@@ -6,6 +6,33 @@ if (!defined('ABSPATH')) {
 
 class LLLM_Migrations {
     public static function run() {
+        $migrations = self::get_migrations();
+        if (empty($migrations)) {
+            return;
+        }
+
+        $current_version = get_option('lllm_db_version', '0.0.0');
+
+        foreach ($migrations as $version => $migration) {
+            if (version_compare($current_version, $version, '<')) {
+                call_user_func($migration);
+                $current_version = $version;
+                update_option('lllm_db_version', $current_version);
+            }
+        }
+    }
+
+    private static function get_migrations() {
+        $migrations = array(
+            '0.1.0' => array(__CLASS__, 'migration_010'),
+        );
+
+        uksort($migrations, 'version_compare');
+
+        return $migrations;
+    }
+
+    private static function migration_010() {
         global $wpdb;
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
