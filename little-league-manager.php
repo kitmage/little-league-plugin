@@ -32,5 +32,6 @@ function lllm_maybe_upgrade() {
     }
 
     LLLM_Migrations::run();
+    LLLM_Activator::sync_roles();
     update_option('lllm_plugin_version', LLLM_VERSION);
 }
