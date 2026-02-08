@@ -26,6 +26,7 @@ function autoload_lllm() {
     require_once __DIR__ . '/includes/class-lllm-activator.php';
     require_once __DIR__ . '/includes/class-lllm-roles.php';
     require_once __DIR__ . '/includes/class-lllm-migrations.php';
+    require_once __DIR__ . '/includes/class-lllm-import.php';
     require_once __DIR__ . '/includes/class-lllm-admin.php';
 }
 

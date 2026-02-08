@@ -17,6 +17,7 @@ class LLLM_Migrations {
         $team_masters_table = $wpdb->prefix . 'lllm_team_masters';
         $team_instances_table = $wpdb->prefix . 'lllm_team_instances';
         $games_table = $wpdb->prefix . 'lllm_games';
+        $import_logs_table = $wpdb->prefix . 'lllm_import_logs';
 
         $seasons_sql = "CREATE TABLE {$seasons_table} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -93,10 +94,30 @@ class LLLM_Migrations {
             UNIQUE KEY game_unique (division_id, start_datetime_utc, home_team_instance_id, away_team_instance_id)
         ) {$charset_collate};";
 
+        $import_logs_sql = "CREATE TABLE {$import_logs_table} (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id BIGINT(20) UNSIGNED NOT NULL,
+            season_id BIGINT(20) UNSIGNED NOT NULL,
+            division_id BIGINT(20) UNSIGNED NOT NULL,
+            import_type VARCHAR(40) NOT NULL,
+            original_filename VARCHAR(255) NOT NULL,
+            total_rows INT NOT NULL DEFAULT 0,
+            total_created INT NOT NULL DEFAULT 0,
+            total_updated INT NOT NULL DEFAULT 0,
+            total_unchanged INT NOT NULL DEFAULT 0,
+            total_errors INT NOT NULL DEFAULT 0,
+            error_report_path VARCHAR(255) NULL,
+            created_at DATETIME NULL,
+            PRIMARY KEY  (id),
+            KEY season_division (season_id, division_id),
+            KEY user_id (user_id)
+        ) {$charset_collate};";
+
         dbDelta($seasons_sql);
         dbDelta($divisions_sql);
         dbDelta($team_masters_sql);
         dbDelta($team_instances_sql);
         dbDelta($games_sql);
+        dbDelta($import_logs_sql);
     }
 }
