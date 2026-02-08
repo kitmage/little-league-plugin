@@ -19,10 +19,14 @@ autoload_lllm();
 register_activation_hook(__FILE__, array('LLLM_Activator', 'activate'));
 
 add_action('plugins_loaded', 'lllm_maybe_upgrade');
+add_action('admin_menu', array('LLLM_Admin', 'register_menu'));
+add_action('admin_init', array('LLLM_Admin', 'register_actions'));
 
 function autoload_lllm() {
     require_once __DIR__ . '/includes/class-lllm-activator.php';
+    require_once __DIR__ . '/includes/class-lllm-roles.php';
     require_once __DIR__ . '/includes/class-lllm-migrations.php';
+    require_once __DIR__ . '/includes/class-lllm-admin.php';
 }
 
 function lllm_maybe_upgrade() {
@@ -32,6 +36,6 @@ function lllm_maybe_upgrade() {
     }
 
     LLLM_Migrations::run();
-    LLLM_Activator::sync_roles();
+    LLLM_Roles::sync_roles();
     update_option('lllm_plugin_version', LLLM_VERSION);
 }
