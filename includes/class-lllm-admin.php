@@ -113,7 +113,7 @@ class LLLM_Admin {
         global $wpdb;
         return $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT * FROM ' . self::table('divisions') . ' WHERE season_id = %d ORDER BY sort_order ASC, name ASC',
+                'SELECT * FROM ' . self::table('divisions') . ' WHERE season_id = %d ORDER BY name ASC',
                 $season_id
             )
         );
@@ -381,14 +381,10 @@ class LLLM_Admin {
         echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
 
         $division_name = $editing ? $editing->name : '';
-        $sort_order = $editing ? (int) $editing->sort_order : 0;
 
         echo '<table class="form-table"><tbody>';
         echo '<tr><th scope="row"><label for="lllm-division-name">' . esc_html__('Division Name', 'lllm') . '</label></th>';
         echo '<td><input name="name" id="lllm-division-name" type="text" class="regular-text" value="' . esc_attr($division_name) . '" required></td></tr>';
-
-        echo '<tr><th scope="row"><label for="lllm-division-sort">' . esc_html__('Sort Order', 'lllm') . '</label></th>';
-        echo '<td><input name="sort_order" id="lllm-division-sort" type="number" class="small-text" value="' . esc_attr($sort_order) . '"></td></tr>';
         echo '</tbody></table>';
 
         submit_button($editing ? __('Update Division', 'lllm') : __('Add Division', 'lllm'));
@@ -402,7 +398,6 @@ class LLLM_Admin {
         } else {
             echo '<table class="widefat striped"><thead><tr>';
             echo '<th>' . esc_html__('Name', 'lllm') . '</th>';
-            echo '<th>' . esc_html__('Sort Order', 'lllm') . '</th>';
             echo '<th>' . esc_html__('Actions', 'lllm') . '</th>';
             echo '</tr></thead><tbody>';
 
@@ -413,7 +408,6 @@ class LLLM_Admin {
                 );
                 echo '<tr>';
                 echo '<td>' . esc_html($division->name) . '</td>';
-                echo '<td>' . esc_html($division->sort_order) . '</td>';
                 echo '<td><a href="' . esc_url($edit_link) . '">' . esc_html__('Edit', 'lllm') . '</a></td>';
                 echo '</tr>';
             }
@@ -987,7 +981,6 @@ class LLLM_Admin {
         $id = isset($_POST['id']) ? absint($_POST['id']) : 0;
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
         $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
-        $sort_order = isset($_POST['sort_order']) ? intval($_POST['sort_order']) : 0;
 
         if (!$season_id || !$name) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions'), 'error', __('Season and division name are required.', 'lllm'));
@@ -1002,7 +995,6 @@ class LLLM_Admin {
             'season_id' => $season_id,
             'name' => $name,
             'slug' => $slug,
-            'sort_order' => $sort_order,
             'updated_at' => $timestamp,
         );
 
