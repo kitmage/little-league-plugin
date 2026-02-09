@@ -1146,10 +1146,13 @@ class LLLM_Admin {
             array('id' => $game_id)
         );
 
+<<<<<<< codex/outline-development-phases-for-plugin-l66xbl
         if ($division_id) {
             LLLM_Standings::bust_cache($division_id);
         }
 
+=======
+>>>>>>> main
         self::redirect_with_notice(
             admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id),
             'game_saved'
@@ -1546,10 +1549,13 @@ class LLLM_Admin {
         }
         $wpdb->query('COMMIT');
 
+<<<<<<< codex/outline-development-phases-for-plugin-l66xbl
         if ($division_id) {
             LLLM_Standings::bust_cache($division_id);
         }
 
+=======
+>>>>>>> main
         self::log_import(array(
             'season_id' => $season_id,
             'division_id' => $division_id,
