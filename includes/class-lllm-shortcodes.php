@@ -40,7 +40,7 @@ class LLLM_Shortcodes {
         global $wpdb;
         return $wpdb->get_row(
             $wpdb->prepare(
-                'SELECT * FROM ' . $wpdb->prefix . 'lllm_divisions WHERE season_id = %d ORDER BY name ASC LIMIT 1',
+                'SELECT * FROM ' . $wpdb->prefix . 'lllm_divisions WHERE season_id = %d ORDER BY sort_order ASC, name ASC LIMIT 1',
                 $season_id
             )
         );

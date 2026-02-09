@@ -85,14 +85,19 @@ class LLLM_Admin {
         add_action('admin_post_lllm_save_division', array(__CLASS__, 'handle_save_division'));
         add_action('admin_post_lllm_save_team', array(__CLASS__, 'handle_save_team'));
         add_action('admin_post_lllm_update_division_teams', array(__CLASS__, 'handle_update_division_teams'));
+        add_action('admin_post_lllm_delete_season', array(__CLASS__, 'handle_delete_season'));
+        add_action('admin_post_lllm_bulk_delete_seasons', array(__CLASS__, 'handle_bulk_delete_seasons'));
+        add_action('admin_post_lllm_delete_division', array(__CLASS__, 'handle_delete_division'));
+        add_action('admin_post_lllm_bulk_delete_divisions', array(__CLASS__, 'handle_bulk_delete_divisions'));
+        add_action('admin_post_lllm_delete_team', array(__CLASS__, 'handle_delete_team'));
+        add_action('admin_post_lllm_bulk_delete_teams', array(__CLASS__, 'handle_bulk_delete_teams'));
+        add_action('admin_post_lllm_delete_game', array(__CLASS__, 'handle_delete_game'));
+        add_action('admin_post_lllm_bulk_delete_games', array(__CLASS__, 'handle_bulk_delete_games'));
         add_action('admin_post_lllm_quick_edit_game', array(__CLASS__, 'handle_quick_edit_game'));
         add_action('admin_post_lllm_import_validate', array(__CLASS__, 'handle_import_validate'));
         add_action('admin_post_lllm_import_commit', array(__CLASS__, 'handle_import_commit'));
         add_action('admin_post_lllm_download_template', array(__CLASS__, 'handle_download_template'));
         add_action('admin_post_lllm_download_current_games', array(__CLASS__, 'handle_download_current_games'));
-        add_action('admin_post_lllm_import_divisions', array(__CLASS__, 'handle_import_divisions'));
-        add_action('admin_post_lllm_import_divisions_commit', array(__CLASS__, 'handle_import_divisions_commit'));
-        add_action('admin_post_lllm_download_divisions_template', array(__CLASS__, 'handle_download_divisions_template'));
     }
 
     private static function table($name) {
@@ -113,7 +118,7 @@ class LLLM_Admin {
         global $wpdb;
         return $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT * FROM ' . self::table('divisions') . ' WHERE season_id = %d ORDER BY name ASC',
+                'SELECT * FROM ' . self::table('divisions') . ' WHERE season_id = %d ORDER BY sort_order ASC, name ASC',
                 $season_id
             )
         );
@@ -185,6 +190,22 @@ class LLLM_Admin {
                 $class = 'notice notice-warning';
                 $text = __('Some teams could not be removed because games exist:', 'lllm') . ' ' . $message;
                 break;
+            case 'season_deleted':
+                $text = __('Season deleted.', 'lllm');
+                break;
+            case 'division_deleted':
+                $text = __('Division deleted.', 'lllm');
+                break;
+            case 'team_deleted':
+                $text = __('Team deleted.', 'lllm');
+                break;
+            case 'game_deleted':
+                $text = __('Game deleted.', 'lllm');
+                break;
+            case 'delete_blocked':
+                $class = 'notice notice-warning';
+                $text = $message ? $message : __('Delete blocked.', 'lllm');
+                break;
             case 'game_saved':
                 $text = __('Game updated.', 'lllm');
                 break;
@@ -252,6 +273,7 @@ class LLLM_Admin {
             echo '<p>' . esc_html__('No seasons yet.', 'lllm') . '</p>';
         } else {
             echo '<table class="widefat striped"><thead><tr>';
+            echo '<th><input type="checkbox" onclick="document.querySelectorAll(\'.lllm-season-select\').forEach(el => el.checked = this.checked);"></th>';
             echo '<th>' . esc_html__('Name', 'lllm') . '</th>';
             echo '<th>' . esc_html__('Timezone', 'lllm') . '</th>';
             echo '<th>' . esc_html__('Status', 'lllm') . '</th>';
@@ -265,14 +287,29 @@ class LLLM_Admin {
                     admin_url('admin.php')
                 );
                 echo '<tr>';
+                echo '<td><input class="lllm-season-select" type="checkbox" name="season_ids[]" value="' . esc_attr($season->id) . '" form="lllm-bulk-seasons"></td>';
                 echo '<td>' . esc_html($season->name) . '</td>';
                 echo '<td>' . esc_html($season->timezone) . '</td>';
                 echo '<td>' . esc_html($status) . '</td>';
-                echo '<td><a href="' . esc_url($edit_link) . '">' . esc_html__('Edit', 'lllm') . '</a></td>';
+                echo '<td><a href="' . esc_url($edit_link) . '">' . esc_html__('Edit', 'lllm') . '</a>';
+                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:inline-block;margin-left:8px;">';
+                wp_nonce_field('lllm_delete_season', 'lllm_delete_season_nonce');
+                echo '<input type="hidden" name="action" value="lllm_delete_season">';
+                echo '<input type="hidden" name="id" value="' . esc_attr($season->id) . '">';
+                echo '<input type="text" name="confirm_text[' . esc_attr($season->id) . ']" placeholder="' . esc_attr__('Type DELETE', 'lllm') . '" class="small-text"> ';
+                echo '<button class="button-link delete">' . esc_html__('Delete', 'lllm') . '</button>';
+                echo '</form></td>';
                 echo '</tr>';
             }
 
             echo '</tbody></table>';
+            echo '<form id="lllm-bulk-seasons" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            wp_nonce_field('lllm_bulk_delete_seasons');
+            echo '<input type="hidden" name="action" value="lllm_bulk_delete_seasons">';
+            echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
+            echo '<input type="text" name="confirm_text_bulk" class="regular-text"> ';
+            submit_button(__('Bulk Delete Selected', 'lllm'), 'delete', 'submit', false);
+            echo '</form>';
         }
 
         echo '</div>';
@@ -312,65 +349,6 @@ class LLLM_Admin {
         echo '</select>';
         echo '</form>';
 
-        echo '<h2>' . esc_html__('Import Divisions CSV', 'lllm') . '</h2>';
-        if (!$season_id) {
-            echo '<p>' . esc_html__('Create a season before importing divisions.', 'lllm') . '</p>';
-        } else {
-            $template_url = wp_nonce_url(
-                admin_url('admin-post.php?action=lllm_download_divisions_template'),
-                'lllm_download_divisions_template'
-            );
-            echo '<p>' . esc_html__('Upload a CSV with a division_name column (optional sort_order).', 'lllm') . '</p>';
-            echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a></p>';
-            echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
-            wp_nonce_field('lllm_import_divisions');
-            echo '<input type="hidden" name="action" value="lllm_import_divisions">';
-            echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
-            echo '<input type="file" name="csv_file" accept=".csv" required> ';
-            submit_button(__('Validate CSV', 'lllm'), 'primary', 'submit', false);
-            echo '</form>';
-
-            $token = isset($_GET['divisions_import_token']) ? sanitize_text_field(wp_unslash($_GET['divisions_import_token'])) : '';
-            $data = $token ? get_transient('lllm_division_import_' . $token) : null;
-            if ($data) {
-                echo '<h3>' . esc_html__('Import Summary', 'lllm') . '</h3>';
-                echo '<ul>';
-                echo '<li>' . esc_html__('Rows read:', 'lllm') . ' ' . esc_html($data['summary']['rows']) . '</li>';
-                echo '<li>' . esc_html__('Creates:', 'lllm') . ' ' . esc_html($data['summary']['creates']) . '</li>';
-                echo '<li>' . esc_html__('Errors:', 'lllm') . ' ' . esc_html($data['summary']['errors']) . '</li>';
-                echo '</ul>';
-
-                if (!empty($data['summary']['errors'])) {
-                    if (!empty($data['error_report_url'])) {
-                        echo '<p><a class="button" href="' . esc_url($data['error_report_url']) . '">' . esc_html__('Download Error Report CSV', 'lllm') . '</a></p>';
-                    }
-                    echo '<p>' . esc_html__('Fix errors before importing.', 'lllm') . '</p>';
-                } else {
-                    if (!empty($data['preview'])) {
-                        echo '<table class="widefat striped"><thead><tr>';
-                        foreach (array_keys($data['preview'][0]) as $header) {
-                            echo '<th>' . esc_html($header) . '</th>';
-                        }
-                        echo '</tr></thead><tbody>';
-                        foreach ($data['preview'] as $row) {
-                            echo '<tr>';
-                            foreach ($row as $value) {
-                                echo '<td>' . esc_html($value) . '</td>';
-                            }
-                            echo '</tr>';
-                        }
-                        echo '</tbody></table>';
-                    }
-                    echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-                    wp_nonce_field('lllm_import_divisions_commit');
-                    echo '<input type="hidden" name="action" value="lllm_import_divisions_commit">';
-                    echo '<input type="hidden" name="token" value="' . esc_attr($token) . '">';
-                    submit_button(__('Import Divisions', 'lllm'));
-                    echo '</form>';
-                }
-            }
-        }
-
         echo '<h2>' . esc_html($editing ? __('Edit Division', 'lllm') : __('Add Division', 'lllm')) . '</h2>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('lllm_save_division');
@@ -381,10 +359,14 @@ class LLLM_Admin {
         echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
 
         $division_name = $editing ? $editing->name : '';
+        $sort_order = $editing ? (int) $editing->sort_order : 0;
 
         echo '<table class="form-table"><tbody>';
         echo '<tr><th scope="row"><label for="lllm-division-name">' . esc_html__('Division Name', 'lllm') . '</label></th>';
         echo '<td><input name="name" id="lllm-division-name" type="text" class="regular-text" value="' . esc_attr($division_name) . '" required></td></tr>';
+
+        echo '<tr><th scope="row"><label for="lllm-division-sort">' . esc_html__('Sort Order', 'lllm') . '</label></th>';
+        echo '<td><input name="sort_order" id="lllm-division-sort" type="number" class="small-text" value="' . esc_attr($sort_order) . '"></td></tr>';
         echo '</tbody></table>';
 
         submit_button($editing ? __('Update Division', 'lllm') : __('Add Division', 'lllm'));
@@ -397,7 +379,9 @@ class LLLM_Admin {
             echo '<p>' . esc_html__('No divisions for this season yet.', 'lllm') . '</p>';
         } else {
             echo '<table class="widefat striped"><thead><tr>';
+            echo '<th><input type="checkbox" onclick="document.querySelectorAll(\'.lllm-division-select\').forEach(el => el.checked = this.checked);"></th>';
             echo '<th>' . esc_html__('Name', 'lllm') . '</th>';
+            echo '<th>' . esc_html__('Sort Order', 'lllm') . '</th>';
             echo '<th>' . esc_html__('Actions', 'lllm') . '</th>';
             echo '</tr></thead><tbody>';
 
@@ -407,12 +391,30 @@ class LLLM_Admin {
                     admin_url('admin.php')
                 );
                 echo '<tr>';
+                echo '<td><input class="lllm-division-select" type="checkbox" name="division_ids[]" value="' . esc_attr($division->id) . '" form="lllm-bulk-divisions"></td>';
                 echo '<td>' . esc_html($division->name) . '</td>';
-                echo '<td><a href="' . esc_url($edit_link) . '">' . esc_html__('Edit', 'lllm') . '</a></td>';
+                echo '<td>' . esc_html($division->sort_order) . '</td>';
+                echo '<td><a href="' . esc_url($edit_link) . '">' . esc_html__('Edit', 'lllm') . '</a>';
+                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:inline-block;margin-left:8px;">';
+                wp_nonce_field('lllm_delete_division', 'lllm_delete_division_nonce');
+                echo '<input type="hidden" name="action" value="lllm_delete_division">';
+                echo '<input type="hidden" name="id" value="' . esc_attr($division->id) . '">';
+                echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+                echo '<input type="text" name="confirm_text[' . esc_attr($division->id) . ']" placeholder="' . esc_attr__('Type DELETE', 'lllm') . '" class="small-text"> ';
+                echo '<button class="button-link delete">' . esc_html__('Delete', 'lllm') . '</button>';
+                echo '</form></td>';
                 echo '</tr>';
             }
 
             echo '</tbody></table>';
+            echo '<form id="lllm-bulk-divisions" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            wp_nonce_field('lllm_bulk_delete_divisions');
+            echo '<input type="hidden" name="action" value="lllm_bulk_delete_divisions">';
+            echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+            echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
+            echo '<input type="text" name="confirm_text_bulk" class="regular-text"> ';
+            submit_button(__('Bulk Delete Selected', 'lllm'), 'delete', 'submit', false);
+            echo '</form>';
         }
 
         echo '</div>';
@@ -464,6 +466,7 @@ class LLLM_Admin {
             echo '<p>' . esc_html__('No teams yet.', 'lllm') . '</p>';
         } else {
             echo '<table class="widefat striped"><thead><tr>';
+            echo '<th><input type="checkbox" onclick="document.querySelectorAll(\'.lllm-team-select\').forEach(el => el.checked = this.checked);"></th>';
             echo '<th>' . esc_html__('Team Name', 'lllm') . '</th>';
             echo '<th>' . esc_html__('Team Code', 'lllm') . '</th>';
             echo '<th>' . esc_html__('Actions', 'lllm') . '</th>';
@@ -475,13 +478,28 @@ class LLLM_Admin {
                     admin_url('admin.php')
                 );
                 echo '<tr>';
+                echo '<td><input class="lllm-team-select" type="checkbox" name="team_ids[]" value="' . esc_attr($team->id) . '" form="lllm-bulk-teams"></td>';
                 echo '<td>' . esc_html($team->name) . '</td>';
                 echo '<td>' . esc_html($team->team_code) . '</td>';
-                echo '<td><a href="' . esc_url($edit_link) . '">' . esc_html__('Edit', 'lllm') . '</a></td>';
+                echo '<td><a href="' . esc_url($edit_link) . '">' . esc_html__('Edit', 'lllm') . '</a>';
+                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:inline-block;margin-left:8px;">';
+                wp_nonce_field('lllm_delete_team', 'lllm_delete_team_nonce');
+                echo '<input type="hidden" name="action" value="lllm_delete_team">';
+                echo '<input type="hidden" name="id" value="' . esc_attr($team->id) . '">';
+                echo '<input type="text" name="confirm_text[' . esc_attr($team->id) . ']" placeholder="' . esc_attr__('Type DELETE', 'lllm') . '" class="small-text"> ';
+                echo '<button class="button-link delete">' . esc_html__('Delete', 'lllm') . '</button>';
+                echo '</form></td>';
                 echo '</tr>';
             }
 
             echo '</tbody></table>';
+            echo '<form id="lllm-bulk-teams" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            wp_nonce_field('lllm_bulk_delete_teams');
+            echo '<input type="hidden" name="action" value="lllm_bulk_delete_teams">';
+            echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
+            echo '<input type="text" name="confirm_text_bulk" class="regular-text"> ';
+            submit_button(__('Bulk Delete Selected', 'lllm'), 'delete', 'submit', false);
+            echo '</form>';
         }
 
         echo '</div>';
@@ -667,7 +685,16 @@ class LLLM_Admin {
             return;
         }
 
+        echo '<form id="lllm-bulk-games" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        wp_nonce_field('lllm_bulk_delete_games');
+        wp_nonce_field('lllm_delete_game', 'lllm_delete_game_nonce');
+        echo '<input type="hidden" name="action" value="lllm_bulk_delete_games">';
+        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
+        echo '</form>';
+
         echo '<table class="widefat striped"><thead><tr>';
+        echo '<th><input type="checkbox" onclick="document.querySelectorAll(\'.lllm-game-select\').forEach(el => el.checked = this.checked);"></th>';
         echo '<th>' . esc_html__('Date/Time (UTC)', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Location', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Home', 'lllm') . '</th>';
@@ -675,11 +702,13 @@ class LLLM_Admin {
         echo '<th>' . esc_html__('Status', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Score', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Quick Edit', 'lllm') . '</th>';
+        echo '<th>' . esc_html__('Actions', 'lllm') . '</th>';
         echo '</tr></thead><tbody>';
 
         foreach ($games as $game) {
             $score = $game->status === 'played' ? sprintf('%d - %d', $game->home_score, $game->away_score) : '—';
             echo '<tr>';
+            echo '<td><input class="lllm-game-select" type="checkbox" name="game_ids[]" value="' . esc_attr($game->id) . '" form="lllm-bulk-games"></td>';
             echo '<td>' . esc_html($game->start_datetime_utc) . '</td>';
             echo '<td>' . esc_html($game->location) . '</td>';
             echo '<td>' . esc_html($game->home_name) . '</td>';
@@ -704,10 +733,17 @@ class LLLM_Admin {
             echo '<button class="button" type="submit">' . esc_html__('Save', 'lllm') . '</button>';
             echo '</form>';
             echo '</td>';
+            echo '<td>';
+            echo '<input type="text" name="confirm_text[' . esc_attr($game->id) . ']" placeholder="' . esc_attr__('Type DELETE', 'lllm') . '" class="small-text" form="lllm-bulk-games"> ';
+            echo '<button class="button-link delete" form="lllm-bulk-games" formaction="' . esc_url(admin_url('admin-post.php?action=lllm_delete_game')) . '" formmethod="post" name="id" value="' . esc_attr($game->id) . '">' . esc_html__('Delete', 'lllm') . '</button>';
+            echo '</td>';
             echo '</tr>';
         }
 
         echo '</tbody></table>';
+        echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
+        echo '<input type="text" name="confirm_text_bulk" class="regular-text" form="lllm-bulk-games"> ';
+        echo '<button class="button delete" form="lllm-bulk-games" type="submit">' . esc_html__('Bulk Delete Selected', 'lllm') . '</button>';
         echo '</div>';
     }
 
@@ -981,6 +1017,7 @@ class LLLM_Admin {
         $id = isset($_POST['id']) ? absint($_POST['id']) : 0;
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
         $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
+        $sort_order = isset($_POST['sort_order']) ? intval($_POST['sort_order']) : 0;
 
         if (!$season_id || !$name) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions'), 'error', __('Season and division name are required.', 'lllm'));
@@ -995,6 +1032,7 @@ class LLLM_Admin {
             'season_id' => $season_id,
             'name' => $name,
             'slug' => $slug,
+            'sort_order' => $sort_order,
             'updated_at' => $timestamp,
         );
 
@@ -1281,21 +1319,6 @@ class LLLM_Admin {
         exit;
     }
 
-    public static function handle_download_divisions_template() {
-        if (!current_user_can('lllm_manage_divisions')) {
-            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
-        }
-
-        check_admin_referer('lllm_download_divisions_template');
-
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename=division-template.csv');
-        $output = fopen('php://output', 'w');
-        fputcsv($output, array('division_name', 'sort_order'));
-        fclose($output);
-        exit;
-    }
-
     private static function log_import($data) {
         global $wpdb;
         $wpdb->insert(
@@ -1497,59 +1520,6 @@ class LLLM_Admin {
         );
     }
 
-    private static function validate_division_import($season_id, $rows) {
-        global $wpdb;
-        $errors = array();
-        $operations = array();
-        $seen_names = array();
-        $existing_names = array();
-
-        $existing_rows = $wpdb->get_results(
-            $wpdb->prepare(
-                'SELECT name FROM ' . self::table('divisions') . ' WHERE season_id = %d',
-                $season_id
-            )
-        );
-        foreach ($existing_rows as $row) {
-            $existing_names[strtolower($row->name)] = true;
-        }
-
-        foreach ($rows as $index => $row) {
-            $row_number = $index + 2;
-            $division_name = isset($row['division_name']) ? sanitize_text_field($row['division_name']) : '';
-            $division_name = trim($division_name);
-            if ($division_name === '') {
-                $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: division_name is required.', 'lllm'), $row_number));
-                continue;
-            }
-
-            $normalized = strtolower($division_name);
-            if (isset($seen_names[$normalized])) {
-                $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: duplicate division_name in CSV.', 'lllm'), $row_number));
-                continue;
-            }
-            if (isset($existing_names[$normalized])) {
-                $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: division already exists for this season.', 'lllm'), $row_number));
-                continue;
-            }
-            $seen_names[$normalized] = true;
-
-            $sort_order = isset($row['sort_order']) && $row['sort_order'] !== '' ? intval($row['sort_order']) : 0;
-            $operations[] = array(
-                'action' => 'create',
-                'data' => array(
-                    'name' => $division_name,
-                    'sort_order' => $sort_order,
-                ),
-            );
-        }
-
-        return array(
-            'errors' => $errors,
-            'operations' => $operations,
-        );
-    }
-
     public static function handle_import_validate() {
         if (!current_user_can('lllm_import_csv')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1629,148 +1599,6 @@ class LLLM_Admin {
         exit;
     }
 
-    public static function handle_import_divisions() {
-        if (!current_user_can('lllm_manage_divisions')) {
-            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
-        }
-
-        check_admin_referer('lllm_import_divisions');
-
-        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
-        if (!$season_id) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions'), 'error', __('Season is required.', 'lllm'));
-        }
-
-        if (empty($_FILES['csv_file']['tmp_name'])) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'error', __('CSV file is required.', 'lllm'));
-        }
-
-        $parsed = LLLM_Import::parse_csv($_FILES['csv_file']['tmp_name']);
-        if (is_wp_error($parsed)) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'error', $parsed->get_error_message());
-        }
-
-        if (!in_array('division_name', $parsed['headers'], true)) {
-            self::redirect_with_notice(
-                admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id),
-                'error',
-                sprintf(__('Missing required header: %s', 'lllm'), 'division_name')
-            );
-        }
-
-        $validation = self::validate_division_import($season_id, $parsed['rows']);
-        $operations = $validation['operations'];
-        $errors = $validation['errors'];
-
-        $summary = array(
-            'rows' => count($parsed['rows']),
-            'creates' => count($operations),
-            'errors' => count($errors),
-        );
-
-        $error_report_path = '';
-        $error_report_url = '';
-        if ($errors) {
-            $error_report_path = LLLM_Import::save_error_report($errors);
-            if ($error_report_path) {
-                $upload = wp_upload_dir();
-                $error_report_url = str_replace($upload['basedir'], $upload['baseurl'], $error_report_path);
-            }
-        }
-
-        self::log_import(array(
-            'season_id' => $season_id,
-            'division_id' => 0,
-            'import_type' => 'divisions',
-            'filename' => sanitize_file_name($_FILES['csv_file']['name']),
-            'total_rows' => $summary['rows'],
-            'total_created' => $summary['creates'],
-            'total_updated' => 0,
-            'total_unchanged' => 0,
-            'total_errors' => $summary['errors'],
-            'error_report_path' => $error_report_path,
-        ));
-
-        $token = wp_generate_password(12, false);
-        set_transient('lllm_division_import_' . $token, array(
-            'season_id' => $season_id,
-            'operations' => $operations,
-            'summary' => $summary,
-            'preview' => array_slice($parsed['rows'], 0, 20),
-            'error_report_url' => $error_report_url,
-        ), 30 * MINUTE_IN_SECONDS);
-
-        wp_safe_redirect(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id . '&divisions_import_token=' . $token));
-        exit;
-    }
-
-    public static function handle_import_divisions_commit() {
-        if (!current_user_can('lllm_manage_divisions')) {
-            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
-        }
-
-        check_admin_referer('lllm_import_divisions_commit');
-        $token = isset($_POST['token']) ? sanitize_text_field(wp_unslash($_POST['token'])) : '';
-        $data = $token ? get_transient('lllm_division_import_' . $token) : null;
-        if (!$data) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions'), 'error', __('Import session expired.', 'lllm'));
-        }
-
-        $season_id = $data['season_id'];
-        $operations = $data['operations'];
-        global $wpdb;
-        $table = self::table('divisions');
-
-        $season_slug = $wpdb->get_var($wpdb->prepare('SELECT slug FROM ' . self::table('seasons') . ' WHERE id = %d', $season_id));
-        if (!$season_slug) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions'), 'error', __('Season not found.', 'lllm'));
-        }
-
-        $created = 0;
-        $timestamp = current_time('mysql', true);
-        $wpdb->query('START TRANSACTION');
-        foreach ($operations as $operation) {
-            if ($operation['action'] !== 'create') {
-                continue;
-            }
-            $name = $operation['data']['name'];
-            $base_slug = sanitize_title($season_slug . '-' . $name);
-            $slug = self::unique_value($table, 'slug', $base_slug);
-            $wpdb->insert(
-                $table,
-                array(
-                    'season_id' => $season_id,
-                    'name' => $name,
-                    'slug' => $slug,
-                    'sort_order' => $operation['data']['sort_order'],
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                )
-            );
-            $created++;
-        }
-        $wpdb->query('COMMIT');
-
-        self::log_import(array(
-            'season_id' => $season_id,
-            'division_id' => 0,
-            'import_type' => 'divisions',
-            'filename' => __('Commit', 'lllm'),
-            'total_rows' => count($operations),
-            'total_created' => $created,
-            'total_updated' => 0,
-            'total_unchanged' => 0,
-            'total_errors' => 0,
-            'error_report_path' => '',
-        ));
-
-        delete_transient('lllm_division_import_' . $token);
-        self::redirect_with_notice(
-            admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id),
-            'import_complete'
-        );
-    }
-
     public static function handle_import_commit() {
         if (!current_user_can('lllm_import_csv')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1832,5 +1660,227 @@ class LLLM_Admin {
             admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id),
             'import_complete'
         );
+    }
+
+    private static function is_delete_confirmed($text) {
+        return strtoupper(trim($text)) === 'DELETE';
+    }
+
+    private static function get_confirm_text($id) {
+        if (!isset($_POST['confirm_text'])) {
+            return '';
+        }
+        $confirm = $_POST['confirm_text'];
+        if (is_array($confirm) && isset($confirm[$id])) {
+            return sanitize_text_field(wp_unslash($confirm[$id]));
+        }
+        if (is_string($confirm)) {
+            return sanitize_text_field(wp_unslash($confirm));
+        }
+        return '';
+    }
+
+    private static function delete_season_by_id($season_id) {
+        global $wpdb;
+        $division_ids = $wpdb->get_col($wpdb->prepare('SELECT id FROM ' . self::table('divisions') . ' WHERE season_id = %d', $season_id));
+        if ($division_ids) {
+            $placeholders = implode(',', array_fill(0, count($division_ids), '%d'));
+            $wpdb->query($wpdb->prepare('DELETE FROM ' . self::table('games') . ' WHERE division_id IN (' . $placeholders . ')', $division_ids));
+            $wpdb->query($wpdb->prepare('DELETE FROM ' . self::table('team_instances') . ' WHERE division_id IN (' . $placeholders . ')', $division_ids));
+            $wpdb->query($wpdb->prepare('DELETE FROM ' . self::table('divisions') . ' WHERE id IN (' . $placeholders . ')', $division_ids));
+        }
+        $wpdb->delete(self::table('seasons'), array('id' => $season_id));
+    }
+
+    public static function handle_delete_season() {
+        if (!current_user_can('lllm_manage_seasons')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_delete_season', 'lllm_delete_season_nonce');
+        $season_id = isset($_POST['id']) ? absint($_POST['id']) : 0;
+        $confirm = self::get_confirm_text($season_id);
+        if (!$season_id || !self::is_delete_confirmed($confirm)) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-seasons'), 'delete_blocked', __('Confirmation required.', 'lllm'));
+        }
+
+        self::delete_season_by_id($season_id);
+
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-seasons'), 'season_deleted');
+    }
+
+    public static function handle_bulk_delete_seasons() {
+        if (!current_user_can('lllm_manage_seasons')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_bulk_delete_seasons');
+        $confirm = isset($_POST['confirm_text_bulk']) ? sanitize_text_field(wp_unslash($_POST['confirm_text_bulk'])) : '';
+        $season_ids = isset($_POST['season_ids']) ? array_map('absint', (array) $_POST['season_ids']) : array();
+        if (!$season_ids || !self::is_delete_confirmed($confirm)) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-seasons'), 'delete_blocked', __('Confirmation required.', 'lllm'));
+        }
+
+        foreach ($season_ids as $season_id) {
+            self::delete_season_by_id($season_id);
+        }
+
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-seasons'), 'season_deleted');
+    }
+
+    private static function delete_division_by_id($division_id) {
+        global $wpdb;
+        $wpdb->delete(self::table('games'), array('division_id' => $division_id));
+        $wpdb->delete(self::table('team_instances'), array('division_id' => $division_id));
+        $wpdb->delete(self::table('divisions'), array('id' => $division_id));
+    }
+
+    public static function handle_delete_division() {
+        if (!current_user_can('lllm_manage_divisions')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_delete_division', 'lllm_delete_division_nonce');
+        $division_id = isset($_POST['id']) ? absint($_POST['id']) : 0;
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $confirm = self::get_confirm_text($division_id);
+        if (!$division_id || !self::is_delete_confirmed($confirm)) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'delete_blocked', __('Confirmation required.', 'lllm'));
+        }
+
+        self::delete_division_by_id($division_id);
+
+        LLLM_Standings::bust_cache($division_id);
+
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'division_deleted');
+    }
+
+    public static function handle_bulk_delete_divisions() {
+        if (!current_user_can('lllm_manage_divisions')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_bulk_delete_divisions');
+        $confirm = isset($_POST['confirm_text_bulk']) ? sanitize_text_field(wp_unslash($_POST['confirm_text_bulk'])) : '';
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_ids = isset($_POST['division_ids']) ? array_map('absint', (array) $_POST['division_ids']) : array();
+        if (!$division_ids || !self::is_delete_confirmed($confirm)) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'delete_blocked', __('Confirmation required.', 'lllm'));
+        }
+
+        foreach ($division_ids as $division_id) {
+            self::delete_division_by_id($division_id);
+            LLLM_Standings::bust_cache($division_id);
+        }
+
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'division_deleted');
+    }
+
+    private static function delete_team_by_id($team_id) {
+        global $wpdb;
+        $wpdb->delete(self::table('team_masters'), array('id' => $team_id));
+    }
+
+    public static function handle_delete_team() {
+        if (!current_user_can('lllm_manage_teams')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_delete_team', 'lllm_delete_team_nonce');
+        $team_id = isset($_POST['id']) ? absint($_POST['id']) : 0;
+        $confirm = self::get_confirm_text($team_id);
+        if (!$team_id || !self::is_delete_confirmed($confirm)) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'delete_blocked', __('Confirmation required.', 'lllm'));
+        }
+
+        global $wpdb;
+        $in_use = $wpdb->get_var(
+            $wpdb->prepare('SELECT id FROM ' . self::table('team_instances') . ' WHERE team_master_id = %d', $team_id)
+        );
+        if ($in_use) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'delete_blocked', __('Team is assigned to a division.', 'lllm'));
+        }
+
+        self::delete_team_by_id($team_id);
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'team_deleted');
+    }
+
+    public static function handle_bulk_delete_teams() {
+        if (!current_user_can('lllm_manage_teams')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_bulk_delete_teams');
+        global $wpdb;
+        $confirm = isset($_POST['confirm_text_bulk']) ? sanitize_text_field(wp_unslash($_POST['confirm_text_bulk'])) : '';
+        $team_ids = isset($_POST['team_ids']) ? array_map('absint', (array) $_POST['team_ids']) : array();
+        if (!$team_ids || !self::is_delete_confirmed($confirm)) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'delete_blocked', __('Confirmation required.', 'lllm'));
+        }
+
+        foreach ($team_ids as $team_id) {
+            $in_use = $wpdb->get_var(
+                $wpdb->prepare('SELECT id FROM ' . self::table('team_instances') . ' WHERE team_master_id = %d', $team_id)
+            );
+            if ($in_use) {
+                continue;
+            }
+            self::delete_team_by_id($team_id);
+        }
+
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'team_deleted');
+    }
+
+    private static function delete_game_by_id($game_id) {
+        global $wpdb;
+        $wpdb->delete(self::table('games'), array('id' => $game_id));
+    }
+
+    public static function handle_delete_game() {
+        if (!current_user_can('lllm_manage_games')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_delete_game', 'lllm_delete_game_nonce');
+        $game_id = isset($_POST['id']) ? absint($_POST['id']) : 0;
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
+        $confirm = self::get_confirm_text($game_id);
+        if (!$game_id || !self::is_delete_confirmed($confirm)) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'delete_blocked', __('Confirmation required.', 'lllm'));
+        }
+
+        self::delete_game_by_id($game_id);
+
+        if ($division_id) {
+            LLLM_Standings::bust_cache($division_id);
+        }
+
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'game_deleted');
+    }
+
+    public static function handle_bulk_delete_games() {
+        if (!current_user_can('lllm_manage_games')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_bulk_delete_games');
+        $confirm = isset($_POST['confirm_text_bulk']) ? sanitize_text_field(wp_unslash($_POST['confirm_text_bulk'])) : '';
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
+        $game_ids = isset($_POST['game_ids']) ? array_map('absint', (array) $_POST['game_ids']) : array();
+        if (!$game_ids || !self::is_delete_confirmed($confirm)) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'delete_blocked', __('Confirmation required.', 'lllm'));
+        }
+
+        foreach ($game_ids as $game_id) {
+            self::delete_game_by_id($game_id);
+        }
+
+        if ($division_id) {
+            LLLM_Standings::bust_cache($division_id);
+        }
+
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'game_deleted');
     }
 }
