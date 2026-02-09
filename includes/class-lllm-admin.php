@@ -90,6 +90,9 @@ class LLLM_Admin {
         add_action('admin_post_lllm_import_commit', array(__CLASS__, 'handle_import_commit'));
         add_action('admin_post_lllm_download_template', array(__CLASS__, 'handle_download_template'));
         add_action('admin_post_lllm_download_current_games', array(__CLASS__, 'handle_download_current_games'));
+        add_action('admin_post_lllm_import_divisions', array(__CLASS__, 'handle_import_divisions'));
+        add_action('admin_post_lllm_import_divisions_commit', array(__CLASS__, 'handle_import_divisions_commit'));
+        add_action('admin_post_lllm_download_divisions_template', array(__CLASS__, 'handle_download_divisions_template'));
     }
 
     private static function table($name) {
@@ -308,6 +311,65 @@ class LLLM_Admin {
         }
         echo '</select>';
         echo '</form>';
+
+        echo '<h2>' . esc_html__('Import Divisions CSV', 'lllm') . '</h2>';
+        if (!$season_id) {
+            echo '<p>' . esc_html__('Create a season before importing divisions.', 'lllm') . '</p>';
+        } else {
+            $template_url = wp_nonce_url(
+                admin_url('admin-post.php?action=lllm_download_divisions_template'),
+                'lllm_download_divisions_template'
+            );
+            echo '<p>' . esc_html__('Upload a CSV with a division_name column (optional sort_order).', 'lllm') . '</p>';
+            echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a></p>';
+            echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            wp_nonce_field('lllm_import_divisions');
+            echo '<input type="hidden" name="action" value="lllm_import_divisions">';
+            echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+            echo '<input type="file" name="csv_file" accept=".csv" required> ';
+            submit_button(__('Validate CSV', 'lllm'), 'primary', 'submit', false);
+            echo '</form>';
+
+            $token = isset($_GET['divisions_import_token']) ? sanitize_text_field(wp_unslash($_GET['divisions_import_token'])) : '';
+            $data = $token ? get_transient('lllm_division_import_' . $token) : null;
+            if ($data) {
+                echo '<h3>' . esc_html__('Import Summary', 'lllm') . '</h3>';
+                echo '<ul>';
+                echo '<li>' . esc_html__('Rows read:', 'lllm') . ' ' . esc_html($data['summary']['rows']) . '</li>';
+                echo '<li>' . esc_html__('Creates:', 'lllm') . ' ' . esc_html($data['summary']['creates']) . '</li>';
+                echo '<li>' . esc_html__('Errors:', 'lllm') . ' ' . esc_html($data['summary']['errors']) . '</li>';
+                echo '</ul>';
+
+                if (!empty($data['summary']['errors'])) {
+                    if (!empty($data['error_report_url'])) {
+                        echo '<p><a class="button" href="' . esc_url($data['error_report_url']) . '">' . esc_html__('Download Error Report CSV', 'lllm') . '</a></p>';
+                    }
+                    echo '<p>' . esc_html__('Fix errors before importing.', 'lllm') . '</p>';
+                } else {
+                    if (!empty($data['preview'])) {
+                        echo '<table class="widefat striped"><thead><tr>';
+                        foreach (array_keys($data['preview'][0]) as $header) {
+                            echo '<th>' . esc_html($header) . '</th>';
+                        }
+                        echo '</tr></thead><tbody>';
+                        foreach ($data['preview'] as $row) {
+                            echo '<tr>';
+                            foreach ($row as $value) {
+                                echo '<td>' . esc_html($value) . '</td>';
+                            }
+                            echo '</tr>';
+                        }
+                        echo '</tbody></table>';
+                    }
+                    echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+                    wp_nonce_field('lllm_import_divisions_commit');
+                    echo '<input type="hidden" name="action" value="lllm_import_divisions_commit">';
+                    echo '<input type="hidden" name="token" value="' . esc_attr($token) . '">';
+                    submit_button(__('Import Divisions', 'lllm'));
+                    echo '</form>';
+                }
+            }
+        }
 
         echo '<h2>' . esc_html($editing ? __('Edit Division', 'lllm') : __('Add Division', 'lllm')) . '</h2>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
@@ -1227,6 +1289,21 @@ class LLLM_Admin {
         exit;
     }
 
+    public static function handle_download_divisions_template() {
+        if (!current_user_can('lllm_manage_divisions')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_download_divisions_template');
+
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename=division-template.csv');
+        $output = fopen('php://output', 'w');
+        fputcsv($output, array('division_name', 'sort_order'));
+        fclose($output);
+        exit;
+    }
+
     private static function log_import($data) {
         global $wpdb;
         $wpdb->insert(
@@ -1428,6 +1505,59 @@ class LLLM_Admin {
         );
     }
 
+    private static function validate_division_import($season_id, $rows) {
+        global $wpdb;
+        $errors = array();
+        $operations = array();
+        $seen_names = array();
+        $existing_names = array();
+
+        $existing_rows = $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT name FROM ' . self::table('divisions') . ' WHERE season_id = %d',
+                $season_id
+            )
+        );
+        foreach ($existing_rows as $row) {
+            $existing_names[strtolower($row->name)] = true;
+        }
+
+        foreach ($rows as $index => $row) {
+            $row_number = $index + 2;
+            $division_name = isset($row['division_name']) ? sanitize_text_field($row['division_name']) : '';
+            $division_name = trim($division_name);
+            if ($division_name === '') {
+                $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: division_name is required.', 'lllm'), $row_number));
+                continue;
+            }
+
+            $normalized = strtolower($division_name);
+            if (isset($seen_names[$normalized])) {
+                $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: duplicate division_name in CSV.', 'lllm'), $row_number));
+                continue;
+            }
+            if (isset($existing_names[$normalized])) {
+                $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: division already exists for this season.', 'lllm'), $row_number));
+                continue;
+            }
+            $seen_names[$normalized] = true;
+
+            $sort_order = isset($row['sort_order']) && $row['sort_order'] !== '' ? intval($row['sort_order']) : 0;
+            $operations[] = array(
+                'action' => 'create',
+                'data' => array(
+                    'name' => $division_name,
+                    'sort_order' => $sort_order,
+                ),
+            );
+        }
+
+        return array(
+            'errors' => $errors,
+            'operations' => $operations,
+        );
+    }
+
     public static function handle_import_validate() {
         if (!current_user_can('lllm_import_csv')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1505,6 +1635,148 @@ class LLLM_Admin {
 
         wp_safe_redirect(admin_url('admin.php?page=lllm-import&step=3&token=' . $token));
         exit;
+    }
+
+    public static function handle_import_divisions() {
+        if (!current_user_can('lllm_manage_divisions')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_import_divisions');
+
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        if (!$season_id) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions'), 'error', __('Season is required.', 'lllm'));
+        }
+
+        if (empty($_FILES['csv_file']['tmp_name'])) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'error', __('CSV file is required.', 'lllm'));
+        }
+
+        $parsed = LLLM_Import::parse_csv($_FILES['csv_file']['tmp_name']);
+        if (is_wp_error($parsed)) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'error', $parsed->get_error_message());
+        }
+
+        if (!in_array('division_name', $parsed['headers'], true)) {
+            self::redirect_with_notice(
+                admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id),
+                'error',
+                sprintf(__('Missing required header: %s', 'lllm'), 'division_name')
+            );
+        }
+
+        $validation = self::validate_division_import($season_id, $parsed['rows']);
+        $operations = $validation['operations'];
+        $errors = $validation['errors'];
+
+        $summary = array(
+            'rows' => count($parsed['rows']),
+            'creates' => count($operations),
+            'errors' => count($errors),
+        );
+
+        $error_report_path = '';
+        $error_report_url = '';
+        if ($errors) {
+            $error_report_path = LLLM_Import::save_error_report($errors);
+            if ($error_report_path) {
+                $upload = wp_upload_dir();
+                $error_report_url = str_replace($upload['basedir'], $upload['baseurl'], $error_report_path);
+            }
+        }
+
+        self::log_import(array(
+            'season_id' => $season_id,
+            'division_id' => 0,
+            'import_type' => 'divisions',
+            'filename' => sanitize_file_name($_FILES['csv_file']['name']),
+            'total_rows' => $summary['rows'],
+            'total_created' => $summary['creates'],
+            'total_updated' => 0,
+            'total_unchanged' => 0,
+            'total_errors' => $summary['errors'],
+            'error_report_path' => $error_report_path,
+        ));
+
+        $token = wp_generate_password(12, false);
+        set_transient('lllm_division_import_' . $token, array(
+            'season_id' => $season_id,
+            'operations' => $operations,
+            'summary' => $summary,
+            'preview' => array_slice($parsed['rows'], 0, 20),
+            'error_report_url' => $error_report_url,
+        ), 30 * MINUTE_IN_SECONDS);
+
+        wp_safe_redirect(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id . '&divisions_import_token=' . $token));
+        exit;
+    }
+
+    public static function handle_import_divisions_commit() {
+        if (!current_user_can('lllm_manage_divisions')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_import_divisions_commit');
+        $token = isset($_POST['token']) ? sanitize_text_field(wp_unslash($_POST['token'])) : '';
+        $data = $token ? get_transient('lllm_division_import_' . $token) : null;
+        if (!$data) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions'), 'error', __('Import session expired.', 'lllm'));
+        }
+
+        $season_id = $data['season_id'];
+        $operations = $data['operations'];
+        global $wpdb;
+        $table = self::table('divisions');
+
+        $season_slug = $wpdb->get_var($wpdb->prepare('SELECT slug FROM ' . self::table('seasons') . ' WHERE id = %d', $season_id));
+        if (!$season_slug) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions'), 'error', __('Season not found.', 'lllm'));
+        }
+
+        $created = 0;
+        $timestamp = current_time('mysql', true);
+        $wpdb->query('START TRANSACTION');
+        foreach ($operations as $operation) {
+            if ($operation['action'] !== 'create') {
+                continue;
+            }
+            $name = $operation['data']['name'];
+            $base_slug = sanitize_title($season_slug . '-' . $name);
+            $slug = self::unique_value($table, 'slug', $base_slug);
+            $wpdb->insert(
+                $table,
+                array(
+                    'season_id' => $season_id,
+                    'name' => $name,
+                    'slug' => $slug,
+                    'sort_order' => $operation['data']['sort_order'],
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                )
+            );
+            $created++;
+        }
+        $wpdb->query('COMMIT');
+
+        self::log_import(array(
+            'season_id' => $season_id,
+            'division_id' => 0,
+            'import_type' => 'divisions',
+            'filename' => __('Commit', 'lllm'),
+            'total_rows' => count($operations),
+            'total_created' => $created,
+            'total_updated' => 0,
+            'total_unchanged' => 0,
+            'total_errors' => 0,
+            'error_report_path' => '',
+        ));
+
+        delete_transient('lllm_division_import_' . $token);
+        self::redirect_with_notice(
+            admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id),
+            'import_complete'
+        );
     }
 
     public static function handle_import_commit() {
