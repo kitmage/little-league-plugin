@@ -100,10 +100,13 @@ class LLLM_Admin {
         add_action('admin_post_lllm_download_current_games', array(__CLASS__, 'handle_download_current_games'));
         add_action('admin_post_lllm_download_divisions_template', array(__CLASS__, 'handle_download_divisions_template'));
         add_action('admin_post_lllm_validate_divisions_csv', array(__CLASS__, 'handle_validate_divisions_csv'));
+        add_action('admin_post_lllm_import_divisions_csv', array(__CLASS__, 'handle_import_divisions_csv'));
         add_action('admin_post_lllm_download_teams_template', array(__CLASS__, 'handle_download_teams_template'));
         add_action('admin_post_lllm_validate_teams_csv', array(__CLASS__, 'handle_validate_teams_csv'));
+        add_action('admin_post_lllm_import_teams_csv', array(__CLASS__, 'handle_import_teams_csv'));
         add_action('admin_post_lllm_download_division_teams_template', array(__CLASS__, 'handle_download_division_teams_template'));
         add_action('admin_post_lllm_validate_division_teams_csv', array(__CLASS__, 'handle_validate_division_teams_csv'));
+        add_action('admin_post_lllm_import_division_teams_csv', array(__CLASS__, 'handle_import_division_teams_csv'));
     }
 
     private static function table($name) {
@@ -460,6 +463,13 @@ class LLLM_Admin {
             echo '<input type="file" name="csv_file" accept=".csv" required> ';
             submit_button(__('Validate CSV', 'lllm'), 'secondary', 'submit', false);
             echo '</form>';
+            echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            wp_nonce_field('lllm_import_divisions_csv');
+            echo '<input type="hidden" name="action" value="lllm_import_divisions_csv">';
+            echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+            echo '<input type="file" name="csv_file" accept=".csv" required> ';
+            submit_button(__('Import CSV', 'lllm'), 'primary', 'submit', false);
+            echo '</form>';
         }
 
         echo '</div>';
@@ -560,6 +570,12 @@ class LLLM_Admin {
         echo '<input type="file" name="csv_file" accept=".csv" required> ';
         submit_button(__('Validate CSV', 'lllm'), 'secondary', 'submit', false);
         echo '</form>';
+        echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        wp_nonce_field('lllm_import_teams_csv');
+        echo '<input type="hidden" name="action" value="lllm_import_teams_csv">';
+        echo '<input type="file" name="csv_file" accept=".csv" required> ';
+        submit_button(__('Import CSV', 'lllm'), 'primary', 'submit', false);
+        echo '</form>';
 
         echo '</div>';
     }
@@ -643,6 +659,14 @@ class LLLM_Admin {
         echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
         echo '<input type="file" name="csv_file" accept=".csv" required> ';
         submit_button(__('Validate CSV', 'lllm'), 'secondary', 'submit', false);
+        echo '</form>';
+        echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        wp_nonce_field('lllm_import_division_teams_csv');
+        echo '<input type="hidden" name="action" value="lllm_import_division_teams_csv">';
+        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
+        echo '<input type="file" name="csv_file" accept=".csv" required> ';
+        submit_button(__('Import CSV', 'lllm'), 'primary', 'submit', false);
         echo '</form>';
 
         echo '<h2>' . esc_html__('Assign Teams', 'lllm') . '</h2>';
@@ -1588,6 +1612,219 @@ class LLLM_Admin {
             $return_url,
             'csv_validated',
             sprintf(__('CSV validated: %d rows checked.', 'lllm'), count($parsed['rows']))
+        );
+    }
+
+    public static function handle_import_divisions_csv() {
+        if (!current_user_can('lllm_manage_divisions')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_import_divisions_csv');
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $return_url = admin_url('admin.php?page=lllm-divisions' . ($season_id ? '&season_id=' . $season_id : ''));
+        if (!$season_id) {
+            self::redirect_with_notice($return_url, 'error', __('Season is required.', 'lllm'));
+        }
+
+        $parsed = self::parse_uploaded_csv();
+        if (is_wp_error($parsed)) {
+            self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
+        }
+
+        $headers_check = self::validate_csv_headers($parsed, array('division_name'));
+        if (is_wp_error($headers_check)) {
+            self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
+        }
+
+        global $wpdb;
+        $table = self::table('divisions');
+        $season_slug = $wpdb->get_var($wpdb->prepare('SELECT slug FROM ' . self::table('seasons') . ' WHERE id = %d', $season_id));
+        $created = 0;
+        $skipped = 0;
+        foreach ($parsed['rows'] as $row) {
+            $row_lower = array_change_key_case($row, CASE_LOWER);
+            $name = isset($row_lower['division_name']) ? trim($row_lower['division_name']) : '';
+            if ($name === '') {
+                $skipped++;
+                continue;
+            }
+            $exists = $wpdb->get_var(
+                $wpdb->prepare('SELECT id FROM ' . $table . ' WHERE season_id = %d AND name = %s', $season_id, $name)
+            );
+            if ($exists) {
+                $skipped++;
+                continue;
+            }
+            $base_slug = sanitize_title($season_slug . '-' . $name);
+            $slug = self::unique_value($table, 'slug', $base_slug);
+            $timestamp = current_time('mysql', true);
+            $wpdb->insert(
+                $table,
+                array(
+                    'season_id' => $season_id,
+                    'name' => $name,
+                    'slug' => $slug,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                )
+            );
+            $created++;
+        }
+
+        self::redirect_with_notice(
+            $return_url,
+            'import_complete',
+            sprintf(__('Divisions imported: %d created, %d skipped.', 'lllm'), $created, $skipped)
+        );
+    }
+
+    public static function handle_import_teams_csv() {
+        if (!current_user_can('lllm_manage_teams')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_import_teams_csv');
+        $return_url = admin_url('admin.php?page=lllm-teams');
+
+        $parsed = self::parse_uploaded_csv();
+        if (is_wp_error($parsed)) {
+            self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
+        }
+
+        $headers_check = self::validate_csv_headers($parsed, array('team_name', 'team_code'));
+        if (is_wp_error($headers_check)) {
+            self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
+        }
+
+        global $wpdb;
+        $table = self::table('team_masters');
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+        foreach ($parsed['rows'] as $row) {
+            $row_lower = array_change_key_case($row, CASE_LOWER);
+            $name = isset($row_lower['team_name']) ? trim($row_lower['team_name']) : '';
+            $code = isset($row_lower['team_code']) ? trim($row_lower['team_code']) : '';
+            if ($name === '') {
+                $skipped++;
+                continue;
+            }
+            if ($code === '') {
+                $code = sanitize_title($name);
+            }
+            if ($code === '') {
+                $code = 'team';
+            }
+            $existing = $wpdb->get_row($wpdb->prepare('SELECT id, team_code FROM ' . $table . ' WHERE team_code = %s', $code));
+            $slug = sanitize_title($name);
+            if ($existing) {
+                $slug = self::unique_value($table, 'slug', $slug, (int) $existing->id);
+                $wpdb->update(
+                    $table,
+                    array(
+                        'name' => $name,
+                        'slug' => $slug,
+                        'updated_at' => current_time('mysql', true),
+                    ),
+                    array('id' => (int) $existing->id)
+                );
+                $updated++;
+                continue;
+            }
+            $code = self::unique_value($table, 'team_code', $code);
+            $slug = self::unique_value($table, 'slug', $slug);
+            $timestamp = current_time('mysql', true);
+            $wpdb->insert(
+                $table,
+                array(
+                    'name' => $name,
+                    'slug' => $slug,
+                    'team_code' => $code,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                )
+            );
+            $created++;
+        }
+
+        self::redirect_with_notice(
+            $return_url,
+            'import_complete',
+            sprintf(__('Teams imported: %d created, %d updated, %d skipped.', 'lllm'), $created, $updated, $skipped)
+        );
+    }
+
+    public static function handle_import_division_teams_csv() {
+        if (!current_user_can('lllm_manage_teams')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_import_division_teams_csv');
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
+        $return_url = admin_url('admin.php?page=lllm-division-teams&season_id=' . $season_id . '&division_id=' . $division_id);
+        if (!$division_id) {
+            self::redirect_with_notice($return_url, 'error', __('Division is required.', 'lllm'));
+        }
+
+        $parsed = self::parse_uploaded_csv();
+        if (is_wp_error($parsed)) {
+            self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
+        }
+
+        $headers_check = self::validate_csv_headers($parsed, array('team_code', 'display_name'));
+        if (is_wp_error($headers_check)) {
+            self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
+        }
+
+        global $wpdb;
+        $created = 0;
+        $skipped = 0;
+        foreach ($parsed['rows'] as $row) {
+            $row_lower = array_change_key_case($row, CASE_LOWER);
+            $code = isset($row_lower['team_code']) ? trim($row_lower['team_code']) : '';
+            $display_name = isset($row_lower['display_name']) ? trim($row_lower['display_name']) : '';
+            if ($code === '') {
+                $skipped++;
+                continue;
+            }
+            $team_id = $wpdb->get_var(
+                $wpdb->prepare('SELECT id FROM ' . self::table('team_masters') . ' WHERE team_code = %s', $code)
+            );
+            if (!$team_id) {
+                $skipped++;
+                continue;
+            }
+            $existing = $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT id FROM ' . self::table('team_instances') . ' WHERE division_id = %d AND team_master_id = %d',
+                    $division_id,
+                    $team_id
+                )
+            );
+            if ($existing) {
+                $skipped++;
+                continue;
+            }
+            $timestamp = current_time('mysql', true);
+            $wpdb->insert(
+                self::table('team_instances'),
+                array(
+                    'division_id' => $division_id,
+                    'team_master_id' => $team_id,
+                    'display_name' => $display_name ?: null,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                )
+            );
+            $created++;
+        }
+
+        self::redirect_with_notice(
+            $return_url,
+            'import_complete',
+            sprintf(__('Division teams imported: %d created, %d skipped.', 'lllm'), $created, $skipped)
         );
     }
 
