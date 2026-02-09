@@ -109,6 +109,18 @@ class LLLM_Admin {
         add_action('admin_post_lllm_import_division_teams_csv', array(__CLASS__, 'handle_import_division_teams_csv'));
     }
 
+    public static function enqueue_assets($hook) {
+        if (empty($_GET['page']) || $_GET['page'] !== 'lllm-teams') {
+            return;
+        }
+
+        wp_enqueue_media();
+        wp_add_inline_script(
+            'jquery',
+            '(function($){$(function(){var frame;function setLogo(id,url){$("#lllm-team-logo-id").val(id||"");if(url){$("#lllm-team-logo-preview").attr("src",url).show();}else{$("#lllm-team-logo-preview").attr("src","").hide();}}$("#lllm-team-logo-select").on("click",function(e){e.preventDefault();if(frame){frame.open();return;}frame=wp.media({title:"' . esc_js(__('Select Team Logo', 'lllm')) . '",button:{text:"' . esc_js(__('Use this logo', 'lllm')) . '"},multiple:false});frame.on("select",function(){var attachment=frame.state().get("selection").first().toJSON();setLogo(attachment.id,attachment.sizes&&attachment.sizes.thumbnail?attachment.sizes.thumbnail.url:attachment.url);});frame.open();});$("#lllm-team-logo-remove").on("click",function(e){e.preventDefault();setLogo("", "");});});})(jQuery);'
+        );
+    }
+
     private static function table($name) {
         global $wpdb;
         return $wpdb->prefix . 'lllm_' . $name;
@@ -504,6 +516,8 @@ class LLLM_Admin {
 
         $team_name = $editing ? $editing->name : '';
         $team_code = $editing ? $editing->team_code : '';
+        $logo_id = $editing ? (int) $editing->logo_attachment_id : 0;
+        $logo_url = $logo_id ? wp_get_attachment_image_url($logo_id, 'thumbnail') : '';
 
         echo '<table class="form-table"><tbody>';
         echo '<tr><th scope="row"><label for="lllm-team-name">' . esc_html__('Team Name', 'lllm') . '</label></th>';
@@ -511,6 +525,12 @@ class LLLM_Admin {
 
         echo '<tr><th scope="row"><label for="lllm-team-code">' . esc_html__('Team Code', 'lllm') . '</label></th>';
         echo '<td><input name="team_code" id="lllm-team-code" type="text" class="regular-text" value="' . esc_attr($team_code) . '" ' . ($can_edit_code ? '' : 'readonly') . '></td></tr>';
+        echo '<tr><th scope="row">' . esc_html__('Team Logo', 'lllm') . '</th><td>';
+        echo '<input type="hidden" name="logo_attachment_id" id="lllm-team-logo-id" value="' . esc_attr($logo_id) . '">';
+        echo '<img id="lllm-team-logo-preview" src="' . esc_url($logo_url) . '" style="' . ($logo_url ? 'max-width:150px;height:auto;display:block;margin-bottom:8px;' : 'max-width:150px;height:auto;display:none;margin-bottom:8px;') . '" alt="">';
+        echo '<button class="button" id="lllm-team-logo-select" type="button">' . esc_html__('Select Logo', 'lllm') . '</button> ';
+        echo '<button class="button" id="lllm-team-logo-remove" type="button">' . esc_html__('Remove Logo', 'lllm') . '</button>';
+        echo '</td></tr>';
         echo '</tbody></table>';
 
         submit_button($editing ? __('Update Team', 'lllm') : __('Add Team', 'lllm'));
@@ -1158,6 +1178,7 @@ class LLLM_Admin {
         $id = isset($_POST['id']) ? absint($_POST['id']) : 0;
         $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
         $team_code = isset($_POST['team_code']) ? sanitize_text_field(wp_unslash($_POST['team_code'])) : '';
+        $logo_id = isset($_POST['logo_attachment_id']) ? absint($_POST['logo_attachment_id']) : 0;
 
         if (!$name) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'error', __('Team name is required.', 'lllm'));
@@ -1180,6 +1201,7 @@ class LLLM_Admin {
             'name' => $name,
             'slug' => $slug,
             'team_code' => $team_code,
+            'logo_attachment_id' => $logo_id ?: null,
             'updated_at' => $timestamp,
         );
 

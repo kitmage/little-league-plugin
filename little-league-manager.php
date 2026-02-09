@@ -21,6 +21,7 @@ register_activation_hook(__FILE__, array('LLLM_Activator', 'activate'));
 add_action('plugins_loaded', 'lllm_maybe_upgrade');
 add_action('admin_menu', array('LLLM_Admin', 'register_menu'));
 add_action('admin_init', array('LLLM_Admin', 'register_actions'));
+add_action('admin_enqueue_scripts', array('LLLM_Admin', 'enqueue_assets'));
 add_action('init', array('LLLM_Shortcodes', 'register'));
 
 function autoload_lllm() {
