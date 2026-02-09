@@ -118,7 +118,7 @@ Managers see only a top-level menu: **Little League** with the plugin pages.
 * `season_id` (BIGINT, not null)
 * `name` (VARCHAR 80, not null)  // “8U”
 * `slug` (VARCHAR 160, unique, not null) // e.g., `spring-2026-8u`
-* `sort_order` (INT, default 0)
+* `sort_order` (INT, default 0, unused)
 * `created_at`, `updated_at`
 
 **Indexes**
@@ -264,7 +264,7 @@ Managers should never need WP’s standard editor screens.
 
 * Filter by Season
 * Add Division (name: “8U”)
-* Optional ordering (drag/drop later; v1 = numeric sort_order)
+* Divisions are listed alphabetically
 
 ### 7.3 Teams screen (Team Masters)
 
