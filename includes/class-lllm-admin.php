@@ -36,8 +36,8 @@ class LLLM_Admin {
 
         add_submenu_page(
             'lllm-seasons',
-            __('Teams', 'lllm'),
-            __('Teams', 'lllm'),
+            __('Franchises', 'lllm'),
+            __('Franchises', 'lllm'),
             'lllm_manage_teams',
             'lllm-teams',
             array(__CLASS__, 'render_teams')
@@ -45,8 +45,8 @@ class LLLM_Admin {
 
         add_submenu_page(
             'lllm-seasons',
-            __('Division Teams', 'lllm'),
-            __('Division Teams', 'lllm'),
+            __('Teams', 'lllm'),
+            __('Teams', 'lllm'),
             'lllm_manage_teams',
             'lllm-division-teams',
             array(__CLASS__, 'render_division_teams')
@@ -117,7 +117,7 @@ class LLLM_Admin {
         wp_enqueue_media();
         wp_add_inline_script(
             'jquery',
-            '(function($){$(function(){var frame;function setLogo(id,url){$("#lllm-team-logo-id").val(id||"");if(url){$("#lllm-team-logo-preview").attr("src",url).show();}else{$("#lllm-team-logo-preview").attr("src","").hide();}}$("#lllm-team-logo-select").on("click",function(e){e.preventDefault();if(frame){frame.open();return;}frame=wp.media({title:"' . esc_js(__('Select Team Logo', 'lllm')) . '",button:{text:"' . esc_js(__('Use this logo', 'lllm')) . '"},multiple:false});frame.on("select",function(){var attachment=frame.state().get("selection").first().toJSON();setLogo(attachment.id,attachment.sizes&&attachment.sizes.thumbnail?attachment.sizes.thumbnail.url:attachment.url);});frame.open();});$("#lllm-team-logo-remove").on("click",function(e){e.preventDefault();setLogo("", "");});});})(jQuery);'
+            '(function($){$(function(){var frame;function setLogo(id,url){$("#lllm-team-logo-id").val(id||"");if(url){$("#lllm-team-logo-preview").attr("src",url).show();}else{$("#lllm-team-logo-preview").attr("src","").hide();}}$("#lllm-team-logo-select").on("click",function(e){e.preventDefault();if(frame){frame.open();return;}frame=wp.media({title:"' . esc_js(__('Select Franchise Logo', 'lllm')) . '",button:{text:"' . esc_js(__('Use this logo', 'lllm')) . '"},multiple:false});frame.on("select",function(){var attachment=frame.state().get("selection").first().toJSON();setLogo(attachment.id,attachment.sizes&&attachment.sizes.thumbnail?attachment.sizes.thumbnail.url:attachment.url);});frame.open();});$("#lllm-team-logo-remove").on("click",function(e){e.preventDefault();setLogo("", "");});});})(jQuery);'
         );
     }
 
@@ -202,7 +202,7 @@ class LLLM_Admin {
                 $text = __('Division saved.', 'lllm');
                 break;
             case 'team_saved':
-                $text = __('Team saved.', 'lllm');
+                $text = __('Franchise saved.', 'lllm');
                 break;
             case 'division_teams_updated':
                 $text = __('Division teams updated.', 'lllm');
@@ -218,7 +218,7 @@ class LLLM_Admin {
                 $text = __('Division deleted.', 'lllm');
                 break;
             case 'team_deleted':
-                $text = __('Team deleted.', 'lllm');
+                $text = __('Franchise deleted.', 'lllm');
                 break;
             case 'game_deleted':
                 $text = __('Game deleted.', 'lllm');
@@ -503,10 +503,10 @@ class LLLM_Admin {
         $can_edit_code = current_user_can('manage_options');
 
         echo '<div class="wrap">';
-        echo '<h1>' . esc_html__('Teams', 'lllm') . '</h1>';
+        echo '<h1>' . esc_html__('Franchises', 'lllm') . '</h1>';
         self::render_notices();
 
-        echo '<h2>' . esc_html($editing ? __('Edit Team', 'lllm') : __('Add Team', 'lllm')) . '</h2>';
+        echo '<h2>' . esc_html($editing ? __('Edit Franchise', 'lllm') : __('Add Franchise', 'lllm')) . '</h2>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('lllm_save_team');
         echo '<input type="hidden" name="action" value="lllm_save_team">';
@@ -520,12 +520,12 @@ class LLLM_Admin {
         $logo_url = $logo_id ? wp_get_attachment_image_url($logo_id, 'thumbnail') : '';
 
         echo '<table class="form-table"><tbody>';
-        echo '<tr><th scope="row"><label for="lllm-team-name">' . esc_html__('Team Name', 'lllm') . '</label></th>';
+        echo '<tr><th scope="row"><label for="lllm-team-name">' . esc_html__('Franchise Name', 'lllm') . '</label></th>';
         echo '<td><input name="name" id="lllm-team-name" type="text" class="regular-text" value="' . esc_attr($team_name) . '" required></td></tr>';
 
-        echo '<tr><th scope="row"><label for="lllm-team-code">' . esc_html__('Team Code', 'lllm') . '</label></th>';
+        echo '<tr><th scope="row"><label for="lllm-team-code">' . esc_html__('Franchise Code', 'lllm') . '</label></th>';
         echo '<td><input name="team_code" id="lllm-team-code" type="text" class="regular-text" value="' . esc_attr($team_code) . '" ' . ($can_edit_code ? '' : 'readonly') . '></td></tr>';
-        echo '<tr><th scope="row">' . esc_html__('Team Logo', 'lllm') . '</th><td>';
+        echo '<tr><th scope="row">' . esc_html__('Franchise Logo', 'lllm') . '</th><td>';
         echo '<input type="hidden" name="logo_attachment_id" id="lllm-team-logo-id" value="' . esc_attr($logo_id) . '">';
         echo '<img id="lllm-team-logo-preview" src="' . esc_url($logo_url) . '" style="' . ($logo_url ? 'max-width:150px;height:auto;display:block;margin-bottom:8px;' : 'max-width:150px;height:auto;display:none;margin-bottom:8px;') . '" alt="">';
         echo '<button class="button" id="lllm-team-logo-select" type="button">' . esc_html__('Select Logo', 'lllm') . '</button> ';
@@ -533,17 +533,17 @@ class LLLM_Admin {
         echo '</td></tr>';
         echo '</tbody></table>';
 
-        submit_button($editing ? __('Update Team', 'lllm') : __('Add Team', 'lllm'));
+        submit_button($editing ? __('Update Franchise', 'lllm') : __('Add Franchise', 'lllm'));
         echo '</form>';
 
-        echo '<h2>' . esc_html__('All Teams', 'lllm') . '</h2>';
+        echo '<h2>' . esc_html__('All Franchises', 'lllm') . '</h2>';
         if (!$teams) {
-            echo '<p>' . esc_html__('No teams yet.', 'lllm') . '</p>';
+            echo '<p>' . esc_html__('No franchises yet.', 'lllm') . '</p>';
         } else {
             echo '<table class="widefat striped"><thead><tr>';
             echo '<th><input type="checkbox" onclick="document.querySelectorAll(\'.lllm-team-select\').forEach(el => el.checked = this.checked);"></th>';
-            echo '<th>' . esc_html__('Team Name', 'lllm') . '</th>';
-            echo '<th>' . esc_html__('Team Code', 'lllm') . '</th>';
+            echo '<th>' . esc_html__('Franchise Name', 'lllm') . '</th>';
+            echo '<th>' . esc_html__('Franchise Code', 'lllm') . '</th>';
             echo '<th>' . esc_html__('Actions', 'lllm') . '</th>';
             echo '</tr></thead><tbody>';
 
@@ -581,8 +581,8 @@ class LLLM_Admin {
             admin_url('admin-post.php?action=lllm_download_teams_template'),
             'lllm_download_teams_template'
         );
-        echo '<h2>' . esc_html__('Teams CSV Import', 'lllm') . '</h2>';
-        echo '<p>' . esc_html__('Use the template to validate teams before importing.', 'lllm') . '</p>';
+        echo '<h2>' . esc_html__('Franchises CSV Import', 'lllm') . '</h2>';
+        echo '<p>' . esc_html__('Use the template to validate franchises before importing.', 'lllm') . '</p>';
         echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a></p>';
         echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('lllm_validate_teams_csv');
@@ -633,7 +633,7 @@ class LLLM_Admin {
         }
 
         echo '<div class="wrap">';
-        echo '<h1>' . esc_html__('Division Teams', 'lllm') . '</h1>';
+        echo '<h1>' . esc_html__('Teams', 'lllm') . '</h1>';
         self::render_notices();
 
         if (!$seasons) {
@@ -669,7 +669,7 @@ class LLLM_Admin {
             admin_url('admin-post.php?action=lllm_download_division_teams_template'),
             'lllm_download_division_teams_template'
         );
-        echo '<h2>' . esc_html__('Division Teams CSV Import', 'lllm') . '</h2>';
+        echo '<h2>' . esc_html__('Teams CSV Import', 'lllm') . '</h2>';
         echo '<p>' . esc_html__('Validate team assignments for this division before importing.', 'lllm') . '</p>';
         echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a></p>';
         echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
@@ -689,7 +689,7 @@ class LLLM_Admin {
         submit_button(__('Import CSV', 'lllm'), 'primary', 'submit', false);
         echo '</form>';
 
-        echo '<h2>' . esc_html__('Assign Teams', 'lllm') . '</h2>';
+        echo '<h2>' . esc_html__('Assign Franchises', 'lllm') . '</h2>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('lllm_update_division_teams');
         echo '<input type="hidden" name="action" value="lllm_update_division_teams">';
@@ -697,12 +697,12 @@ class LLLM_Admin {
         echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
 
         if (!$teams) {
-            echo '<p>' . esc_html__('No teams available. Add teams first.', 'lllm') . '</p>';
+            echo '<p>' . esc_html__('No franchises available. Add franchises first.', 'lllm') . '</p>';
         } else {
             echo '<table class="widefat striped"><thead><tr>';
             echo '<th>' . esc_html__('Assigned', 'lllm') . '</th>';
-            echo '<th>' . esc_html__('Team Name', 'lllm') . '</th>';
-            echo '<th>' . esc_html__('Team Code', 'lllm') . '</th>';
+            echo '<th>' . esc_html__('Franchise Name', 'lllm') . '</th>';
+            echo '<th>' . esc_html__('Franchise Code', 'lllm') . '</th>';
             echo '</tr></thead><tbody>';
 
             foreach ($teams as $team) {
@@ -718,8 +718,8 @@ class LLLM_Admin {
         }
 
         echo '<p>';
-        echo '<button class="button button-primary" type="submit" name="lllm_action" value="assign">' . esc_html__('Assign Selected Teams', 'lllm') . '</button> ';
-        echo '<button class="button" type="submit" name="lllm_action" value="remove">' . esc_html__('Remove Selected Teams', 'lllm') . '</button>';
+        echo '<button class="button button-primary" type="submit" name="lllm_action" value="assign">' . esc_html__('Assign Selected Franchises', 'lllm') . '</button> ';
+        echo '<button class="button" type="submit" name="lllm_action" value="remove">' . esc_html__('Remove Selected Franchises', 'lllm') . '</button>';
         echo '</p>';
         echo '</form>';
         echo '</div>';
@@ -1181,7 +1181,7 @@ class LLLM_Admin {
         $logo_id = isset($_POST['logo_attachment_id']) ? absint($_POST['logo_attachment_id']) : 0;
 
         if (!$name) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'error', __('Team name is required.', 'lllm'));
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'error', __('Franchise name is required.', 'lllm'));
         }
 
         $slug = sanitize_title($name);
@@ -1459,9 +1459,9 @@ class LLLM_Admin {
 
         check_admin_referer('lllm_download_teams_template');
         header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename=teams-template.csv');
+        header('Content-Disposition: attachment; filename=franchises-template.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('team_name', 'team_code'));
+        fputcsv($output, array('franchise_name', 'franchise_code'));
         fclose($output);
         exit;
     }
@@ -1473,9 +1473,9 @@ class LLLM_Admin {
 
         check_admin_referer('lllm_download_division_teams_template');
         header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename=division-teams-template.csv');
+        header('Content-Disposition: attachment; filename=teams-template.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('team_code', 'display_name'));
+        fputcsv($output, array('franchise_code', 'display_name'));
         fclose($output);
         exit;
     }
@@ -1536,7 +1536,7 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
         }
 
-        $headers_check = self::validate_csv_headers($parsed, array('team_name', 'team_code'));
+        $headers_check = self::validate_csv_headers($parsed, array('franchise_name', 'franchise_code'));
         if (is_wp_error($headers_check)) {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
@@ -1545,8 +1545,8 @@ class LLLM_Admin {
         $team_codes = array();
         foreach ($parsed['rows'] as $index => $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
-            $name = isset($row_lower['team_name']) ? trim($row_lower['team_name']) : '';
-            $code = isset($row_lower['team_code']) ? trim($row_lower['team_code']) : '';
+            $name = isset($row_lower['franchise_name']) ? trim($row_lower['franchise_name']) : '';
+            $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
             if ($name === '') {
                 $errors[] = $index + 2;
                 continue;
@@ -1564,7 +1564,7 @@ class LLLM_Admin {
             self::redirect_with_notice(
                 $return_url,
                 'error',
-                sprintf(__('CSV validation failed: %d rows have missing names or duplicate team codes.', 'lllm'), count($errors))
+                sprintf(__('CSV validation failed: %d rows have missing names or duplicate franchise codes.', 'lllm'), count($errors))
             );
         }
 
@@ -1593,7 +1593,7 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
         }
 
-        $headers_check = self::validate_csv_headers($parsed, array('team_code', 'display_name'));
+        $headers_check = self::validate_csv_headers($parsed, array('franchise_code', 'display_name'));
         if (is_wp_error($headers_check)) {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
@@ -1603,7 +1603,7 @@ class LLLM_Admin {
         $team_codes = array();
         foreach ($parsed['rows'] as $index => $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
-            $code = isset($row_lower['team_code']) ? trim($row_lower['team_code']) : '';
+            $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
             if ($code === '') {
                 $errors[] = $index + 2;
                 continue;
@@ -1626,7 +1626,7 @@ class LLLM_Admin {
             self::redirect_with_notice(
                 $return_url,
                 'error',
-                sprintf(__('CSV validation failed: %d rows have missing or unknown team codes.', 'lllm'), count($errors))
+                sprintf(__('CSV validation failed: %d rows have missing or unknown franchise codes.', 'lllm'), count($errors))
             );
         }
 
@@ -1714,7 +1714,7 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
         }
 
-        $headers_check = self::validate_csv_headers($parsed, array('team_name', 'team_code'));
+        $headers_check = self::validate_csv_headers($parsed, array('franchise_name', 'franchise_code'));
         if (is_wp_error($headers_check)) {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
@@ -1726,8 +1726,8 @@ class LLLM_Admin {
         $skipped = 0;
         foreach ($parsed['rows'] as $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
-            $name = isset($row_lower['team_name']) ? trim($row_lower['team_name']) : '';
-            $code = isset($row_lower['team_code']) ? trim($row_lower['team_code']) : '';
+            $name = isset($row_lower['franchise_name']) ? trim($row_lower['franchise_name']) : '';
+            $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
             if ($name === '') {
                 $skipped++;
                 continue;
@@ -1773,7 +1773,7 @@ class LLLM_Admin {
         self::redirect_with_notice(
             $return_url,
             'import_complete',
-            sprintf(__('Teams imported: %d created, %d updated, %d skipped.', 'lllm'), $created, $updated, $skipped)
+            sprintf(__('Franchises imported: %d created, %d updated, %d skipped.', 'lllm'), $created, $updated, $skipped)
         );
     }
 
@@ -1795,7 +1795,7 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
         }
 
-        $headers_check = self::validate_csv_headers($parsed, array('team_code', 'display_name'));
+        $headers_check = self::validate_csv_headers($parsed, array('franchise_code', 'display_name'));
         if (is_wp_error($headers_check)) {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
@@ -1805,7 +1805,7 @@ class LLLM_Admin {
         $skipped = 0;
         foreach ($parsed['rows'] as $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
-            $code = isset($row_lower['team_code']) ? trim($row_lower['team_code']) : '';
+            $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
             $display_name = isset($row_lower['display_name']) ? trim($row_lower['display_name']) : '';
             if ($code === '') {
                 $skipped++;
@@ -1846,7 +1846,7 @@ class LLLM_Admin {
         self::redirect_with_notice(
             $return_url,
             'import_complete',
-            sprintf(__('Division teams imported: %d created, %d skipped.', 'lllm'), $created, $skipped)
+            sprintf(__('Teams imported: %d created, %d skipped.', 'lllm'), $created, $skipped)
         );
     }
 
@@ -2329,7 +2329,7 @@ class LLLM_Admin {
             $wpdb->prepare('SELECT id FROM ' . self::table('team_instances') . ' WHERE team_master_id = %d', $team_id)
         );
         if ($in_use) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'delete_blocked', __('Team is assigned to a division.', 'lllm'));
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'delete_blocked', __('Franchise is assigned to a division.', 'lllm'));
         }
 
         self::delete_team_by_id($team_id);

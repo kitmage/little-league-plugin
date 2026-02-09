@@ -5,8 +5,8 @@ We’re building a WordPress plugin that lets our Little League website show sch
 Here’s how it works:
 
 * We set up **Seasons** (like “Spring 2026”) and **Divisions** within each season (like “8U” and “9U”).
-* We create teams once (name + logo). Each team also gets a simple **Team Code** (like `dirtbags`) that never changes.
-* When a team participates in a specific division and season, the system creates a **Team Instance** behind the scenes. This is important because it guarantees that the 8U Dirtbags’ stats never mix with the 9U Dirtbags’ stats, and nothing carries over between seasons unless we intentionally reuse team identities.
+* We create franchises once (name + logo). Each franchise also gets a simple **Franchise Code** (like `dirtbags`) that never changes.
+* When a franchise participates in a specific division and season, the system creates a **Team** behind the scenes. This is important because it guarantees that the 8U Dirtbags’ stats never mix with the 9U Dirtbags’ stats, and nothing carries over between seasons unless we intentionally reuse franchise identities.
 * Managers upload games by CSV using a guided wizard. The wizard always follows the same safe flow: **Upload → Validate → Preview → Import**.
 
   * If anything is inconsistent (like a wrong team code or a bad date format), the import is rejected and the Manager gets a clear error report.
@@ -31,9 +31,9 @@ The end result: a clean, reliable system that volunteers can run without breakin
 
 * **Season**: e.g., “Spring 2026”
 * **Division (Season-Division)**: a division within a season, e.g., “8U” inside “Spring 2026”
-* **Team Master**: reusable team identity, e.g., “Dirtbags” + logo
-* **Team Instance (Season-Division-Team)**: unique stats-safe team entity in a specific division of a specific season (this is what games and standings reference)
-* **Game**: scheduled/played/canceled/postponed event between two Team Instances
+* **Franchise**: reusable team identity, e.g., “Dirtbags” + logo
+* **Team (Season-Division-Team)**: unique stats-safe team entity in a specific division of a specific season (this is what games and standings reference)
+* **Game**: scheduled/played/canceled/postponed event between two Teams
 
 ---
 
@@ -41,13 +41,13 @@ The end result: a clean, reliable system that volunteers can run without breakin
 
 ### Goals (must ship)
 
-1. Managers can create Seasons, Divisions, Team Masters, and assign teams to divisions using simplified screens (no WP post editor).
+1. Managers can create Seasons, Divisions, Franchises, and assign franchises to divisions using simplified screens (no WP post editor).
 2. Managers can import games via CSV with a guided wizard:
 
    * upload → validate → preview changes → commit (atomic)
 3. System rejects messy uploads (unknown team codes, invalid statuses, bad date formats, duplicate games, etc.) with a clear row-level error report.
 4. Managers can do ongoing weekly updates via a **Score Update CSV** using `game_uid` so names never mismatch.
-5. Divisions, Teams, and Division Teams screens include CSV templates plus a validation step before import.
+5. Divisions, Franchises, and Teams screens include CSV templates plus a validation step before import.
 5. Standings compute per Season-Division only, using played games only.
 6. Front-end shortcodes render schedules and standings.
 
@@ -88,7 +88,7 @@ Managers see only a top-level menu: **Little League** with the plugin pages.
 
 1. **No mixing stats across seasons.**
 2. **No mixing stats across divisions.**
-3. Games reference **Team Instances**, not team names.
+3. Games reference **Teams**, not team names.
 4. CSV imports must not create new teams implicitly (no “auto-create teams from CSV”).
 5. Any CSV error → reject entire import (atomic). No partial writes.
 
@@ -127,12 +127,12 @@ Managers see only a top-level menu: **Little League** with the plugin pages.
 * INDEX(`season_id`)
 * UNIQUE(`season_id`, `name`)  *(prevents duplicate “8U” within same season)*
 
-### 4.3 `wp_lllm_team_masters`
+### 4.3 `wp_lllm_team_masters` (Franchises)
 
 * `id` (BIGINT PK)
 * `name` (VARCHAR 120, not null)
 * `slug` (VARCHAR 140, unique, not null)
-* `team_code` (VARCHAR 60, unique, not null) // stable code for CSV (e.g. `dirtbags`)
+* `team_code` (VARCHAR 60, unique, not null) // franchise code for CSV (e.g. `dirtbags`)
 * `logo_attachment_id` (BIGINT null) // WP media ID
 * `created_at`, `updated_at`
 
@@ -141,19 +141,19 @@ Managers see only a top-level menu: **Little League** with the plugin pages.
 * UNIQUE(`team_code`)
 * UNIQUE(`slug`)
 
-### 4.4 `wp_lllm_team_instances` (Season-Division-Teams)
+### 4.4 `wp_lllm_team_instances` (Teams)
 
 * `id` (BIGINT PK)
 * `division_id` (BIGINT, not null)
 * `team_master_id` (BIGINT, not null)
-* `display_name` (VARCHAR 120 null) // optional override, default = Team Master name
+* `display_name` (VARCHAR 120 null) // optional override, default = Franchise name
 * `created_at`, `updated_at`
 
 **Indexes**
 
 * INDEX(`division_id`)
 * INDEX(`team_master_id`)
-* UNIQUE(`division_id`, `team_master_id`) *(ensures one instance per division per team master)*
+* UNIQUE(`division_id`, `team_master_id`) *(ensures one instance per division per franchise)*
 
 ### 4.5 `wp_lllm_games`
 
@@ -189,7 +189,7 @@ Managers see only a top-level menu: **Little League** with the plugin pages.
 * Only within the selected `division_id` (Season-Division)
 * Canceled/postponed games never count.
 
-### 5.2 Team stats computed per Team Instance
+### 5.2 Team stats computed per Team
 
 * GP = games played
 * W/L/T
@@ -235,7 +235,7 @@ Subpages:
 1. Seasons
 2. Divisions
 3. Teams
-4. Division Teams (team assignment + cloning)
+4. Teams (team assignment + cloning)
 5. Games (view + quick edit)
 6. Import Wizard
 7. Import Logs
@@ -265,23 +265,23 @@ Managers should never need WP’s standard editor screens.
 * Filter by Season
 * Add Division (name: “8U”)
 
-### 7.3 Teams screen (Team Masters)
+### 7.3 Franchises screen
 
-* Create/edit Team Master:
+* Create/edit Franchise:
 
   * Name (required)
   * Logo upload/select (optional)
-  * Team Code (auto-generated from slug; editable only by Admin; Managers view-only)
-* Team Code must be unique and stable (used in CSV forever).
+  * Franchise Code (auto-generated from slug; editable only by Admin; Managers view-only)
+* Franchise Code must be unique and stable (used in CSV forever).
 
-### 7.4 Division Teams screen (Team Instances)
+### 7.4 Teams screen (Season/Division Teams)
 
 * Select Season → Division
-* Show checklist/grid of Team Masters with “Assigned?” toggles
+* Show checklist/grid of Franchises with “Assigned?” toggles
 * Buttons:
 
-  * “Assign Selected Teams”
-  * “Remove Selected Teams” (disabled if teams have games; show warning)
+  * “Assign Selected Franchises”
+  * “Remove Selected Franchises” (disabled if teams have games; show warning)
   * “Clone assignments from another Division” (select source division → apply)
 
 **Integrity**
@@ -385,7 +385,7 @@ Every validation + commit produces a log entry with:
 
 **Team matching**
 
-* `home_team_code` and `away_team_code` must match Team Masters **assigned** to this division.
+* `home_team_code` and `away_team_code` must match Franchises **assigned** to this division.
 * The import process resolves `team_code` → `team_master_id` → `team_instance_id` for this division.
 * If team code exists but isn’t assigned to the division → error.
 
@@ -433,7 +433,7 @@ When errors occur, show:
 
 Examples:
 
-* “Row 12, home_team_code: `Dirt Bags` is not a recognized team code for Spring 2026 / 8U. Use one of: `dirtbags`, `pirates`, …”
+* “Row 12, home_team_code: `Dirt Bags` is not a recognized franchise code for Spring 2026 / 8U. Use one of: `dirtbags`, `pirates`, …”
 * “Row 8, status: `final` is invalid. Allowed: scheduled, played, canceled, postponed.”
 * “Row 20: status is `played` but home_score is blank.”
 
@@ -470,7 +470,7 @@ Downloadable error report CSV should add an `error` column with the message.
    * Defaults: if attributes omitted, use Active Season + first division
    * Optional attributes:
 
-     * `team_code="dirtbags"` (filters to one team instance within that division)
+    * `team_code="dirtbags"` (filters to one team within that division by franchise code)
      * `show_past="1"` / `show_future="1"` (default both)
      * `limit="50"`
 
@@ -510,10 +510,10 @@ Allowed only if status is `played` and league truly uses 0–0 finals (rare). Va
 
 Supported automatically (scores equal in a played game).
 
-### 13.5 Team renames mid-season
+### 13.5 Franchise renames mid-season
 
-* Rename Team Master name/logo is allowed; team_code remains stable.
-* If a team truly becomes a new identity, Admin should create a new Team Master + new code.
+* Rename Franchise name/logo is allowed; franchise code (`team_code`) remains stable.
+* If a team truly becomes a new identity, Admin should create a new Franchise + new code.
 
 ---
 
@@ -559,8 +559,8 @@ Supported automatically (scores equal in a played game).
 
 1. Admin can create Season, set it active.
 2. Admin/Manager can create Divisions under a Season.
-3. Admin/Manager can create Team Masters with logos; system generates unique stable team_code.
-4. Admin/Manager can assign teams to divisions; can clone assignments from another division.
+3. Admin/Manager can create Franchises with logos; system generates unique stable franchise codes (`team_code`).
+4. Admin/Manager can assign franchises to divisions; can clone assignments from another division.
 5. Import Wizard:
 
    * can validate and reject bad CSVs with row-level errors
@@ -605,7 +605,7 @@ Subpages (left nav):
 1. Seasons
 2. Divisions
 3. Teams
-4. Division Teams
+4. Teams
 5. Games
 6. Import Wizard
 7. Import Logs
@@ -696,53 +696,53 @@ Subpages (left nav):
 
 ---
 
-## 3) Teams Screen (Team Masters)
+## 3) Franchises Screen
 
 ### 3.1 List view
 
-**Title:** Teams
-**Primary button:** + Add Team
+**Title:** Franchises
+**Primary button:** + Add Franchise
 
 **Table columns**
 
 * Logo (thumb)
-* Team Name
-* Team Code (read-only for Managers)
+* Franchise Name
+* Franchise Code (read-only for Managers)
 * Actions: Edit | Change Logo
 
 **Empty state**
 
-* “No teams yet. Add your teams once, then assign them to divisions.”
-* Button: “Add a Team”
+* “No franchises yet. Add your franchises once, then assign them to divisions.”
+* Button: “Add a Franchise”
 
-### 3.2 Add / Edit Team
+### 3.2 Add / Edit Franchise
 
 **Fields**
 
-* Team Name (required) — “Dirtbags”
-* Team Code (auto-generated from name)
+* Franchise Name (required) — “Dirtbags”
+* Franchise Code (auto-generated from name)
 
   * **Manager view:** read-only
-  * **Admin view:** editable with warning: “Changing team code can break CSV imports.”
+  * **Admin view:** editable with warning: “Changing franchise code can break CSV imports.”
 * Logo (Media picker)
 
 **Buttons**
 
-* Save Team
+* Save Franchise
 * Cancel
 
 **Validation**
 
-* Team Code must be unique
-* Team Name required
+* Franchise Code must be unique
+* Franchise Name required
 
 ---
 
-## 4) Division Teams Screen (Create Team Instances)
+## 4) Teams Screen (Create Teams)
 
 ### 4.1 Main screen
 
-**Title:** Division Teams
+**Title:** Teams
 **Selectors**
 
 * Season dropdown
@@ -750,10 +750,10 @@ Subpages (left nav):
 
 **Section: Team Assignment**
 
-* A searchable list/grid of Team Masters with:
+* A searchable list/grid of Franchises with:
 
   * Checkbox “Assigned”
-  * Logo + Name + Team Code
+  * Logo + Name + Franchise Code
 
 **Buttons**
 
@@ -768,14 +768,14 @@ Subpages (left nav):
 
 **Rules / Warnings**
 
-* Removing a team from a division is blocked if any games exist for that Team Instance.
+* Removing a team from a division is blocked if any games exist for that Team.
 
   * Message: “Can’t remove ‘Dirtbags’ from 8U because games exist. Remove games first.”
 
 **Empty state**
 
 * “No teams exist yet.”
-* Button: “Add Teams” (links to Teams screen)
+* Button: “Add Franchises” (links to Franchises screen)
 
 ---
 
@@ -920,18 +920,18 @@ Buttons:
 
 Assume Season **Spring 2026**, Division **8U**, timezone **America/Chicago**.
 
-## Reference teams (Team Masters)
+## Reference teams (Franchises)
 
-These are created once in Teams screen:
+These are created once in Franchises screen:
 
-| Team Name | Team Code |
-| --------- | --------- |
+| Franchise Name | Franchise Code |
+| -------------- | -------------- |
 | Dirtbags  | dirtbags  |
 | Pirates   | pirates   |
 | Cubs      | cubs      |
 | A’s       | as        |
 
-> Managers should never type team names in CSV. Only use **team_code**.
+> Managers should never type team names in CSV. Only use franchise codes in the **team_code** columns.
 
 ---
 
@@ -1028,11 +1028,11 @@ game_uid,start_datetime,location,home_team_code,away_team_code,status,home_score
 
 **Why it fails**
 
-* `home_team_code` must match a known assigned team_code. `Dirt Bags` is not valid.
+* `home_team_code` must match a known assigned franchise code. `Dirt Bags` is not valid.
 
 **UI error**
 
-* “Row 2, home_team_code: `Dirt Bags` is not a valid team code for Spring 2026 / 8U. Use: dirtbags, pirates, cubs, as.”
+* “Row 2, home_team_code: `Dirt Bags` is not a valid franchise code for Spring 2026 / 8U. Use: dirtbags, pirates, cubs, as.”
 
 **Downloadable Error Report CSV**
 
@@ -1151,12 +1151,12 @@ Below is a realistic “seed” dataset that an Admin can enter in under 10 minu
 * 8U
 * 9U
 
-### 3) Create Team Masters (name + code + logo optional)
+### 3) Create Franchises (name + code + logo optional)
 
 (These codes are what appear in CSVs)
 
-| Team Name | Team Code | Logo     |
-| --------- | --------- | -------- |
+| Franchise Name | Franchise Code | Logo     |
+| -------------- | -------------- | -------- |
 | Dirtbags  | dirtbags  | optional |
 | Pirates   | pirates   | optional |
 | Cubs      | cubs      | optional |
@@ -1164,7 +1164,7 @@ Below is a realistic “seed” dataset that an Admin can enter in under 10 minu
 | Hawks     | hawks     | optional |
 | Giants    | giants    | optional |
 
-### 4) Assign teams to each division (creates Team Instances)
+### 4) Assign franchises to each division (creates Teams)
 
 **Spring 2026 / 8U**
 

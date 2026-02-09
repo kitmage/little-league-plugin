@@ -5,8 +5,8 @@ LLLM is a WordPress plugin that helps Little League volunteers manage seasons, d
 ## What it does
 
 - Create seasons and divisions
-- Maintain team masters with stable team codes
-- Assign teams to divisions
+- Maintain franchises with stable franchise codes
+- Assign franchises to divisions (Teams)
 - Import schedules and weekly score updates via CSV
 - View games in the admin with quick edit
 - Render schedules and standings via shortcodes
@@ -26,8 +26,8 @@ LLLM is a WordPress plugin that helps Little League volunteers manage seasons, d
 
 1. **Seasons** → Create a season and set it active.
 2. **Divisions** → Add divisions to the season.
-3. **Teams** → Add team masters and verify team codes.
-4. **Division Teams** → Assign team masters to a division.
+3. **Franchises** → Add franchise records and verify franchise codes.
+4. **Teams** → Assign franchises to a division.
 5. **Import Wizard** → Upload the schedule CSV.
 
 ## CSV imports
@@ -68,9 +68,9 @@ G8K4Q2M9T1A3,6,4,played,
 K2P7N6D4R9B1,3,3,played,Tie game
 ```
 
-## CSV templates for Divisions and Teams
+## CSV templates for Divisions, Franchises, and Teams
 
-The **Divisions**, **Teams**, and **Division Teams** admin screens include CSV helpers that let you download templates and validate your CSV before importing.
+The **Divisions**, **Franchises**, and **Teams** admin screens include CSV helpers that let you download templates and validate your CSV before importing.
 
 ### Divisions template
 
@@ -78,16 +78,16 @@ The **Divisions**, **Teams**, and **Division Teams** admin screens include CSV h
 division_name
 ```
 
+### Franchises template
+
+```
+franchise_name,franchise_code
+```
+
 ### Teams template
 
 ```
-team_name,team_code
-```
-
-### Division Teams template
-
-```
-team_code,display_name
+franchise_code,display_name
 ```
 
 ## Shortcodes
@@ -98,7 +98,7 @@ team_code,display_name
 [lllm_schedule season="spring-2026" division="8u" show_past="1" show_future="1" limit="50"]
 ```
 
-Optional filter by team code:
+Optional filter by franchise code (`team_code`):
 
 ```
 [lllm_schedule season="spring-2026" division="8u" team_code="dirtbags"]
