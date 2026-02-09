@@ -874,18 +874,8 @@ class LLLM_Admin {
             echo '<form method="get">';
             echo '<input type="hidden" name="page" value="lllm-games">';
             echo '<input type="hidden" name="step" value="2">';
-            echo '<label for="lllm-import-season">' . esc_html__('Season', 'lllm') . '</label> ';
-            echo '<select id="lllm-import-season" name="season_id">';
-            foreach ($seasons as $season) {
-                echo '<option value="' . esc_attr($season->id) . '" ' . selected($season_id, $season->id, false) . '>' . esc_html($season->name) . '</option>';
-            }
-            echo '</select> ';
-            echo '<label for="lllm-import-division">' . esc_html__('Division', 'lllm') . '</label> ';
-            echo '<select id="lllm-import-division" name="division_id">';
-            foreach ($divisions as $division) {
-                echo '<option value="' . esc_attr($division->id) . '" ' . selected($division_id, $division->id, false) . '>' . esc_html($division->name) . '</option>';
-            }
-            echo '</select>';
+            echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+            echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
 
             echo '<h3>' . esc_html__('Choose Import Type', 'lllm') . '</h3>';
             foreach ($types as $key => $label) {
