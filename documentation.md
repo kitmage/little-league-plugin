@@ -47,6 +47,7 @@ The end result: a clean, reliable system that volunteers can run without breakin
    * upload → validate → preview changes → commit (atomic)
 3. System rejects messy uploads (unknown team codes, invalid statuses, bad date formats, duplicate games, etc.) with a clear row-level error report.
 4. Managers can do ongoing weekly updates via a **Score Update CSV** using `game_uid` so names never mismatch.
+5. Divisions, Teams, and Division Teams screens include CSV templates plus a validation step before import.
 5. Standings compute per Season-Division only, using played games only.
 6. Front-end shortcodes render schedules and standings.
 
@@ -118,7 +119,6 @@ Managers see only a top-level menu: **Little League** with the plugin pages.
 * `season_id` (BIGINT, not null)
 * `name` (VARCHAR 80, not null)  // “8U”
 * `slug` (VARCHAR 160, unique, not null) // e.g., `spring-2026-8u`
-* `sort_order` (INT, default 0)
 * `created_at`, `updated_at`
 
 **Indexes**
@@ -264,7 +264,6 @@ Managers should never need WP’s standard editor screens.
 
 * Filter by Season
 * Add Division (name: “8U”)
-* Optional ordering (drag/drop later; v1 = numeric sort_order)
 
 ### 7.3 Teams screen (Team Masters)
 
@@ -672,7 +671,6 @@ Subpages (left nav):
 **Table columns**
 
 * Division Name (e.g., 8U)
-* Sort Order
 * Teams Assigned (#)
 * Actions: Edit | Manage Teams | Import Games | View Games
 
@@ -686,7 +684,6 @@ Subpages (left nav):
 **Fields**
 
 * Division Name (required) — placeholder “8U”
-* Sort Order (optional integer)
 
 **Buttons**
 

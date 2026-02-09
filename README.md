@@ -68,6 +68,28 @@ G8K4Q2M9T1A3,6,4,played,
 K2P7N6D4R9B1,3,3,played,Tie game
 ```
 
+## CSV templates for Divisions and Teams
+
+The **Divisions**, **Teams**, and **Division Teams** admin screens include CSV helpers that let you download templates and validate your CSV before importing.
+
+### Divisions template
+
+```
+division_name
+```
+
+### Teams template
+
+```
+team_name,team_code
+```
+
+### Division Teams template
+
+```
+team_code,display_name
+```
+
 ## Shortcodes
 
 ### Schedule
