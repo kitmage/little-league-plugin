@@ -63,7 +63,6 @@ class LLLM_Migrations {
             division_id BIGINT(20) UNSIGNED NOT NULL,
             team_master_id BIGINT(20) UNSIGNED NOT NULL,
             display_name VARCHAR(120) NULL,
-            display_name VARCHAR(120) NULL,
             created_at DATETIME NULL,
             updated_at DATETIME NULL,
             PRIMARY KEY  (id),

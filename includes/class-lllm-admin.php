@@ -1878,12 +1878,17 @@ class LLLM_Admin {
         foreach ($rows as $index => $row) {
             $row_number = $index + 2;
             $status = isset($row['status']) ? strtolower(trim($row['status'])) : '';
-            if (!in_array($status, $allowed_status, true)) {
-                $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: invalid status.', 'lllm'), $row_number));
-                continue;
-            }
 
             if ($import_type === 'score') {
+                if ($status === '') {
+                    $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: status is required for score updates.', 'lllm'), $row_number));
+                    continue;
+                }
+                if (!in_array($status, $allowed_status, true)) {
+                    $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: invalid status.', 'lllm'), $row_number));
+                    continue;
+                }
+
                 $game_uid = isset($row['game_uid']) ? trim($row['game_uid']) : '';
                 if (!$game_uid) {
                     $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: game_uid is required.', 'lllm'), $row_number));
@@ -1930,6 +1935,13 @@ class LLLM_Admin {
             $location = isset($row['location']) ? trim($row['location']) : '';
             $home_code = isset($row['home_team_code']) ? trim($row['home_team_code']) : '';
             $away_code = isset($row['away_team_code']) ? trim($row['away_team_code']) : '';
+            if ($status === '') {
+                $status = 'scheduled';
+            }
+            if (!in_array($status, $allowed_status, true)) {
+                $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: invalid status.', 'lllm'), $row_number));
+                continue;
+            }
 
             if (!$start_datetime || !$location || !$home_code || !$away_code) {
                 $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: required fields missing.', 'lllm'), $row_number));
@@ -2050,7 +2062,7 @@ class LLLM_Admin {
 
         $required_headers = $import_type === 'score'
             ? array('game_uid', 'home_score', 'away_score', 'status')
-            : array('start_datetime', 'location', 'home_team_code', 'away_team_code', 'status');
+            : array('start_datetime', 'location', 'home_team_code', 'away_team_code');
         foreach ($required_headers as $header) {
             if (!in_array($header, $parsed['headers'], true)) {
                 self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type)), 'error', sprintf(__('Missing required header: %s', 'lllm'), $header));
