@@ -63,15 +63,6 @@ class LLLM_Admin {
 
         add_submenu_page(
             'lllm-seasons',
-            __('Import Wizard', 'lllm'),
-            __('Import Wizard', 'lllm'),
-            'lllm_import_csv',
-            'lllm-import',
-            array(__CLASS__, 'render_import_wizard')
-        );
-
-        add_submenu_page(
-            'lllm-seasons',
             __('Import Logs', 'lllm'),
             __('Import Logs', 'lllm'),
             'lllm_view_logs',
@@ -781,8 +772,19 @@ class LLLM_Admin {
         echo '</select>';
         echo '</form>';
 
+        if (current_user_can('lllm_import_csv')) {
+            self::render_import_wizard_inline($seasons, $divisions, $season_id, $division_id);
+        }
+
         if (!$division_id) {
             echo '<p>' . esc_html__('Select a division to view games.', 'lllm') . '</p>';
+            echo '</div>';
+            return;
+        }
+
+        if (!$games) {
+            echo '<p>' . esc_html__('No games yet for this division.', 'lllm') . '</p>';
+            echo '<p>' . esc_html__('To add Games, please go to the Import Wizard.', 'lllm') . '</p>';
             echo '</div>';
             return;
         }
@@ -791,18 +793,12 @@ class LLLM_Admin {
             admin_url('admin-post.php?action=lllm_download_current_games&division_id=' . $division_id),
             'lllm_download_current_games'
         );
-        $import_url = admin_url('admin.php?page=lllm-import&season_id=' . $season_id . '&division_id=' . $division_id);
+        $import_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=1');
 
         echo '<p>';
         echo '<a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Export Current Games CSV', 'lllm') . '</a> ';
         echo '<a class="button button-primary" href="' . esc_url($import_url) . '">' . esc_html__('Import Games', 'lllm') . '</a>';
         echo '</p>';
-
-        if (!$games) {
-            echo '<p>' . esc_html__('No games yet for this division.', 'lllm') . '</p>';
-            echo '</div>';
-            return;
-        }
 
         echo '<form id="lllm-bulk-games" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('lllm_bulk_delete_games');
@@ -866,33 +862,17 @@ class LLLM_Admin {
         echo '</div>';
     }
 
-    public static function render_import_wizard() {
-        if (!current_user_can('lllm_import_csv')) {
-            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
-        }
-
-        $seasons = self::get_seasons();
-        $season_id = isset($_GET['season_id']) ? absint($_GET['season_id']) : 0;
-        if (!$season_id && $seasons) {
-            $season_id = (int) $seasons[0]->id;
-        }
-        $divisions = self::get_divisions($season_id);
-        $division_id = isset($_GET['division_id']) ? absint($_GET['division_id']) : 0;
-        if (!$division_id && $divisions) {
-            $division_id = (int) $divisions[0]->id;
-        }
-
+    private static function render_import_wizard_inline($seasons, $divisions, $season_id, $division_id) {
         $step = isset($_GET['step']) ? absint($_GET['step']) : 1;
         $import_type = isset($_GET['import_type']) ? sanitize_text_field(wp_unslash($_GET['import_type'])) : 'full';
         $types = LLLM_Import::get_import_types();
 
-        echo '<div class="wrap">';
-        echo '<h1>' . esc_html__('Import Wizard', 'lllm') . '</h1>';
-        self::render_notices();
+        echo '<hr>';
+        echo '<h2>' . esc_html__('Import Wizard', 'lllm') . '</h2>';
 
         if ($step === 1) {
             echo '<form method="get">';
-            echo '<input type="hidden" name="page" value="lllm-import">';
+            echo '<input type="hidden" name="page" value="lllm-games">';
             echo '<input type="hidden" name="step" value="2">';
             echo '<label for="lllm-import-season">' . esc_html__('Season', 'lllm') . '</label> ';
             echo '<select id="lllm-import-season" name="season_id">';
@@ -907,7 +887,7 @@ class LLLM_Admin {
             }
             echo '</select>';
 
-            echo '<h2>' . esc_html__('Choose Import Type', 'lllm') . '</h2>';
+            echo '<h3>' . esc_html__('Choose Import Type', 'lllm') . '</h3>';
             foreach ($types as $key => $label) {
                 echo '<label style="display:block;margin:8px 0;">';
                 echo '<input type="radio" name="import_type" value="' . esc_attr($key) . '" ' . checked($import_type, $key, false) . '> ';
@@ -917,7 +897,6 @@ class LLLM_Admin {
 
             submit_button(__('Continue', 'lllm'));
             echo '</form>';
-            echo '</div>';
             return;
         }
 
@@ -931,7 +910,7 @@ class LLLM_Admin {
                 'lllm_download_current_games'
             ) : '';
 
-            echo '<h2>' . esc_html__('Upload CSV', 'lllm') . '</h2>';
+            echo '<h3>' . esc_html__('Upload CSV', 'lllm') . '</h3>';
             echo '<p>' . esc_html__('CSV must be UTF-8 with headers and date/time format YYYY-MM-DD HH:MM (24-hour).', 'lllm') . '</p>';
             echo '<p>';
             echo '<a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a> ';
@@ -949,7 +928,6 @@ class LLLM_Admin {
             echo '<input type="file" name="csv_file" accept=".csv" required> ';
             submit_button(__('Validate CSV', 'lllm'), 'primary', 'submit', false);
             echo '</form>';
-            echo '</div>';
             return;
         }
 
@@ -958,11 +936,10 @@ class LLLM_Admin {
             $data = $token ? get_transient('lllm_import_' . $token) : null;
             if (!$data) {
                 echo '<p>' . esc_html__('Import data not found. Please re-upload your CSV.', 'lllm') . '</p>';
-                echo '</div>';
                 return;
             }
 
-            echo '<h2>' . esc_html__('Review Changes', 'lllm') . '</h2>';
+            echo '<h3>' . esc_html__('Review Changes', 'lllm') . '</h3>';
             echo '<ul>';
             echo '<li>' . esc_html__('Rows read:', 'lllm') . ' ' . esc_html($data['summary']['rows']) . '</li>';
             echo '<li>' . esc_html__('Creates:', 'lllm') . ' ' . esc_html($data['summary']['creates']) . '</li>';
@@ -976,7 +953,6 @@ class LLLM_Admin {
                     echo '<p><a class="button" href="' . esc_url($data['error_report_url']) . '">' . esc_html__('Download Error Report CSV', 'lllm') . '</a></p>';
                 }
                 echo '<p>' . esc_html__('Fix errors before importing.', 'lllm') . '</p>';
-                echo '</div>';
                 return;
             }
 
@@ -1002,9 +978,20 @@ class LLLM_Admin {
             echo '<input type="hidden" name="token" value="' . esc_attr($token) . '">';
             submit_button(__('Import Now', 'lllm'));
             echo '</form>';
-            echo '</div>';
-            return;
         }
+    }
+
+    public static function render_import_wizard() {
+        $season_id = isset($_GET['season_id']) ? absint($_GET['season_id']) : 0;
+        $division_id = isset($_GET['division_id']) ? absint($_GET['division_id']) : 0;
+        $step = isset($_GET['step']) ? absint($_GET['step']) : 1;
+        $import_type = isset($_GET['import_type']) ? sanitize_text_field(wp_unslash($_GET['import_type'])) : 'full';
+
+        $target_url = admin_url(
+            'admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=' . $step . '&import_type=' . rawurlencode($import_type)
+        );
+        wp_safe_redirect($target_url);
+        exit;
     }
 
     public static function render_import_logs() {
@@ -1475,7 +1462,7 @@ class LLLM_Admin {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=teams-template.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('franchise_code'));
+        fputcsv($output, array('franchise_code', 'display_name'));
         fclose($output);
         exit;
     }
@@ -1593,7 +1580,7 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
         }
 
-        $headers_check = self::validate_csv_headers($parsed, array('franchise_code'));
+        $headers_check = self::validate_csv_headers($parsed, array('franchise_code', 'display_name'));
         if (is_wp_error($headers_check)) {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
@@ -1795,7 +1782,7 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
         }
 
-        $headers_check = self::validate_csv_headers($parsed, array('franchise_code'));
+        $headers_check = self::validate_csv_headers($parsed, array('franchise_code', 'display_name'));
         if (is_wp_error($headers_check)) {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
@@ -1806,6 +1793,7 @@ class LLLM_Admin {
         foreach ($parsed['rows'] as $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
             $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
+            $display_name = isset($row_lower['display_name']) ? trim($row_lower['display_name']) : '';
             if ($code === '') {
                 $skipped++;
                 continue;
@@ -1834,6 +1822,7 @@ class LLLM_Admin {
                 array(
                     'division_id' => $division_id,
                     'team_master_id' => $team_id,
+                    'display_name' => $display_name ?: null,
                     'created_at' => $timestamp,
                     'updated_at' => $timestamp,
                 )
@@ -2061,12 +2050,12 @@ class LLLM_Admin {
         $import_type = isset($_POST['import_type']) ? sanitize_text_field(wp_unslash($_POST['import_type'])) : 'full';
 
         if (empty($_FILES['csv_file']['tmp_name'])) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-import&step=2'), 'error', __('CSV file is required.', 'lllm'));
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type)), 'error', __('CSV file is required.', 'lllm'));
         }
 
         $parsed = LLLM_Import::parse_csv($_FILES['csv_file']['tmp_name']);
         if (is_wp_error($parsed)) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-import&step=2'), 'error', $parsed->get_error_message());
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type)), 'error', $parsed->get_error_message());
         }
 
         $required_headers = $import_type === 'score'
@@ -2074,7 +2063,7 @@ class LLLM_Admin {
             : array('start_datetime', 'location', 'home_team_code', 'away_team_code', 'status');
         foreach ($required_headers as $header) {
             if (!in_array($header, $parsed['headers'], true)) {
-                self::redirect_with_notice(admin_url('admin.php?page=lllm-import&step=2'), 'error', sprintf(__('Missing required header: %s', 'lllm'), $header));
+                self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type)), 'error', sprintf(__('Missing required header: %s', 'lllm'), $header));
             }
         }
 
@@ -2124,7 +2113,7 @@ class LLLM_Admin {
             'error_report_url' => $error_report_url,
         ), 30 * MINUTE_IN_SECONDS);
 
-        wp_safe_redirect(admin_url('admin.php?page=lllm-import&step=3&token=' . $token));
+        wp_safe_redirect(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=3&token=' . $token));
         exit;
     }
 
@@ -2137,7 +2126,7 @@ class LLLM_Admin {
         $token = isset($_POST['token']) ? sanitize_text_field(wp_unslash($_POST['token'])) : '';
         $data = $token ? get_transient('lllm_import_' . $token) : null;
         if (!$data) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-import&step=1'), 'error', __('Import session expired.', 'lllm'));
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&step=1'), 'error', __('Import session expired.', 'lllm'));
         }
 
         $operations = $data['operations'];

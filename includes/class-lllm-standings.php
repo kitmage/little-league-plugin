@@ -23,7 +23,7 @@ class LLLM_Standings {
         global $wpdb;
         $teams = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT ti.id AS team_instance_id, tm.name AS team_name
+                'SELECT ti.id AS team_instance_id, COALESCE(ti.display_name, tm.name) AS team_name
                  FROM ' . $wpdb->prefix . 'lllm_team_instances ti
                  JOIN ' . $wpdb->prefix . 'lllm_team_masters tm ON ti.team_master_id = tm.id
                  WHERE ti.division_id = %d
