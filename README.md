@@ -87,7 +87,11 @@ franchise_name,franchise_code
 ### Teams template
 
 ```
+<<<<<<< codex/outline-development-phases-for-plugin-1xovej
 franchise_code,display_name
+=======
+franchise_code
+>>>>>>> main
 ```
 
 ## Shortcodes
