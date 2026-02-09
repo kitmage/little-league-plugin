@@ -21,12 +21,15 @@ register_activation_hook(__FILE__, array('LLLM_Activator', 'activate'));
 add_action('plugins_loaded', 'lllm_maybe_upgrade');
 add_action('admin_menu', array('LLLM_Admin', 'register_menu'));
 add_action('admin_init', array('LLLM_Admin', 'register_actions'));
+add_action('init', array('LLLM_Shortcodes', 'register'));
 
 function autoload_lllm() {
     require_once __DIR__ . '/includes/class-lllm-activator.php';
     require_once __DIR__ . '/includes/class-lllm-roles.php';
     require_once __DIR__ . '/includes/class-lllm-migrations.php';
     require_once __DIR__ . '/includes/class-lllm-import.php';
+    require_once __DIR__ . '/includes/class-lllm-standings.php';
+    require_once __DIR__ . '/includes/class-lllm-shortcodes.php';
     require_once __DIR__ . '/includes/class-lllm-admin.php';
 }
 
