@@ -27,6 +27,15 @@ class LLLM_Admin {
 
         add_submenu_page(
             'lllm-seasons',
+            __('Welcome', 'lllm'),
+            __('Welcome', 'lllm'),
+            'lllm_manage_seasons',
+            'lllm-welcome',
+            array(__CLASS__, 'render_welcome')
+        );
+
+        add_submenu_page(
+            'lllm-seasons',
             __('Divisions', 'lllm'),
             __('Divisions', 'lllm'),
             'lllm_manage_divisions',
@@ -269,6 +278,19 @@ class LLLM_Admin {
         }
 
         return $headers_lower;
+    }
+
+    public static function render_welcome() {
+        if (!current_user_can('lllm_manage_seasons')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__('Welcome to League Manager', 'lllm') . '</h1>';
+        echo '<p>' . esc_html__('League Manager helps you run your Little League season with a simple workflow: set up seasons/divisions/franchises, assign teams, import schedules, and post weekly scores.', 'lllm') . '</p>';
+        echo '<p>' . esc_html__('Managers can keep data consistent by using the CSV templates and import tools, while viewing game results and standings in one place for each division.', 'lllm') . '</p>';
+        echo '<p>' . esc_html__('To get started, use the submenu on the left beginning with Seasons, then Divisions, Franchises, Teams, and Games.', 'lllm') . '</p>';
+        echo '</div>';
     }
 
     public static function render_seasons() {
