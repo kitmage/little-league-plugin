@@ -810,9 +810,15 @@ class LLLM_Admin {
         echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
         echo '</form>';
 
+        $site_timezone = wp_timezone();
+        $site_timezone_label = wp_timezone_string();
+        if (!$site_timezone_label) {
+            $site_timezone_label = 'UTC';
+        }
+
         echo '<table class="widefat striped"><thead><tr>';
         echo '<th><input type="checkbox" onclick="document.querySelectorAll(\'.lllm-game-select\').forEach(el => el.checked = this.checked);"></th>';
-        echo '<th>' . esc_html__('Date/Time (UTC)', 'lllm') . '</th>';
+        echo '<th>' . esc_html(sprintf(__('Date/Time (%s)', 'lllm'), $site_timezone_label)) . '</th>';
         echo '<th>' . esc_html__('Location', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Home', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Away', 'lllm') . '</th>';
@@ -824,9 +830,15 @@ class LLLM_Admin {
 
         foreach ($games as $game) {
             $score = $game->status === 'played' ? sprintf('%d - %d', $game->home_score, $game->away_score) : '—';
+            $start_datetime_display = $game->start_datetime_utc;
+            if (!empty($game->start_datetime_utc)) {
+                $start_datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
+                $start_datetime->setTimezone($site_timezone);
+                $start_datetime_display = $start_datetime->format('Y-m-d H:i');
+            }
             echo '<tr>';
             echo '<td><input class="lllm-game-select" type="checkbox" name="game_ids[]" value="' . esc_attr($game->id) . '" form="lllm-bulk-games"></td>';
-            echo '<td>' . esc_html($game->start_datetime_utc) . '</td>';
+            echo '<td>' . esc_html($start_datetime_display) . '</td>';
             echo '<td>' . esc_html($game->location) . '</td>';
             echo '<td>' . esc_html($game->home_name) . '</td>';
             echo '<td>' . esc_html($game->away_name) . '</td>';
