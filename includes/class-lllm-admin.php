@@ -354,7 +354,9 @@ class LLLM_Admin {
             echo '<form id="lllm-bulk-seasons" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             wp_nonce_field('lllm_bulk_delete_seasons');
             echo '<input type="hidden" name="action" value="lllm_bulk_delete_seasons">';
-            echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
+    
+
+        echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
             echo '<input type="text" name="confirm_text_bulk" class="regular-text"> ';
             submit_button(__('Bulk Delete Selected', 'lllm'), 'delete', 'submit', false);
             echo '</form>';
@@ -452,7 +454,9 @@ class LLLM_Admin {
             wp_nonce_field('lllm_bulk_delete_divisions');
             echo '<input type="hidden" name="action" value="lllm_bulk_delete_divisions">';
             echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
-            echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
+    
+
+        echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
             echo '<input type="text" name="confirm_text_bulk" class="regular-text"> ';
             submit_button(__('Bulk Delete Selected', 'lllm'), 'delete', 'submit', false);
             echo '</form>';
@@ -575,7 +579,9 @@ class LLLM_Admin {
             echo '<form id="lllm-bulk-teams" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             wp_nonce_field('lllm_bulk_delete_teams');
             echo '<input type="hidden" name="action" value="lllm_bulk_delete_teams">';
-            echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
+    
+
+        echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
             echo '<input type="text" name="confirm_text_bulk" class="regular-text"> ';
             submit_button(__('Bulk Delete Selected', 'lllm'), 'delete', 'submit', false);
             echo '</form>';
@@ -851,7 +857,8 @@ class LLLM_Admin {
             echo '<td>' . esc_html($game->status) . '</td>';
             echo '<td>' . esc_html($score) . '</td>';
             echo '<td>';
-            echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            echo '<button class="button lllm-quick-edit-toggle" type="button">' . esc_html__('Edit', 'lllm') . '</button>';
+            echo '<form class="lllm-quick-edit-form" method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:none;margin-top:8px;">';
             wp_nonce_field('lllm_quick_edit_game');
             echo '<input type="hidden" name="action" value="lllm_quick_edit_game">';
             echo '<input type="hidden" name="game_id" value="' . esc_attr($game->id) . '">';
@@ -866,6 +873,7 @@ class LLLM_Admin {
             echo '<input type="number" class="small-text" name="home_score" value="' . esc_attr($game->home_score) . '" placeholder="Home"> ';
             echo '<input type="text" class="regular-text" name="notes" value="' . esc_attr($game->notes) . '" placeholder="' . esc_attr__('Notes', 'lllm') . '"> ';
             echo '<button class="button" type="submit">' . esc_html__('Save', 'lllm') . '</button>';
+            echo '<p class="lllm-quick-edit-unsaved" style="display:none;color:#b32d2e;margin:8px 0 0;">' . esc_html__('You have unsaved changes.', 'lllm') . '</p>';
             echo '</form>';
             echo '</td>';
             echo '<td>';
@@ -876,6 +884,17 @@ class LLLM_Admin {
         }
 
         echo '</tbody></table>';
+
+        echo '<script>';
+        echo '(function(){';
+        echo 'var toggles=document.querySelectorAll(".lllm-quick-edit-toggle");';
+        echo 'toggles.forEach(function(btn){btn.addEventListener("click",function(){var form=btn.parentElement.querySelector(".lllm-quick-edit-form");if(!form){return;}var open=form.style.display!=="none";form.style.display=open?"none":"block";});});';
+        echo 'var forms=document.querySelectorAll(".lllm-quick-edit-form");';
+        echo 'forms.forEach(function(form){var warning=form.querySelector(".lllm-quick-edit-unsaved");var fields=form.querySelectorAll("select[name=\"status\"], input[name=\"away_score\"], input[name=\"home_score\"], input[name=\"notes\"]");var initial={};fields.forEach(function(field){initial[field.name]=field.value;});var focusedCount=0;var update=function(){if(!warning){return;}var changed=false;fields.forEach(function(field){if(field.value!==initial[field.name]){changed=true;}});warning.style.display=(changed && focusedCount===0)?"block":"none";};fields.forEach(function(field){field.addEventListener("focus",function(){focusedCount++;update();});field.addEventListener("blur",function(){focusedCount=Math.max(0,focusedCount-1);setTimeout(update,0);});field.addEventListener("input",update);field.addEventListener("change",update);});form.addEventListener("submit",function(){if(warning){warning.style.display="none";}});});';
+        echo '})();';
+        echo '</script>';
+
+
         echo '<p>' . esc_html__('Type DELETE to confirm bulk deletion:', 'lllm') . '</p>';
         echo '<input type="text" name="confirm_text_bulk" class="regular-text" form="lllm-bulk-games"> ';
         echo '<button class="button delete" form="lllm-bulk-games" type="submit">' . esc_html__('Bulk Delete Selected', 'lllm') . '</button>';
