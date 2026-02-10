@@ -5,6 +5,17 @@ if (!defined('ABSPATH')) {
 }
 
 class LLLM_Import {
+    private static function normalize_csv_header($header) {
+        $header = strtolower(trim((string) $header));
+        if (preg_match('/^start_date\s*\(.*\)$/', $header)) {
+            return 'start_date';
+        }
+        if (preg_match('/^start_time\s*\(.*\)$/', $header)) {
+            return 'start_time';
+        }
+        return $header;
+    }
+
     public static function get_import_types() {
         return array(
             'full' => __('Full Schedule Import', 'lllm'),
@@ -25,7 +36,7 @@ class LLLM_Import {
             return new WP_Error('lllm_csv_headers_missing', __('CSV headers are required.', 'lllm'));
         }
 
-        $headers = array_map('trim', $headers);
+        $headers = array_map(array(__CLASS__, 'normalize_csv_header'), $headers);
 
         while (($data = fgetcsv($handle)) !== false) {
             if (count($data) === 1 && $data[0] === null) {

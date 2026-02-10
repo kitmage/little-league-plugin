@@ -840,7 +840,7 @@ class LLLM_Admin {
             if (!empty($game->start_datetime_utc)) {
                 $start_datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
                 $start_datetime->setTimezone($site_timezone);
-                $start_datetime_display = $start_datetime->format('Y-m-d H:i');
+                $start_datetime_display = $start_datetime->format('m/d/Y H:i');
             }
             echo '<tr>';
             echo '<td><input class="lllm-game-select" type="checkbox" name="game_ids[]" value="' . esc_attr($game->id) . '" form="lllm-bulk-games"></td>';
@@ -915,18 +915,10 @@ class LLLM_Admin {
                 admin_url('admin-post.php?action=lllm_download_template&import_type=' . $import_type),
                 'lllm_download_template'
             );
-            $export_url = $division_id ? wp_nonce_url(
-                admin_url('admin-post.php?action=lllm_download_current_games&division_id=' . $division_id),
-                'lllm_download_current_games'
-            ) : '';
-
             echo '<h3>' . esc_html__('Upload CSV', 'lllm') . '</h3>';
             echo '<p>' . esc_html__('CSV must be UTF-8 with headers and date/time format MM/DD/YYYY and HH:MM (24-hour).', 'lllm') . '</p>';
             echo '<p>';
-            echo '<a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a> ';
-            if ($export_url) {
-                echo '<a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Download Current Games CSV', 'lllm') . '</a>';
-            }
+            echo '<a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a>';
             echo '</p>';
 
             echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
@@ -1378,7 +1370,7 @@ class LLLM_Admin {
             $headers = array('game_uid', 'home_score', 'away_score', 'status', 'notes');
             $filename = 'score-update-template.csv';
         } else {
-            $headers = array('game_uid', 'start_date', 'start_time', 'location', 'home_team_code', 'away_team_code', 'status', 'home_score', 'away_score', 'notes');
+            $headers = array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'home_team_code', 'away_team_code', 'status', 'home_score', 'away_score', 'notes');
             $filename = 'full-schedule-template.csv';
         }
 
@@ -1419,7 +1411,7 @@ class LLLM_Admin {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=current-games.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('game_uid', 'start_date', 'start_time', 'location', 'home_team_code', 'away_team_code', 'status', 'home_score', 'away_score', 'notes'));
+        fputcsv($output, array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'home_team_code', 'away_team_code', 'status', 'home_score', 'away_score', 'notes'));
         foreach ($games as $game) {
             $datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
             fputcsv($output, array(

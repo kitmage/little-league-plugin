@@ -939,7 +939,7 @@ These are created once in Franchises screen:
 ## 1) Full Schedule Import — Template (blank)
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 ```
 
 ### 1A) Full Schedule Import — Example (initial season upload; no game_uid)
@@ -947,7 +947,7 @@ game_uid,start_date,start_time,location,home_team_code,away_team_code,status,hom
 All games are scheduled; scores blank.
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 ,03/14/2026,17:30,Field 1,dirtbags,pirates,scheduled,,,
 ,03/14/2026,18:45,Field 2,cubs,as,scheduled,,,
 ,03/21/2026,17:30,Field 1,pirates,cubs,scheduled,,,
@@ -967,7 +967,7 @@ game_uid,start_date,start_time,location,home_team_code,away_team_code,status,hom
 After commit, system exports with `game_uid` filled in (example UIDs).
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 G8K4Q2M9T1A3,03/14/2026,17:30,Field 1,dirtbags,pirates,scheduled,,,
 K2P7N6D4R9B1,03/14/2026,18:45,Field 2,cubs,as,scheduled,,,
 M5T1C8H3W2Z7,03/21/2026,17:30,Field 1,pirates,cubs,scheduled,,,
@@ -1004,7 +1004,7 @@ K2P7N6D4R9B1,3,3,played,Tie game (time limit)
 This is allowed in Full Schedule mode because it can create/update.
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 G8K4Q2M9T1A3,03/14/2026,17:30,Field 1,dirtbags,pirates,played,6,4,
 K2P7N6D4R9B1,03/14/2026,18:45,Field 2,cubs,as,played,3,3,Tie game (time limit)
 M5T1C8H3W2Z7,03/22/2026,14:00,Field 3,pirates,cubs,postponed,,,Rainout
@@ -1023,7 +1023,7 @@ R9B1L6S2J4Q8,03/21/2026,18:45,Field 2,as,dirtbags,scheduled,,,
 ## Bad Example 1: team code typo (Dad-proof rejection)
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 ,03/14/2026,17:30,Field 1,Dirt Bags,pirates,scheduled,,,
 ```
 
@@ -1038,7 +1038,7 @@ game_uid,start_date,start_time,location,home_team_code,away_team_code,status,hom
 **Downloadable Error Report CSV**
 
 ```csv
-row_number,game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes,error
+row_number,game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes,error
 2,,03/14/2026,17:30,Field 1,Dirt Bags,pirates,scheduled,,,,Invalid home_team_code 'Dirt Bags'. Must be one of: dirtbags|pirates|cubs|as
 ```
 
@@ -1047,7 +1047,7 @@ row_number,game_uid,start_date,start_time,location,home_team_code,away_team_code
 ## Bad Example 2: played game missing scores
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 ,03/14/2026,17:30,Field 1,dirtbags,pirates,played,,,
 ```
 
@@ -1060,7 +1060,7 @@ Error:
 ## Bad Example 3: scheduled game includes scores (prevents accidental ‘0-0 played’ confusion)
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 ,03/14/2026,17:30,Field 1,dirtbags,pirates,scheduled,0,0,
 ```
 
@@ -1073,7 +1073,7 @@ Error:
 ## Bad Example 4: invalid datetime format
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 ,03/14/2026,5:30 PM,Field 1,dirtbags,pirates,scheduled,,,
 ```
 
@@ -1086,7 +1086,7 @@ Error:
 ## Bad Example 5: home and away are the same team
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 ,03/14/2026,17:30,Field 1,dirtbags,dirtbags,scheduled,,,
 ```
 
@@ -1112,7 +1112,7 @@ Error:
 ## Bad Example 7: duplicate games (same datetime + same teams)
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 ,03/14/2026,17:30,Field 1,dirtbags,pirates,scheduled,,,
 ,03/14/2026,17:30,Field 1,dirtbags,pirates,scheduled,,,
 ```
@@ -1190,7 +1190,7 @@ Below is a realistic “seed” dataset that an Admin can enter in under 10 minu
 ### 5A) Spring 2026 / 8U — Full Schedule Import (initial)
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 ,03/14/2026,17:30,Field 1,dirtbags,pirates,scheduled,,,
 ,03/14/2026,18:45,Field 2,cubs,as,scheduled,,,
 ,03/21/2026,17:30,Field 1,pirates,cubs,scheduled,,,
@@ -1202,7 +1202,7 @@ game_uid,start_date,start_time,location,home_team_code,away_team_code,status,hom
 ### 5B) Spring 2026 / 9U — Full Schedule Import (initial)
 
 ```csv
-game_uid,start_date,start_time,location,home_team_code,away_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,home_team_code,away_team_code,status,home_score,away_score,notes
 ,03/15/2026,17:30,Field 1,dirtbags,hawks,scheduled,,,
 ,03/15/2026,18:45,Field 2,giants,cubs,scheduled,,,
 ,03/22/2026,17:30,Field 1,hawks,giants,scheduled,,,
