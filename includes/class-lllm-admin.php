@@ -496,6 +496,11 @@ class LLLM_Admin {
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('Franchises', 'lllm') . '</h1>';
+        $export_url = wp_nonce_url(
+            admin_url('admin-post.php?action=lllm_export_franchises_csv'),
+            'lllm_export_franchises_csv'
+        );
+        echo '<p><a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Export all Franchises', 'lllm') . '</a></p>';
         self::render_notices();
 
         echo '<h2>' . esc_html($editing ? __('Edit Franchise', 'lllm') : __('Add Franchise', 'lllm')) . '</h2>';
@@ -529,11 +534,6 @@ class LLLM_Admin {
         echo '</form>';
 
         echo '<h2>' . esc_html__('All Franchises', 'lllm') . '</h2>';
-        $export_url = wp_nonce_url(
-            admin_url('admin-post.php?action=lllm_export_franchises_csv'),
-            'lllm_export_franchises_csv'
-        );
-        echo '<p><a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Export all Franchises', 'lllm') . '</a></p>';
         if (!$teams) {
             echo '<p>' . esc_html__('No franchises yet.', 'lllm') . '</p>';
         } else {
