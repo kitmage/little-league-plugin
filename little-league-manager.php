@@ -24,6 +24,8 @@ add_action('admin_init', array('LLLM_Admin', 'register_actions'));
 add_action('admin_enqueue_scripts', array('LLLM_Admin', 'enqueue_assets'));
 add_action('admin_bar_menu', 'lllm_add_welcome_admin_bar_link', 100);
 add_filter('login_redirect', 'lllm_manager_login_redirect', 10, 3);
+add_filter('ajax_query_attachments_args', 'lllm_manager_media_library_query');
+add_action('pre_get_posts', 'lllm_manager_media_library_list_query');
 add_action('init', array('LLLM_Shortcodes', 'register'));
 
 function autoload_lllm() {
@@ -79,4 +81,43 @@ function lllm_manager_login_redirect($redirect_to, $requested_redirect_to, $user
     }
 
     return $redirect_to;
+}
+
+
+function lllm_manager_media_library_query($query) {
+    if (!is_user_logged_in() || !current_user_can('lllm_manage_media_library')) {
+        return $query;
+    }
+
+    $user = wp_get_current_user();
+    if (!in_array('lllm_manager', (array) $user->roles, true)) {
+        return $query;
+    }
+
+    if (isset($query['author'])) {
+        unset($query['author']);
+    }
+
+    return $query;
+}
+
+function lllm_manager_media_library_list_query($query) {
+    if (!is_admin() || !$query->is_main_query()) {
+        return;
+    }
+
+    if (!isset($GLOBALS['pagenow']) || 'upload.php' !== $GLOBALS['pagenow']) {
+        return;
+    }
+
+    if (!is_user_logged_in() || !current_user_can('lllm_manage_media_library')) {
+        return;
+    }
+
+    $user = wp_get_current_user();
+    if (!in_array('lllm_manager', (array) $user->roles, true)) {
+        return;
+    }
+
+    $query->set('author', '');
 }

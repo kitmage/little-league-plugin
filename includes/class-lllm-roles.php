@@ -13,6 +13,8 @@ class LLLM_Roles {
             'lllm_manage_games' => true,
             'lllm_import_csv' => true,
             'lllm_view_logs' => true,
+            'upload_files' => true,
+            'lllm_manage_media_library' => true,
         );
     }
 
