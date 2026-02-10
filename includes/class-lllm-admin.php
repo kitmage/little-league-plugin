@@ -163,6 +163,12 @@ class LLLM_Admin {
         }
     }
 
+
+    private static function normalize_team_code($value) {
+        $value = strtolower((string) $value);
+        return preg_replace('/[^a-z0-9]+/', '', $value);
+    }
+
     private static function redirect_with_notice($url, $notice, $message = '') {
         $url = add_query_arg('lllm_notice', $notice, $url);
         if ($message !== '') {
@@ -1168,7 +1174,7 @@ class LLLM_Admin {
 
         $id = isset($_POST['id']) ? absint($_POST['id']) : 0;
         $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
-        $team_code = isset($_POST['team_code']) ? sanitize_text_field(wp_unslash($_POST['team_code'])) : '';
+        $team_code = isset($_POST['team_code']) ? self::normalize_team_code(sanitize_text_field(wp_unslash($_POST['team_code']))) : '';
         $logo_id = isset($_POST['logo_attachment_id']) ? absint($_POST['logo_attachment_id']) : 0;
 
         if (!$name) {
@@ -1180,7 +1186,7 @@ class LLLM_Admin {
 
         $can_edit_code = current_user_can('manage_options');
         if (!$can_edit_code || !$team_code) {
-            $team_code = sanitize_title($name);
+            $team_code = self::normalize_team_code($name);
         }
         if (!$team_code) {
             $team_code = 'team';
@@ -1559,13 +1565,13 @@ class LLLM_Admin {
         foreach ($parsed['rows'] as $index => $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
             $name = isset($row_lower['franchise_name']) ? trim($row_lower['franchise_name']) : '';
-            $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
+            $code = isset($row_lower['franchise_code']) ? self::normalize_team_code(trim($row_lower['franchise_code'])) : '';
             if ($name === '') {
                 $errors[] = $index + 2;
                 continue;
             }
             if ($code !== '') {
-                $code_key = strtolower($code);
+                $code_key = $code;
                 if (isset($team_codes[$code_key])) {
                     $errors[] = $index + 2;
                 }
@@ -1616,12 +1622,12 @@ class LLLM_Admin {
         $team_codes = array();
         foreach ($parsed['rows'] as $index => $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
-            $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
+            $code = isset($row_lower['franchise_code']) ? self::normalize_team_code(trim($row_lower['franchise_code'])) : '';
             if ($code === '') {
                 $errors[] = $index + 2;
                 continue;
             }
-            $code_key = strtolower($code);
+            $code_key = $code;
             if (isset($team_codes[$code_key])) {
                 $errors[] = $index + 2;
                 continue;
@@ -1740,13 +1746,13 @@ class LLLM_Admin {
         foreach ($parsed['rows'] as $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
             $name = isset($row_lower['franchise_name']) ? trim($row_lower['franchise_name']) : '';
-            $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
+            $code = isset($row_lower['franchise_code']) ? self::normalize_team_code(trim($row_lower['franchise_code'])) : '';
             if ($name === '') {
                 $skipped++;
                 continue;
             }
             if ($code === '') {
-                $code = sanitize_title($name);
+                $code = self::normalize_team_code($name);
             }
             if ($code === '') {
                 $code = 'team';
@@ -1818,7 +1824,7 @@ class LLLM_Admin {
         $skipped = 0;
         foreach ($parsed['rows'] as $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
-            $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
+            $code = isset($row_lower['franchise_code']) ? self::normalize_team_code(trim($row_lower['franchise_code'])) : '';
             $display_name = isset($row_lower['display_name']) ? trim($row_lower['display_name']) : '';
             if ($code === '') {
                 $skipped++;
