@@ -297,7 +297,7 @@ class LLLM_Admin {
 
         echo '<table class="form-table"><tbody>';
         echo '<tr><th scope="row"><label for="lllm-season-name">' . esc_html__('Season Name', 'lllm') . '</label></th>';
-        echo '<td><input name="name" id="lllm-season-name" type="text" class="regular-text" value="' . esc_attr($season_name) . '" required></td></tr>';
+        echo '<td><input name="name" id="lllm-season-name" type="text" class="regular-text" value="' . esc_attr($season_name) . '" placeholder="' . esc_attr__('Fall 2026', 'lllm') . '" required></td></tr>';
 
         echo '<tr><th scope="row"><label for="lllm-season-timezone">' . esc_html__('Timezone', 'lllm') . '</label></th>';
         echo '<td><input name="timezone" id="lllm-season-timezone" type="text" class="regular-text" value="' . esc_attr($timezone) . '"></td></tr>';
@@ -402,7 +402,7 @@ class LLLM_Admin {
         $division_name = $editing ? $editing->name : '';
         echo '<table class="form-table"><tbody>';
         echo '<tr><th scope="row"><label for="lllm-division-name">' . esc_html__('Division Name', 'lllm') . '</label></th>';
-        echo '<td><input name="name" id="lllm-division-name" type="text" class="regular-text" value="' . esc_attr($division_name) . '" required></td></tr>';
+        echo '<td><input name="name" id="lllm-division-name" type="text" class="regular-text" value="' . esc_attr($division_name) . '" placeholder="' . esc_attr__('7U Major', 'lllm') . '" required></td></tr>';
         echo '</tbody></table>';
 
         submit_button($editing ? __('Update Division', 'lllm') : __('Add Division', 'lllm'));
@@ -512,10 +512,10 @@ class LLLM_Admin {
 
         echo '<table class="form-table"><tbody>';
         echo '<tr><th scope="row"><label for="lllm-team-name">' . esc_html__('Franchise Name', 'lllm') . '</label></th>';
-        echo '<td><input name="name" id="lllm-team-name" type="text" class="regular-text" value="' . esc_attr($team_name) . '" required></td></tr>';
+        echo '<td><input name="name" id="lllm-team-name" type="text" class="regular-text" value="' . esc_attr($team_name) . '" placeholder="' . esc_attr__('Bambinos', 'lllm') . '" required></td></tr>';
 
         echo '<tr><th scope="row"><label for="lllm-team-code">' . esc_html__('Franchise Code', 'lllm') . '</label></th>';
-        echo '<td><input name="team_code" id="lllm-team-code" type="text" class="regular-text" value="' . esc_attr($team_code) . '" ' . ($can_edit_code ? '' : 'readonly') . '></td></tr>';
+        echo '<td><input name="team_code" id="lllm-team-code" type="text" class="regular-text" value="' . esc_attr($team_code) . '" placeholder="' . esc_attr__('Leave this blank if you're not sure.', 'lllm') . '" ' . ($can_edit_code ? '' : 'readonly') . '></td></tr>';
         echo '<tr><th scope="row">' . esc_html__('Franchise Logo', 'lllm') . '</th><td>';
         echo '<input type="hidden" name="logo_attachment_id" id="lllm-team-logo-id" value="' . esc_attr($logo_id) . '">';
         echo '<img id="lllm-team-logo-preview" src="' . esc_url($logo_url) . '" style="' . ($logo_url ? 'max-width:150px;height:auto;display:block;margin-bottom:8px;' : 'max-width:150px;height:auto;display:none;margin-bottom:8px;') . '" alt="">';
