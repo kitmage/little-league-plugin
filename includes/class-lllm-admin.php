@@ -39,7 +39,7 @@ class LLLM_Admin {
             __('Franchises', 'lllm'),
             __('Franchises', 'lllm'),
             'lllm_manage_teams',
-            'lllm-teams',
+            'lllm-franchises',
             array(__CLASS__, 'render_teams')
         );
 
@@ -101,7 +101,7 @@ class LLLM_Admin {
     }
 
     public static function enqueue_assets($hook) {
-        if (empty($_GET['page']) || $_GET['page'] !== 'lllm-teams') {
+        if (empty($_GET['page']) || $_GET['page'] !== 'lllm-franchises') {
             return;
         }
 
@@ -540,7 +540,7 @@ class LLLM_Admin {
 
             foreach ($teams as $team) {
                 $edit_link = add_query_arg(
-                    array('page' => 'lllm-teams', 'edit' => $team->id),
+                    array('page' => 'lllm-franchises', 'edit' => $team->id),
                     admin_url('admin.php')
                 );
                 echo '<tr>';
@@ -568,25 +568,28 @@ class LLLM_Admin {
             echo '</form>';
         }
 
-        $template_url = wp_nonce_url(
-            admin_url('admin-post.php?action=lllm_download_teams_template'),
-            'lllm_download_teams_template'
-        );
-        echo '<h2>' . esc_html__('Franchises CSV Import', 'lllm') . '</h2>';
-        echo '<p>' . esc_html__('Use the template to validate franchises before importing.', 'lllm') . '</p>';
-        echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a></p>';
-        echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        wp_nonce_field('lllm_validate_teams_csv');
-        echo '<input type="hidden" name="action" value="lllm_validate_teams_csv">';
-        echo '<input type="file" name="csv_file" accept=".csv" required> ';
-        submit_button(__('Validate CSV', 'lllm'), 'secondary', 'submit', false);
-        echo '</form>';
-        echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        wp_nonce_field('lllm_import_teams_csv');
-        echo '<input type="hidden" name="action" value="lllm_import_teams_csv">';
-        echo '<input type="file" name="csv_file" accept=".csv" required> ';
-        submit_button(__('Import CSV', 'lllm'), 'primary', 'submit', false);
-        echo '</form>';
+        $show_franchises_csv_import = false;
+        if ($show_franchises_csv_import) {
+            $template_url = wp_nonce_url(
+                admin_url('admin-post.php?action=lllm_download_teams_template'),
+                'lllm_download_teams_template'
+            );
+            echo '<h2>' . esc_html__('Franchises CSV Import', 'lllm') . '</h2>';
+            echo '<p>' . esc_html__('Use the template to validate franchises before importing.', 'lllm') . '</p>';
+            echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a></p>';
+            echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            wp_nonce_field('lllm_validate_teams_csv');
+            echo '<input type="hidden" name="action" value="lllm_validate_teams_csv">';
+            echo '<input type="file" name="csv_file" accept=".csv" required> ';
+            submit_button(__('Validate CSV', 'lllm'), 'secondary', 'submit', false);
+            echo '</form>';
+            echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            wp_nonce_field('lllm_import_teams_csv');
+            echo '<input type="hidden" name="action" value="lllm_import_teams_csv">';
+            echo '<input type="file" name="csv_file" accept=".csv" required> ';
+            submit_button(__('Import CSV', 'lllm'), 'primary', 'submit', false);
+            echo '</form>';
+        }
 
         echo '</div>';
     }
@@ -1158,7 +1161,7 @@ class LLLM_Admin {
         $logo_id = isset($_POST['logo_attachment_id']) ? absint($_POST['logo_attachment_id']) : 0;
 
         if (!$name) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'error', __('Franchise name is required.', 'lllm'));
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'error', __('Franchise name is required.', 'lllm'));
         }
 
         $slug = sanitize_title($name);
@@ -1189,7 +1192,7 @@ class LLLM_Admin {
             $wpdb->insert($table, $data);
         }
 
-        self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'team_saved');
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'team_saved');
     }
 
     public static function handle_update_division_teams() {
@@ -1508,7 +1511,7 @@ class LLLM_Admin {
         }
 
         check_admin_referer('lllm_validate_teams_csv');
-        $return_url = admin_url('admin.php?page=lllm-teams');
+        $return_url = admin_url('admin.php?page=lllm-franchises');
 
         $parsed = self::parse_uploaded_csv();
         if (is_wp_error($parsed)) {
@@ -1686,7 +1689,7 @@ class LLLM_Admin {
         }
 
         check_admin_referer('lllm_import_teams_csv');
-        $return_url = admin_url('admin.php?page=lllm-teams');
+        $return_url = admin_url('admin.php?page=lllm-franchises');
 
         $parsed = self::parse_uploaded_csv();
         if (is_wp_error($parsed)) {
@@ -2313,7 +2316,7 @@ class LLLM_Admin {
         $team_id = isset($_POST['id']) ? absint($_POST['id']) : 0;
         $confirm = self::get_confirm_text($team_id);
         if (!$team_id || !self::is_delete_confirmed($confirm)) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'delete_blocked', __('Confirmation required.', 'lllm'));
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'delete_blocked', __('Confirmation required.', 'lllm'));
         }
 
         global $wpdb;
@@ -2321,11 +2324,11 @@ class LLLM_Admin {
             $wpdb->prepare('SELECT id FROM ' . self::table('team_instances') . ' WHERE team_master_id = %d', $team_id)
         );
         if ($in_use) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'delete_blocked', __('Franchise is assigned to a division.', 'lllm'));
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'delete_blocked', __('Franchise is assigned to a division.', 'lllm'));
         }
 
         self::delete_team_by_id($team_id);
-        self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'team_deleted');
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'team_deleted');
     }
 
     public static function handle_bulk_delete_teams() {
@@ -2338,7 +2341,7 @@ class LLLM_Admin {
         $confirm = isset($_POST['confirm_text_bulk']) ? sanitize_text_field(wp_unslash($_POST['confirm_text_bulk'])) : '';
         $team_ids = isset($_POST['team_ids']) ? array_map('absint', (array) $_POST['team_ids']) : array();
         if (!$team_ids || !self::is_delete_confirmed($confirm)) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'delete_blocked', __('Confirmation required.', 'lllm'));
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'delete_blocked', __('Confirmation required.', 'lllm'));
         }
 
         foreach ($team_ids as $team_id) {
@@ -2351,7 +2354,7 @@ class LLLM_Admin {
             self::delete_team_by_id($team_id);
         }
 
-        self::redirect_with_notice(admin_url('admin.php?page=lllm-teams'), 'team_deleted');
+        self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'team_deleted');
     }
 
     private static function delete_game_by_id($game_id) {
