@@ -515,7 +515,7 @@ class LLLM_Admin {
         echo '<td><input name="name" id="lllm-team-name" type="text" class="regular-text" value="' . esc_attr($team_name) . '" placeholder="' . esc_attr__('Bambinos', 'lllm') . '" required></td></tr>';
 
         echo '<tr><th scope="row"><label for="lllm-team-code">' . esc_html__('Franchise Code', 'lllm') . '</label></th>';
-        echo '<td><input name="team_code" id="lllm-team-code" type="text" class="regular-text" value="' . esc_attr($team_code) . '" placeholder="' . esc_attr__('Leave this blank if you're not sure.', 'lllm') . '" ' . ($can_edit_code ? '' : 'readonly') . '></td></tr>';
+        echo '<td><input name="team_code" id="lllm-team-code" type="text" class="regular-text" value="' . esc_attr($team_code) . '" placeholder="' . esc_attr__("Leave this blank if you're not sure.", 'lllm') . '" ' . ($can_edit_code ? '' : 'readonly') . '></td></tr>';
         echo '<tr><th scope="row">' . esc_html__('Franchise Logo', 'lllm') . '</th><td>';
         echo '<input type="hidden" name="logo_attachment_id" id="lllm-team-logo-id" value="' . esc_attr($logo_id) . '">';
         echo '<img id="lllm-team-logo-preview" src="' . esc_url($logo_url) . '" style="' . ($logo_url ? 'max-width:150px;height:auto;display:block;margin-bottom:8px;' : 'max-width:150px;height:auto;display:none;margin-bottom:8px;') . '" alt="">';
