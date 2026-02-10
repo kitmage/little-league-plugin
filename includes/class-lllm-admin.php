@@ -901,7 +901,7 @@ class LLLM_Admin {
             ) : '';
 
             echo '<h3>' . esc_html__('Upload CSV', 'lllm') . '</h3>';
-            echo '<p>' . esc_html__('CSV must be UTF-8 with headers and date/time format YYYY-MM-DD HH:MM (24-hour).', 'lllm') . '</p>';
+            echo '<p>' . esc_html__('CSV must be UTF-8 with headers and date/time format MM/DD/YYYY and HH:MM (24-hour).', 'lllm') . '</p>';
             echo '<p>';
             echo '<a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a> ';
             if ($export_url) {
@@ -1356,7 +1356,7 @@ class LLLM_Admin {
             $headers = array('game_uid', 'home_score', 'away_score', 'status', 'notes');
             $filename = 'score-update-template.csv';
         } else {
-            $headers = array('game_uid', 'start_datetime', 'location', 'home_team_code', 'away_team_code', 'status', 'home_score', 'away_score', 'notes');
+            $headers = array('game_uid', 'start_date', 'start_time', 'location', 'home_team_code', 'away_team_code', 'status', 'home_score', 'away_score', 'notes');
             $filename = 'full-schedule-template.csv';
         }
 
@@ -1397,11 +1397,13 @@ class LLLM_Admin {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=current-games.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('game_uid', 'start_datetime', 'location', 'home_team_code', 'away_team_code', 'status', 'home_score', 'away_score', 'notes'));
+        fputcsv($output, array('game_uid', 'start_date', 'start_time', 'location', 'home_team_code', 'away_team_code', 'status', 'home_score', 'away_score', 'notes'));
         foreach ($games as $game) {
+            $datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
             fputcsv($output, array(
                 $game->game_uid,
-                $game->start_datetime_utc,
+                $datetime->format('m/d/Y'),
+                $datetime->format('H:i'),
                 $game->location,
                 $game->home_code,
                 $game->away_code,
@@ -1931,7 +1933,8 @@ class LLLM_Admin {
                 continue;
             }
 
-            $start_datetime = isset($row['start_datetime']) ? trim($row['start_datetime']) : '';
+            $start_date = isset($row['start_date']) ? trim($row['start_date']) : '';
+            $start_time = isset($row['start_time']) ? trim($row['start_time']) : '';
             $location = isset($row['location']) ? trim($row['location']) : '';
             $home_code = isset($row['home_team_code']) ? trim($row['home_team_code']) : '';
             $away_code = isset($row['away_team_code']) ? trim($row['away_team_code']) : '';
@@ -1943,7 +1946,7 @@ class LLLM_Admin {
                 continue;
             }
 
-            if (!$start_datetime || !$location || !$home_code || !$away_code) {
+            if (!$start_date || !$start_time || !$location || !$home_code || !$away_code) {
                 $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: required fields missing.', 'lllm'), $row_number));
                 continue;
             }
@@ -1958,7 +1961,7 @@ class LLLM_Admin {
                 continue;
             }
 
-            $datetime_utc = LLLM_Import::parse_datetime_to_utc($start_datetime, $timezone);
+            $datetime_utc = LLLM_Import::parse_datetime_to_utc($start_date . ' ' . $start_time, $timezone);
             if (!$datetime_utc) {
                 $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: invalid datetime format.', 'lllm'), $row_number));
                 continue;
@@ -2062,7 +2065,7 @@ class LLLM_Admin {
 
         $required_headers = $import_type === 'score'
             ? array('game_uid', 'home_score', 'away_score', 'status')
-            : array('start_datetime', 'location', 'home_team_code', 'away_team_code');
+            : array('start_date', 'start_time', 'location', 'home_team_code', 'away_team_code');
         foreach ($required_headers as $header) {
             if (!in_array($header, $parsed['headers'], true)) {
                 self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type)), 'error', sprintf(__('Missing required header: %s', 'lllm'), $header));
