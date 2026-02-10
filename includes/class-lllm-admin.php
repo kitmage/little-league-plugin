@@ -671,16 +671,8 @@ class LLLM_Admin {
             'lllm_download_division_teams_template'
         );
         echo '<h2>' . esc_html__('Teams CSV Import', 'lllm') . '</h2>';
-        echo '<p>' . esc_html__('Validate team assignments for this division before importing.', 'lllm') . '</p>';
+        echo '<p>' . esc_html__('Import team assignments for this division.', 'lllm') . '</p>';
         echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a></p>';
-        echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        wp_nonce_field('lllm_validate_division_teams_csv');
-        echo '<input type="hidden" name="action" value="lllm_validate_division_teams_csv">';
-        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
-        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
-        echo '<input type="file" name="csv_file" accept=".csv" required> ';
-        submit_button(__('Validate CSV', 'lllm'), 'secondary', 'submit', false);
-        echo '</form>';
         echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('lllm_import_division_teams_csv');
         echo '<input type="hidden" name="action" value="lllm_import_division_teams_csv">';
@@ -1484,7 +1476,7 @@ class LLLM_Admin {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=teams-template.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('franchise_code'));
+        fputcsv($output, array('franchise_code', 'display_name'));
         fclose($output);
         exit;
     }
@@ -1602,7 +1594,7 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
         }
 
-        $headers_check = self::validate_csv_headers($parsed, array('franchise_code'));
+        $headers_check = self::validate_csv_headers($parsed, array('franchise_code', 'display_name'));
         if (is_wp_error($headers_check)) {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
@@ -1804,7 +1796,7 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
         }
 
-        $headers_check = self::validate_csv_headers($parsed, array('franchise_code'));
+        $headers_check = self::validate_csv_headers($parsed, array('franchise_code', 'display_name'));
         if (is_wp_error($headers_check)) {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
@@ -1815,6 +1807,7 @@ class LLLM_Admin {
         foreach ($parsed['rows'] as $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
             $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
+            $display_name = isset($row_lower['display_name']) ? trim($row_lower['display_name']) : '';
             if ($code === '') {
                 $skipped++;
                 continue;
@@ -1843,7 +1836,7 @@ class LLLM_Admin {
                 array(
                     'division_id' => $division_id,
                     'team_master_id' => $team_id,
-                    'display_name' => null,
+                    'display_name' => $display_name ?: null,
                     'created_at' => $timestamp,
                     'updated_at' => $timestamp,
                 )

@@ -87,7 +87,7 @@ franchise_name,franchise_code
 ### Teams template
 
 ```
-franchise_code
+franchise_code,display_name
 ```
 
 ## Shortcodes
