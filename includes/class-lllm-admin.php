@@ -93,6 +93,7 @@ class LLLM_Admin {
         add_action('admin_post_lllm_validate_divisions_csv', array(__CLASS__, 'handle_validate_divisions_csv'));
         add_action('admin_post_lllm_import_divisions_csv', array(__CLASS__, 'handle_import_divisions_csv'));
         add_action('admin_post_lllm_download_teams_template', array(__CLASS__, 'handle_download_teams_template'));
+        add_action('admin_post_lllm_export_franchises_csv', array(__CLASS__, 'handle_export_franchises_csv'));
         add_action('admin_post_lllm_validate_teams_csv', array(__CLASS__, 'handle_validate_teams_csv'));
         add_action('admin_post_lllm_import_teams_csv', array(__CLASS__, 'handle_import_teams_csv'));
         add_action('admin_post_lllm_download_division_teams_template', array(__CLASS__, 'handle_download_division_teams_template'));
@@ -528,6 +529,11 @@ class LLLM_Admin {
         echo '</form>';
 
         echo '<h2>' . esc_html__('All Franchises', 'lllm') . '</h2>';
+        $export_url = wp_nonce_url(
+            admin_url('admin-post.php?action=lllm_export_franchises_csv'),
+            'lllm_export_franchises_csv'
+        );
+        echo '<p><a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Export all Franchises', 'lllm') . '</a></p>';
         if (!$teams) {
             echo '<p>' . esc_html__('No franchises yet.', 'lllm') . '</p>';
         } else {
@@ -1444,6 +1450,26 @@ class LLLM_Admin {
         header('Content-Disposition: attachment; filename=franchises-template.csv');
         $output = fopen('php://output', 'w');
         fputcsv($output, array('franchise_name', 'franchise_code'));
+        fclose($output);
+        exit;
+    }
+
+    public static function handle_export_franchises_csv() {
+        if (!current_user_can('lllm_manage_teams')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_export_franchises_csv');
+        global $wpdb;
+        $franchises = $wpdb->get_results('SELECT team_code, name FROM ' . self::table('team_masters') . ' ORDER BY name ASC');
+
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename=franchises.csv');
+        $output = fopen('php://output', 'w');
+        fputcsv($output, array('franchise_code', 'franchise_name'));
+        foreach ($franchises as $franchise) {
+            fputcsv($output, array($franchise->team_code, $franchise->name));
+        }
         fclose($output);
         exit;
     }
