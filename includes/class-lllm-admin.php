@@ -496,11 +496,6 @@ class LLLM_Admin {
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('Franchises', 'lllm') . '</h1>';
-        $export_url = wp_nonce_url(
-            admin_url('admin-post.php?action=lllm_export_franchises_csv'),
-            'lllm_export_franchises_csv'
-        );
-        echo '<p><a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Export all Franchises', 'lllm') . '</a></p>';
         self::render_notices();
 
         echo '<h2>' . esc_html($editing ? __('Edit Franchise', 'lllm') : __('Add Franchise', 'lllm')) . '</h2>';
@@ -532,6 +527,12 @@ class LLLM_Admin {
 
         submit_button($editing ? __('Update Franchise', 'lllm') : __('Add Franchise', 'lllm'));
         echo '</form>';
+
+        $export_url = wp_nonce_url(
+            admin_url('admin-post.php?action=lllm_export_franchises_csv'),
+            'lllm_export_franchises_csv'
+        );
+        echo '<p><a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Export all Franchises', 'lllm') . '</a></p>';
 
         echo '<h2>' . esc_html__('All Franchises', 'lllm') . '</h2>';
         if (!$teams) {
@@ -1483,7 +1484,7 @@ class LLLM_Admin {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=teams-template.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('franchise_code', 'display_name'));
+        fputcsv($output, array('franchise_code'));
         fclose($output);
         exit;
     }
@@ -1601,7 +1602,7 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
         }
 
-        $headers_check = self::validate_csv_headers($parsed, array('franchise_code', 'display_name'));
+        $headers_check = self::validate_csv_headers($parsed, array('franchise_code'));
         if (is_wp_error($headers_check)) {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
@@ -1803,7 +1804,7 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $parsed->get_error_message());
         }
 
-        $headers_check = self::validate_csv_headers($parsed, array('franchise_code', 'display_name'));
+        $headers_check = self::validate_csv_headers($parsed, array('franchise_code'));
         if (is_wp_error($headers_check)) {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
@@ -1814,7 +1815,6 @@ class LLLM_Admin {
         foreach ($parsed['rows'] as $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
             $code = isset($row_lower['franchise_code']) ? trim($row_lower['franchise_code']) : '';
-            $display_name = isset($row_lower['display_name']) ? trim($row_lower['display_name']) : '';
             if ($code === '') {
                 $skipped++;
                 continue;
@@ -1843,7 +1843,7 @@ class LLLM_Admin {
                 array(
                     'division_id' => $division_id,
                     'team_master_id' => $team_id,
-                    'display_name' => $display_name ?: null,
+                    'display_name' => null,
                     'created_at' => $timestamp,
                     'updated_at' => $timestamp,
                 )
