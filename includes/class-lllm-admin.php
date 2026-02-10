@@ -1318,8 +1318,10 @@ class LLLM_Admin {
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
         $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
         $status = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : 'scheduled';
-        $home_score = isset($_POST['home_score']) ? intval($_POST['home_score']) : null;
-        $away_score = isset($_POST['away_score']) ? intval($_POST['away_score']) : null;
+        $home_score_raw = isset($_POST['home_score']) ? trim((string) wp_unslash($_POST['home_score'])) : '';
+        $away_score_raw = isset($_POST['away_score']) ? trim((string) wp_unslash($_POST['away_score'])) : '';
+        $home_score = $home_score_raw === '' ? null : intval($home_score_raw);
+        $away_score = $away_score_raw === '' ? null : intval($away_score_raw);
         $notes = isset($_POST['notes']) ? sanitize_text_field(wp_unslash($_POST['notes'])) : '';
 
         $allowed = array('scheduled', 'played', 'canceled', 'postponed');
@@ -1332,8 +1334,15 @@ class LLLM_Admin {
                 self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'error', __('Scores are required for played games.', 'lllm'));
             }
         } else {
-            $home_score = null;
-            $away_score = null;
+            if ($home_score !== null || $away_score !== null) {
+                $status = 'played';
+                if ($home_score === null || $away_score === null) {
+                    self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'error', __('Both away and home scores are required when entering scores.', 'lllm'));
+                }
+            } else {
+                $home_score = null;
+                $away_score = null;
+            }
         }
 
         $wpdb->update(
