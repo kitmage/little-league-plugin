@@ -826,8 +826,8 @@ class LLLM_Admin {
         echo '<th><input type="checkbox" onclick="document.querySelectorAll(\'.lllm-game-select\').forEach(el => el.checked = this.checked);"></th>';
         echo '<th>' . esc_html(sprintf(__('Date/Time (%s)', 'lllm'), $site_timezone_label)) . '</th>';
         echo '<th>' . esc_html__('Location', 'lllm') . '</th>';
-        echo '<th>' . esc_html__('Home', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Away', 'lllm') . '</th>';
+        echo '<th>' . esc_html__('Home', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Status', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Score', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Quick Edit', 'lllm') . '</th>';
@@ -846,8 +846,8 @@ class LLLM_Admin {
             echo '<td><input class="lllm-game-select" type="checkbox" name="game_ids[]" value="' . esc_attr($game->id) . '" form="lllm-bulk-games"></td>';
             echo '<td>' . esc_html($start_datetime_display) . '</td>';
             echo '<td>' . esc_html($game->location) . '</td>';
-            echo '<td>' . esc_html($game->home_name) . '</td>';
             echo '<td>' . esc_html($game->away_name) . '</td>';
+            echo '<td>' . esc_html($game->home_name) . '</td>';
             echo '<td>' . esc_html($game->status) . '</td>';
             echo '<td>' . esc_html($score) . '</td>';
             echo '<td>';
@@ -1370,7 +1370,7 @@ class LLLM_Admin {
             $headers = array('game_uid', 'home_score', 'away_score', 'status', 'notes');
             $filename = 'score-update-template.csv';
         } else {
-            $headers = array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'home_team_code', 'away_team_code', 'status', 'home_score', 'away_score', 'notes');
+            $headers = array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'status', 'home_score', 'away_score', 'notes');
             $filename = 'full-schedule-template.csv';
         }
 
@@ -1411,7 +1411,7 @@ class LLLM_Admin {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=current-games.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'home_team_code', 'away_team_code', 'status', 'home_score', 'away_score', 'notes'));
+        fputcsv($output, array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'status', 'home_score', 'away_score', 'notes'));
         foreach ($games as $game) {
             $datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
             fputcsv($output, array(
@@ -1419,8 +1419,8 @@ class LLLM_Admin {
                 $datetime->format('m/d/Y'),
                 $datetime->format('H:i'),
                 $game->location,
-                $game->home_code,
                 $game->away_code,
+                $game->home_code,
                 $game->status,
                 $game->home_score,
                 $game->away_score,
@@ -2099,7 +2099,7 @@ class LLLM_Admin {
 
         $required_headers = $import_type === 'score'
             ? array('game_uid', 'home_score', 'away_score', 'status')
-            : array('start_date', 'start_time', 'location', 'home_team_code', 'away_team_code');
+            : array('start_date', 'start_time', 'location', 'away_team_code', 'home_team_code');
         foreach ($required_headers as $header) {
             if (!in_array($header, $parsed['headers'], true)) {
                 self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type)), 'error', sprintf(__('Missing required header: %s', 'lllm'), $header));
