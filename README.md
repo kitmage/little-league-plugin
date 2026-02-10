@@ -40,13 +40,13 @@ Use at season start or when the schedule changes.
 Required headers:
 
 ```
-game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,away_team_code,home_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,away_team_code,home_team_code,status,away_score,home_score,notes
 ```
 
 Example:
 
 ```
-game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,away_team_code,home_team_code,status,home_score,away_score,notes
+game_uid,start_date(mm/dd/yyyy),start_time(24HR),location,away_team_code,home_team_code,status,away_score,home_score,notes
 ,03/14/2026,17:30,Field 1,dirtbags,pirates,scheduled,,,
 ,03/21/2026,18:45,Field 2,cubs,as,scheduled,,,
 ```
@@ -57,13 +57,13 @@ Use weekly updates with existing game IDs.
 Required headers:
 
 ```
-game_uid,home_score,away_score,status,notes
+game_uid,away_score,home_score,status,notes
 ```
 
 Example:
 
 ```
-game_uid,home_score,away_score,status,notes
+game_uid,away_score,home_score,status,notes
 G8K4Q2M9T1A3,6,4,played,
 K2P7N6D4R9B1,3,3,played,Tie game
 ```

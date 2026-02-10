@@ -835,7 +835,7 @@ class LLLM_Admin {
         echo '</tr></thead><tbody>';
 
         foreach ($games as $game) {
-            $score = $game->status === 'played' ? sprintf('%d - %d', $game->home_score, $game->away_score) : '—';
+            $score = $game->status === 'played' ? sprintf('%d - %d', $game->away_score, $game->home_score) : '—';
             $start_datetime_display = $game->start_datetime_utc;
             if (!empty($game->start_datetime_utc)) {
                 $start_datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
@@ -862,8 +862,8 @@ class LLLM_Admin {
                 echo '<option value="' . esc_attr($status) . '" ' . selected($game->status, $status, false) . '>' . esc_html($status) . '</option>';
             }
             echo '</select> ';
-            echo '<input type="number" class="small-text" name="home_score" value="' . esc_attr($game->home_score) . '" placeholder="Home"> ';
             echo '<input type="number" class="small-text" name="away_score" value="' . esc_attr($game->away_score) . '" placeholder="Away"> ';
+            echo '<input type="number" class="small-text" name="home_score" value="' . esc_attr($game->home_score) . '" placeholder="Home"> ';
             echo '<input type="text" class="regular-text" name="notes" value="' . esc_attr($game->notes) . '" placeholder="' . esc_attr__('Notes', 'lllm') . '"> ';
             echo '<button class="button" type="submit">' . esc_html__('Save', 'lllm') . '</button>';
             echo '</form>';
@@ -1367,10 +1367,10 @@ class LLLM_Admin {
         $type = isset($_GET['import_type']) ? sanitize_text_field(wp_unslash($_GET['import_type'])) : 'full';
 
         if ($type === 'score') {
-            $headers = array('game_uid', 'home_score', 'away_score', 'status', 'notes');
+            $headers = array('game_uid', 'away_score', 'home_score', 'status', 'notes');
             $filename = 'score-update-template.csv';
         } else {
-            $headers = array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'status', 'home_score', 'away_score', 'notes');
+            $headers = array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'status', 'away_score', 'home_score', 'notes');
             $filename = 'full-schedule-template.csv';
         }
 
@@ -1411,7 +1411,7 @@ class LLLM_Admin {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=current-games.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'status', 'home_score', 'away_score', 'notes'));
+        fputcsv($output, array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'status', 'away_score', 'home_score', 'notes'));
         foreach ($games as $game) {
             $datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
             fputcsv($output, array(
@@ -1422,8 +1422,8 @@ class LLLM_Admin {
                 $game->away_code,
                 $game->home_code,
                 $game->status,
-                $game->home_score,
                 $game->away_score,
+                $game->home_score,
                 $game->notes,
             ));
         }
@@ -2098,7 +2098,7 @@ class LLLM_Admin {
         }
 
         $required_headers = $import_type === 'score'
-            ? array('game_uid', 'home_score', 'away_score', 'status')
+            ? array('game_uid', 'away_score', 'home_score', 'status')
             : array('start_date', 'start_time', 'location', 'away_team_code', 'home_team_code');
         foreach ($required_headers as $header) {
             if (!in_array($header, $parsed['headers'], true)) {
