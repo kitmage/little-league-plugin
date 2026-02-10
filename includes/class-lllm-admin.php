@@ -961,6 +961,8 @@ class LLLM_Admin {
             if (!empty($data['summary']['errors'])) {
                 if (!empty($data['error_report_url'])) {
                     echo '<p><a class="button" href="' . esc_url($data['error_report_url']) . '">' . esc_html__('Download Error Report CSV', 'lllm') . '</a></p>';
+                    $retry_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type));
+                    echo '<p><a class="button button-secondary" href="' . esc_url($retry_url) . '">' . esc_html__('Try Again', 'lllm') . '</a></p>';
                 }
                 echo '<p>' . esc_html__('Fix errors before importing.', 'lllm') . '</p>';
                 return;
