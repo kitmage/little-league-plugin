@@ -5,12 +5,24 @@ if (!defined('ABSPATH')) {
 }
 
 class LLLM_Shortcodes {
+    /**
+     * Registers public-facing shortcodes.
+     *
+     * @return void
+     */
     public static function register() {
         add_shortcode('lllm_schedule', array(__CLASS__, 'render_schedule'));
         add_shortcode('lllm_standings', array(__CLASS__, 'render_standings'));
         add_shortcode('lllm_teams', array(__CLASS__, 'render_teams'));
     }
 
+    /**
+     * Fetches a season row by slug.
+     *
+     * @param string $slug Season slug.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return object|null Season row or null when not found.
+     */
     private static function get_season_by_slug($slug) {
         global $wpdb;
         return $wpdb->get_row(
@@ -21,6 +33,13 @@ class LLLM_Shortcodes {
         );
     }
 
+    /**
+     * Fetches a division row by slug.
+     *
+     * @param string $slug Division slug.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return object|null Division row or null when not found.
+     */
     private static function get_division_by_slug($slug) {
         global $wpdb;
         return $wpdb->get_row(
@@ -31,11 +50,24 @@ class LLLM_Shortcodes {
         );
     }
 
+    /**
+     * Returns the latest active season.
+     *
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return object|null Season row or null when no active season exists.
+     */
     private static function get_active_season() {
         global $wpdb;
         return $wpdb->get_row('SELECT * FROM ' . $wpdb->prefix . 'lllm_seasons WHERE is_active = 1 ORDER BY id DESC LIMIT 1');
     }
 
+    /**
+     * Returns the first alphabetical division for a season.
+     *
+     * @param int $season_id Season primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return object|null Division row or null when none exist.
+     */
     private static function get_first_division($season_id) {
         global $wpdb;
         return $wpdb->get_row(
@@ -46,6 +78,17 @@ class LLLM_Shortcodes {
         );
     }
 
+    /**
+     * Resolves season/division context for shortcode rendering.
+     *
+     * Resolution order:
+     * 1) Explicit `season` / `division` shortcode attributes (slug-based).
+     * 2) Active season fallback.
+     * 3) First division in resolved season fallback.
+     *
+     * @param array<string,string> $atts Parsed shortcode attributes.
+     * @return array{0: object|null, 1: object|null} Season and division rows.
+     */
     private static function resolve_context($atts) {
         $season = null;
         $division = null;
@@ -68,6 +111,19 @@ class LLLM_Shortcodes {
         return array($season, $division);
     }
 
+    /**
+     * Renders the public schedule table shortcode output.
+     *
+     * Supported attributes:
+     * - `season`, `division` (slug filters)
+     * - `team_code` (limits to games involving the team)
+     * - `show_past`, `show_future` (`1`/`0` flags)
+     * - `limit` (max rows)
+     *
+     * @param array<string,string> $atts Shortcode attributes.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return string HTML output.
+     */
     public static function render_schedule($atts) {
         $atts = shortcode_atts(
             array(
@@ -163,6 +219,15 @@ class LLLM_Shortcodes {
         return $output;
     }
 
+    /**
+     * Renders the standings table shortcode output.
+     *
+     * Supported attributes:
+     * - `season`, `division` (slug filters)
+     *
+     * @param array<string,string> $atts Shortcode attributes.
+     * @return string HTML output.
+     */
     public static function render_standings($atts) {
         $atts = shortcode_atts(
             array(
@@ -217,6 +282,17 @@ class LLLM_Shortcodes {
         return $output;
     }
 
+    /**
+     * Renders the teams list shortcode output.
+     *
+     * Supported attributes:
+     * - `season`, `division` (slug filters)
+     * - `show_logos` (`1`/`0` flag)
+     *
+     * @param array<string,string> $atts Shortcode attributes.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return string HTML output.
+     */
     public static function render_teams($atts) {
         $atts = shortcode_atts(
             array(

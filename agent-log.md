@@ -284,3 +284,33 @@ Proceed to Phase 2 Chunk 3:
 #### Next Step
 Proceed to Phase 2 Chunk 4:
 - `includes/class-lllm-shortcodes.php`
+
+### Function Documentation Audit — Chunk 4 (`includes/class-lllm-shortcodes.php`)
+**Status:** Completed  
+**Scope reviewed:**
+- `includes/class-lllm-shortcodes.php`
+
+#### Classification summary
+- **A (well documented):** none prior to this pass
+- **B (needs PHPDoc):**
+  - `LLLM_Shortcodes::register`
+  - `LLLM_Shortcodes::get_season_by_slug`
+  - `LLLM_Shortcodes::get_division_by_slug`
+  - `LLLM_Shortcodes::get_active_season`
+  - `LLLM_Shortcodes::get_first_division`
+  - `LLLM_Shortcodes::resolve_context`
+  - `LLLM_Shortcodes::render_schedule`
+  - `LLLM_Shortcodes::render_standings`
+  - `LLLM_Shortcodes::render_teams`
+- **C (needs inline comment):** none required
+- **D (misleading/stale docs):** none found
+
+#### Applied edits
+- Added PHPDoc blocks for all shortcode class methods.
+- Documented shortcode attributes and fallback resolution behavior for season/division context.
+- Documented return contracts and key data dependencies for each renderer.
+- Preserved runtime behavior (documentation-only changes).
+
+#### Next Step
+Proceed to Phase 2 Chunk 5:
+- `includes/class-lllm-admin.php` (split into sections)
