@@ -111,6 +111,8 @@ class LLLM_Admin {
         add_action('admin_post_lllm_import_commit', array(__CLASS__, 'handle_import_commit'));
         add_action('admin_post_lllm_download_template', array(__CLASS__, 'handle_download_template'));
         add_action('admin_post_lllm_download_current_games', array(__CLASS__, 'handle_download_current_games'));
+        add_action('admin_post_lllm_generate_playoff_bracket', array(__CLASS__, 'handle_generate_playoff_bracket'));
+        add_action('admin_post_lllm_reset_playoff_bracket', array(__CLASS__, 'handle_reset_playoff_bracket'));
         add_action('admin_post_lllm_download_divisions_template', array(__CLASS__, 'handle_download_divisions_template'));
         add_action('admin_post_lllm_validate_divisions_csv', array(__CLASS__, 'handle_validate_divisions_csv'));
         add_action('admin_post_lllm_import_divisions_csv', array(__CLASS__, 'handle_import_divisions_csv'));
@@ -442,6 +444,12 @@ class LLLM_Admin {
             case 'import_complete':
                 $text = __('Import complete.', 'lllm');
                 break;
+            case 'playoff_generated':
+                $text = __('Playoff bracket generated.', 'lllm');
+                break;
+            case 'playoff_reset':
+                $text = __('Playoff games reset.', 'lllm');
+                break;
             case 'csv_validated':
                 $text = $message ? $message : __('CSV validated successfully.', 'lllm');
                 break;
@@ -468,6 +476,69 @@ class LLLM_Admin {
         }
 
         return LLLM_Import::parse_csv($_FILES[$file_key]['tmp_name']);
+    }
+
+    /**
+     * Creates a game row using shared UID/timestamp behavior.
+     *
+     * @param array<string,mixed> $payload Candidate game payload.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return array{ok:bool,uid:string,error:string} Insert result details.
+     */
+    private static function create_game_record($payload) {
+        global $wpdb;
+
+        $payload['game_uid'] = isset($payload['game_uid']) && $payload['game_uid'] !== ''
+            ? self::normalize_game_uid($payload['game_uid'])
+            : LLLM_Import::unique_game_uid();
+
+        $validation = self::validate_game_competition_data($payload);
+        if (!$validation['valid']) {
+            return array(
+                'ok' => false,
+                'uid' => '',
+                'error' => $validation['error'],
+            );
+        }
+
+        $payload = $validation['data'];
+        $payload['created_at'] = current_time('mysql', true);
+        $payload['updated_at'] = current_time('mysql', true);
+
+        $inserted = $wpdb->insert(self::table('games'), $payload);
+        if (!$inserted) {
+            return array(
+                'ok' => false,
+                'uid' => '',
+                'error' => __('Unable to create game record.', 'lllm'),
+            );
+        }
+
+        return array(
+            'ok' => true,
+            'uid' => $payload['game_uid'],
+            'error' => '',
+        );
+    }
+
+    /**
+     * Returns whether playoff games already exist in a division.
+     *
+     * @param int $division_id Division primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return bool True when at least one playoff game exists.
+     */
+    private static function division_has_playoff_games($division_id) {
+        global $wpdb;
+        $count = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT COUNT(*) FROM ' . self::table('games') . ' WHERE division_id = %d AND competition_type = %s',
+                $division_id,
+                'playoff'
+            )
+        );
+
+        return $count > 0;
     }
 
     /**
@@ -1082,6 +1153,23 @@ class LLLM_Admin {
         echo '<a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Export Current Games CSV', 'lllm') . '</a> ';
         echo '<a class="button button-primary" href="' . esc_url($import_url) . '">' . esc_html__('Import Games', 'lllm') . '</a>';
         echo '</p>';
+
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:10px 0;display:flex;gap:8px;align-items:center;">';
+        wp_nonce_field('lllm_generate_playoff_bracket');
+        echo '<input type="hidden" name="action" value="lllm_generate_playoff_bracket">';
+        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
+        echo '<button class="button button-secondary" type="submit">' . esc_html__('Generate Playoff Bracket', 'lllm') . '</button>';
+        echo '</form>';
+
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:0 0 16px;display:flex;gap:8px;align-items:center;">';
+        wp_nonce_field('lllm_reset_playoff_bracket');
+        echo '<input type="hidden" name="action" value="lllm_reset_playoff_bracket">';
+        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
+        echo '<button class="button" type="submit">' . esc_html__('Reset Playoff Games', 'lllm') . '</button>';
+        echo '<span style="color:#646970;">' . esc_html__('Use reset before regenerating playoff games.', 'lllm') . '</span>';
+        echo '</form>';
 
         echo '<form id="lllm-bulk-games" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('lllm_bulk_delete_games');
@@ -2628,11 +2716,15 @@ class LLLM_Admin {
         $wpdb->query('START TRANSACTION');
         foreach ($operations as $operation) {
             if ($operation['action'] === 'create') {
-                $payload = $operation['data'];
-                $payload['game_uid'] = LLLM_Import::unique_game_uid();
-                $payload['created_at'] = current_time('mysql', true);
-                $payload['updated_at'] = current_time('mysql', true);
-                $wpdb->insert(self::table('games'), $payload);
+                $create_result = self::create_game_record($operation['data']);
+                if (!$create_result['ok']) {
+                    $wpdb->query('ROLLBACK');
+                    self::redirect_with_notice(
+                        admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id),
+                        'error',
+                        $create_result['error']
+                    );
+                }
                 $created++;
             } elseif ($operation['action'] === 'update') {
                 $payload = $operation['data'];
@@ -2665,6 +2757,169 @@ class LLLM_Admin {
             admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id),
             'import_complete'
         );
+    }
+
+    /**
+     * Generates a seeded playoff bracket for the selected division.
+     *
+     * @return void
+     */
+    public static function handle_generate_playoff_bracket() {
+        if (!current_user_can('lllm_manage_games')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_generate_playoff_bracket');
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
+        $redirect_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id);
+
+        if (!$division_id) {
+            self::redirect_with_notice($redirect_url, 'error', __('Division is required for playoff generation.', 'lllm'));
+        }
+
+        if (self::division_has_playoff_games($division_id)) {
+            self::redirect_with_notice($redirect_url, 'error', __('Playoff games already exist. Use Reset Playoff Games before generating again.', 'lllm'));
+        }
+
+        $standings = LLLM_Standings::get_standings($division_id);
+        if (count($standings) < 6) {
+            self::redirect_with_notice($redirect_url, 'error', __('Playoff bracket generation requires at least 6 teams in official standings order.', 'lllm'));
+        }
+
+        $seed_ids = array_map(
+            'intval',
+            array_column(array_slice($standings, 0, 6), 'team_instance_id')
+        );
+
+        $base_datetime = gmdate('Y-m-d 17:00:00', strtotime('+1 day'));
+        $slot_payloads = array(
+            'r1_g1' => array(
+                'competition_type' => 'playoff',
+                'playoff_round' => 'r1',
+                'playoff_slot' => '1',
+                'home_team_instance_id' => $seed_ids[2],
+                'away_team_instance_id' => $seed_ids[5],
+                'location' => __('TBD', 'lllm'),
+                'start_datetime_utc' => $base_datetime,
+                'status' => 'scheduled',
+            ),
+            'r1_g2' => array(
+                'competition_type' => 'playoff',
+                'playoff_round' => 'r1',
+                'playoff_slot' => '2',
+                'home_team_instance_id' => $seed_ids[3],
+                'away_team_instance_id' => $seed_ids[4],
+                'location' => __('TBD', 'lllm'),
+                'start_datetime_utc' => gmdate('Y-m-d 17:00:00', strtotime($base_datetime . ' +1 day')),
+                'status' => 'scheduled',
+            ),
+            'r2_g1' => array(
+                'competition_type' => 'playoff',
+                'playoff_round' => 'r2',
+                'playoff_slot' => '1',
+                'home_team_instance_id' => $seed_ids[0],
+                'away_team_instance_id' => $seed_ids[3],
+                'location' => __('TBD', 'lllm'),
+                'start_datetime_utc' => gmdate('Y-m-d 17:00:00', strtotime($base_datetime . ' +3 day')),
+                'status' => 'scheduled',
+            ),
+            'r2_g2' => array(
+                'competition_type' => 'playoff',
+                'playoff_round' => 'r2',
+                'playoff_slot' => '2',
+                'home_team_instance_id' => $seed_ids[1],
+                'away_team_instance_id' => $seed_ids[2],
+                'location' => __('TBD', 'lllm'),
+                'start_datetime_utc' => gmdate('Y-m-d 17:00:00', strtotime($base_datetime . ' +4 day')),
+                'status' => 'scheduled',
+            ),
+            'ch_g1' => array(
+                'competition_type' => 'playoff',
+                'playoff_round' => 'championship',
+                'playoff_slot' => '1',
+                'home_team_instance_id' => $seed_ids[0],
+                'away_team_instance_id' => $seed_ids[1],
+                'location' => __('TBD', 'lllm'),
+                'start_datetime_utc' => gmdate('Y-m-d 17:00:00', strtotime($base_datetime . ' +6 day')),
+                'status' => 'scheduled',
+            ),
+        );
+
+        global $wpdb;
+        $wpdb->query('START TRANSACTION');
+
+        foreach ($slot_payloads as $slot => &$payload) {
+            $payload['division_id'] = $division_id;
+            $payload['home_score'] = null;
+            $payload['away_score'] = null;
+            $payload['notes'] = $slot;
+        }
+        unset($payload);
+
+        $r1_g1 = self::create_game_record($slot_payloads['r1_g1']);
+        $r1_g2 = self::create_game_record($slot_payloads['r1_g2']);
+        if (!$r1_g1['ok'] || !$r1_g2['ok']) {
+            $wpdb->query('ROLLBACK');
+            self::redirect_with_notice($redirect_url, 'error', $r1_g1['error'] ? $r1_g1['error'] : $r1_g2['error']);
+        }
+
+        $slot_payloads['r2_g1']['source_game_uid_1'] = $r1_g2['uid'];
+        $slot_payloads['r2_g1']['source_game_uid_2'] = null;
+        $slot_payloads['r2_g2']['source_game_uid_1'] = $r1_g1['uid'];
+        $slot_payloads['r2_g2']['source_game_uid_2'] = null;
+
+        $r2_g1 = self::create_game_record($slot_payloads['r2_g1']);
+        $r2_g2 = self::create_game_record($slot_payloads['r2_g2']);
+        if (!$r2_g1['ok'] || !$r2_g2['ok']) {
+            $wpdb->query('ROLLBACK');
+            self::redirect_with_notice($redirect_url, 'error', $r2_g1['error'] ? $r2_g1['error'] : $r2_g2['error']);
+        }
+
+        $slot_payloads['ch_g1']['source_game_uid_1'] = $r2_g1['uid'];
+        $slot_payloads['ch_g1']['source_game_uid_2'] = $r2_g2['uid'];
+        $ch_g1 = self::create_game_record($slot_payloads['ch_g1']);
+        if (!$ch_g1['ok']) {
+            $wpdb->query('ROLLBACK');
+            self::redirect_with_notice($redirect_url, 'error', $ch_g1['error']);
+        }
+
+        $wpdb->query('COMMIT');
+        LLLM_Standings::bust_cache($division_id);
+        self::redirect_with_notice($redirect_url, 'playoff_generated');
+    }
+
+    /**
+     * Deletes generated playoff games for a selected division.
+     *
+     * @return void
+     */
+    public static function handle_reset_playoff_bracket() {
+        if (!current_user_can('lllm_manage_games')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_reset_playoff_bracket');
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
+        $redirect_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id);
+
+        if (!$division_id) {
+            self::redirect_with_notice($redirect_url, 'error', __('Division is required for playoff reset.', 'lllm'));
+        }
+
+        global $wpdb;
+        $wpdb->delete(
+            self::table('games'),
+            array(
+                'division_id' => $division_id,
+                'competition_type' => 'playoff',
+            ),
+            array('%d', '%s')
+        );
+
+        LLLM_Standings::bust_cache($division_id);
+        self::redirect_with_notice($redirect_url, 'playoff_reset');
     }
 
     /**
