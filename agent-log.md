@@ -260,3 +260,27 @@ Proceed to Phase 2 Chunk 2:
 #### Next Step
 Proceed to Phase 2 Chunk 3:
 - `includes/class-lllm-standings.php`
+
+### Function Documentation Audit — Chunk 3 (`includes/class-lllm-standings.php`)
+**Status:** Completed  
+**Scope reviewed:**
+- `includes/class-lllm-standings.php`
+
+#### Classification summary
+- **A (well documented):** none prior to this pass
+- **B (needs PHPDoc):**
+  - `LLLM_Standings::get_cache_key`
+  - `LLLM_Standings::bust_cache`
+  - `LLLM_Standings::get_standings`
+- **C (needs inline comment):**
+  - Tie-break sorting sequence in standings `usort` comparator
+- **D (misleading/stale docs):** none found
+
+#### Applied edits
+- Added PHPDoc blocks to all `LLLM_Standings` methods, including cache behavior and data-shape expectations.
+- Added an inline comment that documents the exact tie-break precedence used for standings ordering.
+- Preserved runtime behavior (documentation-only changes).
+
+#### Next Step
+Proceed to Phase 2 Chunk 4:
+- `includes/class-lllm-shortcodes.php`

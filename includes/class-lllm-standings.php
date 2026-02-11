@@ -5,14 +5,37 @@ if (!defined('ABSPATH')) {
 }
 
 class LLLM_Standings {
+    /**
+     * Builds the transient key used for cached standings by division.
+     *
+     * @param int $division_id Division primary key.
+     * @return string Transient cache key.
+     */
     public static function get_cache_key($division_id) {
         return 'lllm_standings_' . (int) $division_id;
     }
 
+    /**
+     * Invalidates cached standings for a division.
+     *
+     * @param int $division_id Division primary key.
+     * @return void
+     */
     public static function bust_cache($division_id) {
         delete_transient(self::get_cache_key($division_id));
     }
 
+    /**
+     * Computes and returns standings for a division.
+     *
+     * If a cached standings payload exists, it is returned immediately.
+     * Otherwise this method aggregates played games into per-team totals,
+     * applies tie-break sorting, caches the result for one hour, and returns it.
+     *
+     * @param int $division_id Division primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return array<int,array<string,int|float|string>> Sorted standings rows.
+     */
     public static function get_standings($division_id) {
         $cache_key = self::get_cache_key($division_id);
         $cached = get_transient($cache_key);
@@ -98,6 +121,7 @@ class LLLM_Standings {
         unset($row);
 
         $standings = array_values($stats);
+        // Tie-break order: win% desc, wins desc, run differential desc, runs allowed asc, then name.
         usort($standings, function ($a, $b) {
             if ($a['win_pct'] !== $b['win_pct']) {
                 return ($a['win_pct'] < $b['win_pct']) ? 1 : -1;
