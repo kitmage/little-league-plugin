@@ -510,3 +510,26 @@ Proceed to Phase 3 PR 2:
 #### Next Step
 Proceed to Phase 3 PR 3:
 - Roles/access docs corrections (`documentation.md`)
+
+### PR 3 — Roles/access docs corrections
+**Status:** Completed
+**Scope updated:**
+- `documentation.md`
+
+#### Applied fixes
+- Corrected Manager/menu wording from **Little League** to **League Manager**.
+- Removed unsupported strict WP-menu-hiding statement and replaced with implementation-safe guidance.
+- Added missing capabilities to the documented list:
+  - `upload_files`
+  - `lllm_manage_media_library`
+- Added explicit implemented access-behavior notes for:
+  - admin-bar welcome link visibility (`lllm_manage_seasons`)
+  - manager login redirect target (`admin.php?page=lllm-welcome`)
+  - manager media-library sitewide browsing behavior
+
+#### Evidence basis
+- Prior Pass 1C mismatch record and evidence references in this log.
+
+#### Next Step
+Proceed to Phase 3 PR 4:
+- Function PHPDoc + inline comment cleanup by module (complete remaining touch-ups if any)

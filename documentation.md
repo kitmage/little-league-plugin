@@ -76,11 +76,19 @@ The end result: a clean, reliable system that volunteers can run without breakin
 * `lllm_manage_games`
 * `lllm_import_csv`
 * `lllm_view_logs`
+* `upload_files`
+* `lllm_manage_media_library`
 
 ### UI visibility rules (Manager)
 
-Hide standard WP menus for Managers: Posts, Pages, Comments, Appearance, Plugins, Tools, Settings, etc.
-Managers see only a top-level menu: **Little League** with the plugin pages.
+Managers see the plugin top-level menu: **League Manager** with the plugin pages.
+Managers are intended to work primarily in League Manager screens.
+
+### Access behavior (implemented)
+
+* Admin bar: show `⚾ League Manager` link for logged-in users with `lllm_manage_seasons`.
+* Login redirect: users with role `lllm_manager` are redirected to `admin.php?page=lllm-welcome`.
+* Media Library scope: managers with `lllm_manage_media_library` can browse sitewide media in both modal and list views.
 
 ---
 
@@ -228,7 +236,7 @@ Managers see only a top-level menu: **Little League** with the plugin pages.
 
 ### 6.1 Admin menu structure
 
-Top-level: **Little League**
+Top-level: **League Manager**
 
 Subpages:
 
@@ -597,9 +605,9 @@ Below are **wireframe-style screen specs** (what’s on each page, button labels
 
 # A) Admin UI Wireframes (Dad-proof)
 
-## Global: Little League menu
+## Global: League Manager menu
 
-Top-level: **Little League**
+Top-level: **League Manager**
 
 Subpages (left nav):
 
