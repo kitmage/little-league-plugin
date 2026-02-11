@@ -314,3 +314,38 @@ Proceed to Phase 2 Chunk 4:
 #### Next Step
 Proceed to Phase 2 Chunk 5:
 - `includes/class-lllm-admin.php` (split into sections)
+
+### Function Documentation Audit — Chunk 5A (`includes/class-lllm-admin.php` lines 1-430)
+**Status:** Completed  
+**Scope reviewed:**
+- `includes/class-lllm-admin.php` (menu/actions/utilities + early render methods)
+
+#### Classification summary
+- **A (well documented):** none prior to this pass in reviewed range
+- **B (needs PHPDoc):**
+  - `LLLM_Admin::register_menu`
+  - `LLLM_Admin::register_actions`
+  - `LLLM_Admin::enqueue_assets`
+  - `LLLM_Admin::table`
+  - `LLLM_Admin::get_seasons`
+  - `LLLM_Admin::get_divisions`
+  - `LLLM_Admin::unique_value`
+  - `LLLM_Admin::normalize_team_code`
+  - `LLLM_Admin::redirect_with_notice`
+  - `LLLM_Admin::render_notices`
+  - `LLLM_Admin::parse_uploaded_csv`
+  - `LLLM_Admin::validate_csv_headers`
+  - `LLLM_Admin::render_welcome`
+  - `LLLM_Admin::render_seasons`
+  - `LLLM_Admin::render_divisions`
+- **C (needs inline comment):** none required
+- **D (misleading/stale docs):** none found
+
+#### Applied edits
+- Added PHPDoc blocks to reviewed methods in the first admin-module section.
+- Documented side effects for admin redirects/notice flow and CSV parser validation contracts.
+- Kept behavior unchanged (documentation-only updates).
+
+#### Next Step
+Proceed to Phase 2 Chunk 5B:
+- `includes/class-lllm-admin.php` next method block (remaining render/handler sections)

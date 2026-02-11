@@ -5,6 +5,11 @@ if (!defined('ABSPATH')) {
 }
 
 class LLLM_Admin {
+    /**
+     * Registers the League Manager admin menu and submenus.
+     *
+     * @return void
+     */
     public static function register_menu() {
         add_menu_page(
             __('League Manager', 'lllm'),
@@ -83,6 +88,11 @@ class LLLM_Admin {
         remove_submenu_page('lllm-seasons', 'lllm-seasons');
     }
 
+    /**
+     * Registers `admin_post_*` handlers for CRUD, CSV, and import actions.
+     *
+     * @return void
+     */
     public static function register_actions() {
         add_action('admin_post_lllm_save_season', array(__CLASS__, 'handle_save_season'));
         add_action('admin_post_lllm_save_division', array(__CLASS__, 'handle_save_division'));
@@ -113,6 +123,14 @@ class LLLM_Admin {
         add_action('admin_post_lllm_import_division_teams_csv', array(__CLASS__, 'handle_import_division_teams_csv'));
     }
 
+    /**
+     * Enqueues assets used by League Manager admin pages.
+     *
+     * On the Franchises page, this wires the WordPress media picker for logo selection.
+     *
+     * @param string $hook Current admin hook suffix.
+     * @return void
+     */
     public static function enqueue_assets($hook) {
         if (empty($_GET['page']) || $_GET['page'] !== 'lllm-franchises') {
             return;
@@ -125,16 +143,35 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Resolves a plugin table name using the WordPress table prefix.
+     *
+     * @param string $name Base table suffix (without `lllm_`).
+     * @return string Full table name.
+     */
     private static function table($name) {
         global $wpdb;
         return $wpdb->prefix . 'lllm_' . $name;
     }
 
+    /**
+     * Returns all seasons ordered by creation date descending.
+     *
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return array<int,object> Season rows.
+     */
     private static function get_seasons() {
         global $wpdb;
         return $wpdb->get_results('SELECT * FROM ' . self::table('seasons') . ' ORDER BY created_at DESC');
     }
 
+    /**
+     * Returns divisions for a season.
+     *
+     * @param int $season_id Season primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return array<int,object> Division rows.
+     */
     private static function get_divisions($season_id) {
         if (!$season_id) {
             return array();
@@ -149,6 +186,18 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Ensures a string value is unique in a table column by appending a suffix.
+     *
+     * Example progression: `slug`, `slug-2`, `slug-3`, ...
+     *
+     * @param string $table      Full table name.
+     * @param string $column     Column name to check.
+     * @param string $value      Candidate value.
+     * @param int    $exclude_id Optional row id to ignore during updates.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return string Unique value.
+     */
     private static function unique_value($table, $column, $value, $exclude_id = 0) {
         global $wpdb;
         $base = $value;
@@ -176,11 +225,25 @@ class LLLM_Admin {
     }
 
 
+    /**
+     * Normalizes team codes to lowercase alphanumeric characters only.
+     *
+     * @param string $value Raw team code input.
+     * @return string Normalized team code.
+     */
     private static function normalize_team_code($value) {
         $value = strtolower((string) $value);
         return preg_replace('/[^a-z0-9]+/', '', $value);
     }
 
+    /**
+     * Redirects to an admin URL with standard League Manager notice args.
+     *
+     * @param string $url     Destination URL.
+     * @param string $notice  Notice key consumed by `render_notices()`.
+     * @param string $message Optional notice message.
+     * @return void
+     */
     private static function redirect_with_notice($url, $notice, $message = '') {
         $url = add_query_arg('lllm_notice', $notice, $url);
         if ($message !== '') {
@@ -190,6 +253,11 @@ class LLLM_Admin {
         exit;
     }
 
+    /**
+     * Renders notice banners from query-string notice values.
+     *
+     * @return void
+     */
     private static function render_notices() {
         if (empty($_GET['lllm_notice'])) {
             return;
@@ -257,6 +325,12 @@ class LLLM_Admin {
         }
     }
 
+    /**
+     * Parses an uploaded CSV file from `$_FILES`.
+     *
+     * @param string $file_key Input field key in `$_FILES`.
+     * @return array<string,mixed>|WP_Error Parsed CSV payload or error.
+     */
     private static function parse_uploaded_csv($file_key = 'csv_file') {
         if (empty($_FILES[$file_key]) || empty($_FILES[$file_key]['tmp_name'])) {
             return new WP_Error('lllm_csv_required', __('CSV file is required.', 'lllm'));
@@ -265,6 +339,13 @@ class LLLM_Admin {
         return LLLM_Import::parse_csv($_FILES[$file_key]['tmp_name']);
     }
 
+    /**
+     * Validates that a parsed CSV includes all required headers.
+     *
+     * @param array<string,mixed>|WP_Error $parsed           Parsed CSV payload.
+     * @param array<int,string>            $expected_headers Required header names.
+     * @return array<int,string>|WP_Error Lowercased CSV headers or error.
+     */
     private static function validate_csv_headers($parsed, $expected_headers) {
         if (!is_array($parsed) || empty($parsed['headers'])) {
             return new WP_Error('lllm_csv_invalid', __('CSV headers are required.', 'lllm'));
@@ -283,6 +364,11 @@ class LLLM_Admin {
         return $headers_lower;
     }
 
+    /**
+     * Renders the Welcome admin screen.
+     *
+     * @return void
+     */
     public static function render_welcome() {
         if (!current_user_can('lllm_manage_seasons')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -296,6 +382,11 @@ class LLLM_Admin {
         echo '</div>';
     }
 
+    /**
+     * Renders the Seasons admin screen (create/edit/list/delete).
+     *
+     * @return void
+     */
     public static function render_seasons() {
         if (!current_user_can('lllm_manage_seasons')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -390,6 +481,11 @@ class LLLM_Admin {
         echo '</div>';
     }
 
+    /**
+     * Renders the Divisions admin screen and related CSV helpers.
+     *
+     * @return void
+     */
     public static function render_divisions() {
         if (!current_user_can('lllm_manage_divisions')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
