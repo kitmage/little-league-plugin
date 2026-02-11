@@ -140,3 +140,64 @@ Proceed to **Pass 1C: Roles, permissions, and access** and produce mismatch list
 
 ## Next Step
 Proceed to **Pass 1D: UI flow correctness** and produce mismatch list in same format.
+
+### Pass 1D — UI Flow Correctness (Started/Completed)
+**Status:** Completed  
+**Scope reviewed:**
+- `documentation.md`
+- `includes/class-lllm-admin.php`
+
+#### ✅ Accurate items
+- Games screen documents Away/Home ordering and score column presence, which matches the current table layout.
+- Import Wizard still uses step-based flow with type selection and upload/validate/review behavior.
+
+#### ❌ Mismatches found
+1. Teams screen docs describe a **Clone assignments from another Division** action/modal.
+   - **Code reality:** only Assign Selected / Remove Selected actions are present; no clone action exists.
+
+2. Import Wizard Step 2 docs still say **Download Current Games CSV** appears on the upload screen.
+   - **Code reality:** Step 2 shows only **Download Template** and file upload/Validate.
+
+3. Games screen docs describe **Quick edit modal**.
+   - **Code reality:** quick edit is an inline per-row form toggled by an **Edit** button (no modal).
+
+4. Import Wizard error-state docs list a **Back** button.
+   - **Code reality:** button label is **Try Again** (links back to step 2).
+
+5. Import Wizard docs include a dedicated **Step 4: Success** screen.
+   - **Code reality:** flow is step-based with review/commit handlers, but no separate documented render block for a "Step 4: Success" page in `render_import_wizard_inline`.
+
+#### 🔧 Suggested replacement text (not yet applied)
+- Replace clone-related Teams screen lines with:
+  > "Buttons: Assign Selected Franchises, Remove Selected Franchises."
+
+- Replace Step 2 buttons list entry:
+  > "Download Template + Download Current Games CSV"
+  with:
+  > "Download Template"
+
+- Replace "Quick edit modal" wording with:
+  > "Inline quick edit (per row) revealed by Edit button: status + scores + notes."
+
+- Replace error-state "Back" button text with:
+  > "Try Again"
+
+- Replace "Step 4: Success" section with:
+  > "After commit, users are redirected back to Games with an import-complete notice."
+
+#### 📌 Evidence references
+- Teams screen actions present: `includes/class-lllm-admin.php` lines 722–727 and 757–760.
+- No clone UI in Teams render section: `includes/class-lllm-admin.php` lines 641–778.
+- Import Wizard step 2 buttons: `includes/class-lllm-admin.php` lines 957–966.
+- Games quick edit is inline/toggled (not modal): `includes/class-lllm-admin.php` lines 859–877.
+- Error-state retry button label: `includes/class-lllm-admin.php` lines 998–1002.
+- Documentation clone claims: `documentation.md` lines 763–768.
+- Documentation Step 2 CSV button claim: `documentation.md` lines 314 and 848–850.
+- Documentation quick edit modal claim: `documentation.md` line 451.
+- Documentation error "Back" button claim: `documentation.md` line 874.
+- Documentation Step 4 success section: `documentation.md` lines 884–897.
+
+---
+
+## Next Step
+Phase 1 fact-check passes complete (1A–1D). Next: prepare scoped doc-fix PRs per Phase 3 sequence.
