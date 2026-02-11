@@ -78,6 +78,9 @@ class LLLM_Admin {
             'lllm-import-logs',
             array(__CLASS__, 'render_import_logs')
         );
+
+        // Remove the duplicate auto-generated first submenu item that points to the parent slug.
+        remove_submenu_page('lllm-seasons', 'lllm-seasons');
     }
 
     public static function register_actions() {
