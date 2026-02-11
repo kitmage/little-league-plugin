@@ -146,7 +146,7 @@ Managers see only a top-level menu: **Little League** with the plugin pages.
 * `id` (BIGINT PK)
 * `division_id` (BIGINT, not null)
 * `team_master_id` (BIGINT, not null)
-* `display_name` (VARCHAR 120 null) // optional override, default = Franchise name
+* `display_name` (VARCHAR 120 null) // internal field; team import defaults to Franchise name
 * `created_at`, `updated_at`
 
 **Indexes**
