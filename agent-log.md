@@ -201,3 +201,33 @@ Proceed to **Pass 1D: UI flow correctness** and produce mismatch list in same fo
 
 ## Next Step
 Phase 1 fact-check passes complete (1A–1D). Next: prepare scoped doc-fix PRs per Phase 3 sequence.
+
+## Phase 2 Progress
+
+### Function Documentation Audit — Chunk 1 (`little-league-manager.php`, `includes/class-lllm-roles.php`)
+**Status:** Completed  
+**Scope reviewed:**
+- `little-league-manager.php`
+- `includes/class-lllm-roles.php`
+
+#### Classification summary
+- **A (well documented):** none prior to this pass
+- **B (needs PHPDoc):**
+  - `autoload_lllm`
+  - `lllm_maybe_upgrade`
+  - `lllm_add_welcome_admin_bar_link`
+  - `lllm_manager_login_redirect`
+  - `lllm_manager_media_library_query`
+  - `lllm_manager_media_library_list_query`
+  - `LLLM_Roles::get_caps`
+  - `LLLM_Roles::sync_roles`
+- **C (needs inline comment):** none required beyond existing critical comment in upgrade flow
+- **D (misleading/stale docs):** none found
+
+#### Applied edits
+- Added PHPDoc blocks for all functions in this chunk with intent, parameters, return types, and key side-effects where relevant.
+- Preserved runtime behavior (documentation-only change).
+
+#### Next Step
+Proceed to Phase 2 Chunk 2:
+- `includes/class-lllm-import.php`

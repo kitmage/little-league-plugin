@@ -28,6 +28,11 @@ add_filter('ajax_query_attachments_args', 'lllm_manager_media_library_query');
 add_action('pre_get_posts', 'lllm_manager_media_library_list_query');
 add_action('init', array('LLLM_Shortcodes', 'register'));
 
+/**
+ * Loads all plugin class files used during runtime.
+ *
+ * @return void
+ */
 function autoload_lllm() {
     require_once __DIR__ . '/includes/class-lllm-activator.php';
     require_once __DIR__ . '/includes/class-lllm-roles.php';
@@ -38,6 +43,13 @@ function autoload_lllm() {
     require_once __DIR__ . '/includes/class-lllm-admin.php';
 }
 
+/**
+ * Runs plugin upgrade tasks when the stored version is out of date.
+ *
+ * Always re-syncs role capabilities so existing users receive any newly-added caps.
+ *
+ * @return void
+ */
 function lllm_maybe_upgrade() {
     // Always resync role capabilities so existing Manager users receive new caps immediately.
     LLLM_Roles::sync_roles();
@@ -52,6 +64,14 @@ function lllm_maybe_upgrade() {
 }
 
 
+/**
+ * Adds a quick League Manager link to the WordPress admin bar.
+ *
+ * The link is shown only for logged-in users who can manage seasons.
+ *
+ * @param WP_Admin_Bar $wp_admin_bar Admin bar object provided by WordPress.
+ * @return void
+ */
 function lllm_add_welcome_admin_bar_link($wp_admin_bar) {
     if (!is_admin_bar_showing()) {
         return;
@@ -68,6 +88,14 @@ function lllm_add_welcome_admin_bar_link($wp_admin_bar) {
     ));
 }
 
+/**
+ * Redirects manager users to the League Manager welcome screen after login.
+ *
+ * @param string               $redirect_to           Default destination URL.
+ * @param string               $requested_redirect_to Requested redirect URL.
+ * @param WP_User|WP_Error     $user                  Authenticated user object when available.
+ * @return string Redirect URL.
+ */
 function lllm_manager_login_redirect($redirect_to, $requested_redirect_to, $user) {
     if (!($user instanceof WP_User)) {
         return $redirect_to;
@@ -81,6 +109,15 @@ function lllm_manager_login_redirect($redirect_to, $requested_redirect_to, $user
 }
 
 
+/**
+ * Allows managers to browse sitewide media in the attachment modal query.
+ *
+ * WordPress commonly limits attachment queries to current author for lower-privileged users.
+ * This removes that author constraint for managers with media-library capability.
+ *
+ * @param array<string,mixed> $query Attachment query args for AJAX media requests.
+ * @return array<string,mixed> Filtered attachment query args.
+ */
 function lllm_manager_media_library_query($query) {
     if (!is_user_logged_in() || !current_user_can('lllm_manage_media_library')) {
         return $query;
@@ -98,6 +135,12 @@ function lllm_manager_media_library_query($query) {
     return $query;
 }
 
+/**
+ * Allows managers to browse all media items in the Uploads list table.
+ *
+ * @param WP_Query $query The main admin query object.
+ * @return void
+ */
 function lllm_manager_media_library_list_query($query) {
     if (!is_admin() || !$query->is_main_query()) {
         return;

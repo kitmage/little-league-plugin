@@ -5,6 +5,11 @@ if (!defined('ABSPATH')) {
 }
 
 class LLLM_Roles {
+    /**
+     * Returns capabilities granted to both Manager and Administrator roles.
+     *
+     * @return array<string,bool> Map of capability => enabled.
+     */
     public static function get_caps() {
         return array(
             'lllm_manage_seasons' => true,
@@ -18,6 +23,14 @@ class LLLM_Roles {
         );
     }
 
+    /**
+     * Ensures plugin roles exist and include all required capabilities.
+     *
+     * Creates the custom Manager role when missing, then syncs capabilities onto
+     * both Manager and Administrator roles.
+     *
+     * @return void
+     */
     public static function sync_roles() {
         $caps = self::get_caps();
 
