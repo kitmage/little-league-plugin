@@ -3,7 +3,7 @@
 ## Phase 1 Progress
 
 ### Pass 1A — README Accuracy (Started/Completed)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `README.md`
 - `includes/class-lllm-admin.php`
@@ -40,7 +40,7 @@ With:
 Proceed to **Pass 1B: CSV templates/import behavior** and produce mismatch list in same format.
 
 ### Pass 1B — CSV Templates / Import-Export Behavior (Started/Completed)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `README.md`
 - `documentation.md`
@@ -81,7 +81,7 @@ With:
 Proceed to **Pass 1C: Roles, permissions, and access** and produce mismatch list in same format.
 
 ### Pass 1C — Roles, Permissions, and Access (Started/Completed)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `documentation.md`
 - `includes/class-lllm-roles.php`
@@ -142,7 +142,7 @@ Proceed to **Pass 1C: Roles, permissions, and access** and produce mismatch list
 Proceed to **Pass 1D: UI flow correctness** and produce mismatch list in same format.
 
 ### Pass 1D — UI Flow Correctness (Started/Completed)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `documentation.md`
 - `includes/class-lllm-admin.php`
@@ -205,7 +205,7 @@ Phase 1 fact-check passes complete (1A–1D). Next: prepare scoped doc-fix PRs p
 ## Phase 2 Progress
 
 ### Function Documentation Audit — Chunk 1 (`little-league-manager.php`, `includes/class-lllm-roles.php`)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `little-league-manager.php`
 - `includes/class-lllm-roles.php`
@@ -233,7 +233,7 @@ Proceed to Phase 2 Chunk 2:
 - `includes/class-lllm-import.php`
 
 ### Function Documentation Audit — Chunk 2 (`includes/class-lllm-import.php`)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `includes/class-lllm-import.php`
 
@@ -262,7 +262,7 @@ Proceed to Phase 2 Chunk 3:
 - `includes/class-lllm-standings.php`
 
 ### Function Documentation Audit — Chunk 3 (`includes/class-lllm-standings.php`)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `includes/class-lllm-standings.php`
 
@@ -286,7 +286,7 @@ Proceed to Phase 2 Chunk 4:
 - `includes/class-lllm-shortcodes.php`
 
 ### Function Documentation Audit — Chunk 4 (`includes/class-lllm-shortcodes.php`)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `includes/class-lllm-shortcodes.php`
 
@@ -316,7 +316,7 @@ Proceed to Phase 2 Chunk 5:
 - `includes/class-lllm-admin.php` (split into sections)
 
 ### Function Documentation Audit — Chunk 5A (`includes/class-lllm-admin.php` lines 1-430)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `includes/class-lllm-admin.php` (menu/actions/utilities + early render methods)
 
@@ -351,7 +351,7 @@ Proceed to Phase 2 Chunk 5B:
 - `includes/class-lllm-admin.php` next method block (remaining render/handler sections)
 
 ### Function Documentation Audit — Chunk 5B (`includes/class-lllm-admin.php` render section)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `includes/class-lllm-admin.php` (render methods for franchises/teams/games/import UI)
 
@@ -377,7 +377,7 @@ Proceed to Phase 2 Chunk 5C:
 - `includes/class-lllm-admin.php` action handler section (`handle_*`, validation/import helpers)
 
 ### Function Documentation Audit — Chunk 5C (`includes/class-lllm-admin.php` handlers/import/delete section)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `includes/class-lllm-admin.php` (`handle_*`, import validation/commit helpers, delete helpers)
 
@@ -433,7 +433,7 @@ Proceed to Phase 2 Chunk 6:
 - `includes/class-lllm-migrations.php`
 
 ### Function Documentation Audit — Chunk 6 (`includes/class-lllm-migrations.php`)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `includes/class-lllm-migrations.php`
 
@@ -455,7 +455,7 @@ Proceed to Phase 2 Chunk 7:
 - `includes/class-lllm-activator.php`
 
 ### Function Documentation Audit — Chunk 7 (`includes/class-lllm-activator.php`)
-**Status:** Completed  
+**Status:** Completed
 **Scope reviewed:**
 - `includes/class-lllm-activator.php`
 
@@ -473,3 +473,23 @@ Proceed to Phase 2 Chunk 7:
 #### Next Step
 Phase 2 function documentation audit complete for planned file order (chunks 1–7 + split admin chunks 5A/5B/5C).
 Proceed to Phase 3 scoped doc-fix PR sequence.
+
+## Phase 3 Progress
+
+### PR 1 — README factual corrections
+**Status:** Completed
+**Scope updated:**
+- `README.md`
+
+#### Applied fixes
+- Updated CSV helper wording to match current code behavior:
+  - Divisions: template + validate + import
+  - Teams: template + import (no separate validate action)
+  - Franchises: removed claim that CSV helper/validation is currently available as part of this sentence
+
+#### Evidence basis
+- Prior Pass 1A mismatch record and evidence references in this log.
+
+#### Next Step
+Proceed to Phase 3 PR 2:
+- CSV/import docs corrections (`documentation.md`)
