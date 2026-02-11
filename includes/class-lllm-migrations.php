@@ -5,6 +5,20 @@ if (!defined('ABSPATH')) {
 }
 
 class LLLM_Migrations {
+    /**
+     * Creates or updates plugin database tables using WordPress dbDelta.
+     *
+     * Tables managed:
+     * - seasons
+     * - divisions
+     * - team masters
+     * - team instances
+     * - games
+     * - import logs
+     *
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return void
+     */
     public static function run() {
         global $wpdb;
 
@@ -112,6 +126,7 @@ class LLLM_Migrations {
             KEY user_id (user_id)
         ) {$charset_collate};";
 
+        // Apply schema changes idempotently so upgrades can safely run on every version bump.
         dbDelta($seasons_sql);
         dbDelta($divisions_sql);
         dbDelta($team_masters_sql);

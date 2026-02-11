@@ -431,3 +431,25 @@ Proceed to Phase 2 Chunk 5C:
 #### Next Step
 Proceed to Phase 2 Chunk 6:
 - `includes/class-lllm-migrations.php`
+
+### Function Documentation Audit — Chunk 6 (`includes/class-lllm-migrations.php`)
+**Status:** Completed  
+**Scope reviewed:**
+- `includes/class-lllm-migrations.php`
+
+#### Classification summary
+- **A (well documented):** none prior to this pass
+- **B (needs PHPDoc):**
+  - `LLLM_Migrations::run`
+- **C (needs inline comment):**
+  - `dbDelta` idempotent-upgrade rationale in migration execution block
+- **D (misleading/stale docs):** none found
+
+#### Applied edits
+- Added PHPDoc for `LLLM_Migrations::run` with explicit table coverage and upgrade intent.
+- Added inline comment clarifying why `dbDelta` calls are safe to run repeatedly during upgrades.
+- Preserved runtime behavior (documentation-only updates).
+
+#### Next Step
+Proceed to Phase 2 Chunk 7:
+- `includes/class-lllm-activator.php`
