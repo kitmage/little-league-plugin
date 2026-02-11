@@ -553,3 +553,24 @@ Proceed to Phase 3 PR 4:
 
 #### Next Step
 Proceed to Phase 4 final consistency sweep (README + `documentation.md` terminology/behavior drift checks).
+
+## Phase 4 Progress
+
+### Final Consistency Sweep — Pass 1 (UI flow drift in `documentation.md`)
+**Status:** Completed
+**Scope updated:**
+- `documentation.md`
+
+#### Applied fixes
+- Removed non-existent Teams clone-assignment action from Teams screen specs.
+- Updated import wizard Step 2 button list to remove unsupported "Download Current Games CSV" button.
+- Replaced "Quick edit modal" wording with inline quick-edit behavior.
+- Updated validation-error action label from "Back" to "Try Again".
+- Replaced standalone "Step 4: Success" section with post-commit redirect behavior.
+- Adjusted template-download guidance in section D to align with current wizard behavior.
+
+#### Evidence basis
+- Prior Pass 1D mismatch record and evidence references in this log.
+
+#### Next Step
+Continue Phase 4 sweep for any remaining terminology or behavior drift between README and `documentation.md`.

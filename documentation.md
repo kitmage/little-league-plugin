@@ -288,9 +288,8 @@ Managers should never need WP’s standard editor screens.
 * Show checklist/grid of Franchises with “Assigned?” toggles
 * Buttons:
 
-  * “Assign Selected Franchises”
+  * “Assign Selected Franchises"
   * “Remove Selected Franchises” (disabled if teams have games; show warning)
-  * “Clone assignments from another Division” (select source division → apply)
 
 **Integrity**
 
@@ -319,7 +318,7 @@ Default recommendation in UI copy:
 
 * CSV only (reject XLSX to reduce complexity)
 * File size cap (e.g., 2–5 MB)
-* Display: “Download Template” + “Download Current Games CSV”
+* Display: “Download Template”
 
 ### 8.4 Step 3: Validate (no writes)
 
@@ -456,7 +455,7 @@ Downloadable error report CSV should add an `error` column with the message.
 
 * Filter: Season → Division
 * Table: Date/Time, Location, Away, Home, Status, Score
-* Quick edit modal: Status + scores + notes
+* Inline quick edit (per row): Status + scores + notes
 * “Export CSV” button
 * “Go to Import Wizard” button
 
@@ -854,7 +853,6 @@ Button: Continue
 **Buttons**
 
 * Download Template (secondary)
-* Download Current Games CSV (secondary)
 * Choose File (CSV)
 * Validate (primary)
 
@@ -879,7 +877,7 @@ Button: Continue
 
 * Big red banner: “Fix errors before importing.”
 * Button: Download Error Report CSV
-* Button: Back
+* Button: Try Again
 
 **If no errors**
 
@@ -889,19 +887,9 @@ Button: Continue
 
 ---
 
-### Step 4: Success
+### Step 4: Post-Commit Behavior
 
-**Title:** Import Complete
-**Show**
-
-* Created X games
-* Updated Y games
-* Standings refreshed
-
-Buttons:
-
-* View Games
-* Download Current Games CSV
+After commit, users are redirected back to Games with an import-complete notice.
 
 ---
 
@@ -1133,15 +1121,13 @@ Error:
 
 # D) Suggested “Download Template” files Managers will actually use
 
-To reduce mistakes, provide **two download buttons** in the wizard:
+To reduce mistakes, provide template downloads in the wizard:
 
 1. **Download Full Schedule Template** (blank header only)
 2. **Download Score Update Template** (blank header only)
-3. **Download Current Games CSV** (pre-filled with `game_uid`)
+This keeps the Manager workflow simple:
 
-This makes the Manager workflow almost always:
-
-* Export → edit scores → upload score update CSV
+* Download template → fill/update rows → upload CSV
 
 ---
 
