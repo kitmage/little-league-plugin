@@ -66,7 +66,7 @@ function lllm_add_welcome_admin_bar_link($wp_admin_bar) {
 
     $wp_admin_bar->add_node(array(
         'id' => 'lllm-welcome',
-        'title' => __('League Manager Welcome', 'lllm'),
+        'title' => __('⚾ League Manager', 'lllm'),
         'href' => admin_url('admin.php?page=lllm-welcome'),
     ));
 }

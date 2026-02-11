@@ -18,20 +18,20 @@ class LLLM_Admin {
 
         add_submenu_page(
             'lllm-seasons',
-            __('Seasons', 'lllm'),
-            __('Seasons', 'lllm'),
-            'lllm_manage_seasons',
-            'lllm-seasons',
-            array(__CLASS__, 'render_seasons')
-        );
-
-        add_submenu_page(
-            'lllm-seasons',
             __('Welcome', 'lllm'),
             __('Welcome', 'lllm'),
             'lllm_manage_seasons',
             'lllm-welcome',
             array(__CLASS__, 'render_welcome')
+        );
+
+        add_submenu_page(
+            'lllm-seasons',
+            __('Seasons', 'lllm'),
+            __('Seasons', 'lllm'),
+            'lllm_manage_seasons',
+            'lllm-seasons',
+            array(__CLASS__, 'render_seasons')
         );
 
         add_submenu_page(
