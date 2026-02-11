@@ -574,3 +574,24 @@ Proceed to Phase 4 final consistency sweep (README + `documentation.md` terminol
 
 #### Next Step
 Continue Phase 4 sweep for any remaining terminology or behavior drift between README and `documentation.md`.
+
+### Final Consistency Sweep — Pass 2 (cross-doc drift check)
+**Status:** Completed
+**Scope reviewed:**
+- `README.md`
+- `documentation.md`
+
+#### ✅ Confirmed checks
+- CSV header names/order remain consistent across README and documentation examples (`start_date(mm/dd/yyyy)`, `start_time(24HR)`, away-before-home team/score order).
+- Import wizard UI text now aligns with implemented behavior (Step 2 template download wording, validation error action text, post-commit behavior).
+- Roles/access wording aligns with implemented capability/menu/admin-bar/login/media behavior.
+- Terminology is aligned for manager navigation label (`League Manager`) in documentation sections.
+
+#### ❌ Remaining mismatches
+- None identified in this sweep.
+
+#### TODOs
+- None.
+
+#### Final status
+Phase 4 consistency sweep complete. Documentation currently in-contract against the audited implementation scope.
