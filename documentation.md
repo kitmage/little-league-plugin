@@ -56,7 +56,7 @@ The end result: a clean, reliable system that volunteers can run without breakin
 * Live “in-progress” scoring / play-by-play
 * Head-to-head tie-breaker rules (optional future)
 * Cross-division games counting toward standings (future)
-* Brackets/playoffs module (future)
+* Advanced/custom playoff formats (future)
 * Automated sync with 3rd-party scheduling apps
 
 ---
@@ -168,6 +168,11 @@ Managers are intended to work primarily in League Manager screens.
 * `id` (BIGINT PK)
 * `game_uid` (CHAR(12) unique, not null) // human-friendly stable ID for CSV (e.g., base32)
 * `division_id` (BIGINT, not null)
+* `competition_type` (VARCHAR 20, not null, default `regular`) // `regular|playoff`
+* `playoff_round` (VARCHAR 20, null) // `r1|r2|championship` when playoff
+* `playoff_slot` (VARCHAR 20, null) // slot inside round, stringified for UI compatibility
+* `source_game_uid_1` (CHAR(12), null) // feeder game UID for winner placeholder/advancement wiring
+* `source_game_uid_2` (CHAR(12), null) // second feeder UID (used by championship)
 * `home_team_instance_id` (BIGINT, not null)
 * `away_team_instance_id` (BIGINT, not null)
 * `location` (VARCHAR 160, not null) // free text v1
@@ -182,6 +187,9 @@ Managers are intended to work primarily in League Manager screens.
 
 * UNIQUE(`game_uid`)
 * INDEX(`division_id`, `start_datetime_utc`)
+* INDEX(`division_id`, `competition_type`, `playoff_round`, `playoff_slot`)
+* INDEX(`source_game_uid_1`)
+* INDEX(`source_game_uid_2`)
 * INDEX(`home_team_instance_id`)
 * INDEX(`away_team_instance_id`)
 * UNIQUE(`division_id`, `start_datetime_utc`, `home_team_instance_id`, `away_team_instance_id`)
@@ -455,7 +463,7 @@ Downloadable error report CSV should add an `error` column with the message.
 
 * Filter: Season → Division
 * Table: Date/Time, Location, Away, Home, Status, Score
-* Inline quick edit (per row): Status + scores + notes
+* Inline quick edit (per row): Status + game type + playoff slot (when playoff) + scores + notes
 * “Export CSV” button
 * “Go to Import Wizard” button
 
@@ -490,6 +498,12 @@ Downloadable error report CSV should add an `error` column with the message.
 
    * `[lllm_teams season="spring-2026" division="8u" show_logos="1"]`
 
+4. Playoff bracket:
+
+   * `[lllm_playoff_bracket season="spring-2026" division="8u"]`
+   * Renders generated playoff games for `r1`, `r2`, and `championship` rounds.
+   * If feeder results are not final yet, shows winner placeholders until source games are `played`.
+
 ### 12.2 Display rules (dad-proof)
 
 * Scheduled games show: date/time + location (no scores)
@@ -522,6 +536,40 @@ Supported automatically (scores equal in a played game).
 
 * Rename Franchise name/logo is allowed; franchise code (`team_code`) remains stable.
 * If a team truly becomes a new identity, Admin should create a new Franchise + new code.
+
+### 13.6 Playoff business rules (fixed 6-team bracket)
+
+* Format is fixed at **6 teams** in standings order (seeds 1–6).
+* Bracket generator creates exactly 5 games in this sequence:
+
+  * `r1` slot `1`: seed 3 vs seed 6
+  * `r1` slot `2`: seed 4 vs seed 5
+  * `r2` slot `1`: seed 1 vs winner of `r1` slot `2`
+  * `r2` slot `2`: seed 2 vs winner of `r1` slot `1`
+  * `championship` slot `1`: winner of `r2` slot `1` vs winner of `r2` slot `2`
+
+#### Round + slot naming
+
+* Round codes are stored as `r1`, `r2`, and `championship`.
+* Slot values are stored as string numerals (`1`, `2`, etc.) for consistent quick-edit and rendering behavior.
+* Display ordering is by round (`r1` → `r2` → `championship`) and then numeric slot order.
+
+#### Feeder linkage rules
+
+* `source_game_uid_1` and `source_game_uid_2` are only valid for playoff games.
+* R1 games do not have feeder links.
+* R2 games use `source_game_uid_1` to identify the R1 winner feeding that slot.
+* Championship uses both feeder fields to reference both R2 winners.
+* If feeder game status is unresolved (not `played`), displays should show a placeholder label (`Winner of Game <round>-<slot>`) instead of a resolved team winner.
+
+### 13.7 Manager playoff workflow notes
+
+1. Go to **Games**, pick Season + Division, and verify standings are final.
+2. Click **Generate Playoff Bracket** (requires at least 6 teams in standings).
+3. Review generated games (`r1`, `r2`, `championship`) and optionally adjust date/time/location.
+4. Enter results in Quick Edit as games complete.
+5. As feeder games are marked `played`, downstream bracket placeholders resolve automatically to winners.
+6. If setup needs to be restarted, use **Reset Playoff Games** and generate again.
 
 ---
 

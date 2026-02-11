@@ -309,6 +309,7 @@ class LLLM_Admin {
             );
         }
 
+        // Central playoff round/slot allowlist shared by imports and quick edit writes.
         $round_slots = array(
             'r1' => array('1', '2', '3', '4'),
             'r2' => array('1', '2'),
@@ -375,6 +376,7 @@ class LLLM_Admin {
      * @return array<string,string> Game type options.
      */
     private static function get_quick_edit_game_types() {
+        // Keep values stable; form posts persist these keys directly.
         return array(
             'regular' => __('Regular Game', 'lllm'),
             'playoff_r1' => __('Playoff R1', 'lllm'),
@@ -2922,12 +2924,14 @@ class LLLM_Admin {
             self::redirect_with_notice($redirect_url, 'error', __('Playoff bracket generation requires at least 6 teams in official standings order.', 'lllm'));
         }
 
+        // Seed map is fixed for a 6-team bracket and follows standings rank 1..6.
         $seed_ids = array_map(
             'intval',
             array_column(array_slice($standings, 0, 6), 'team_instance_id')
         );
 
         $base_datetime = gmdate('Y-m-d 17:00:00', strtotime('+1 day'));
+        // Slot map defines the generated bracket skeleton and feeder linkage targets.
         $slot_payloads = array(
             'r1_g1' => array(
                 'competition_type' => 'playoff',
