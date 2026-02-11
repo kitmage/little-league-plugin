@@ -14,6 +14,77 @@ class LLLM_Shortcodes {
         add_shortcode('lllm_schedule', array(__CLASS__, 'render_schedule'));
         add_shortcode('lllm_standings', array(__CLASS__, 'render_standings'));
         add_shortcode('lllm_teams', array(__CLASS__, 'render_teams'));
+        add_shortcode('lllm_playoff_bracket', array(__CLASS__, 'render_playoff_bracket'));
+    }
+
+    /**
+     * Builds a fallback label for feeder-based playoff teams.
+     *
+     * @param string               $source_game_uid Source game UID.
+     * @param array<string,object> $games_by_uid    Game rows indexed by UID.
+     * @return string Human-readable placeholder label.
+     */
+    private static function get_playoff_placeholder_label($source_game_uid, $games_by_uid) {
+        $source_game_uid = (string) $source_game_uid;
+        if ($source_game_uid === '') {
+            return __('TBD', 'lllm');
+        }
+
+        if (!empty($games_by_uid[$source_game_uid])) {
+            $source_game = $games_by_uid[$source_game_uid];
+            $round_code = isset($source_game->playoff_round) ? (string) $source_game->playoff_round : '';
+            $slot = isset($source_game->playoff_slot) ? (string) $source_game->playoff_slot : '';
+
+            $round_label_map = array(
+                'r1' => __('R1', 'lllm'),
+                'r2' => __('R2', 'lllm'),
+                'championship' => __('Championship', 'lllm'),
+            );
+
+            if (isset($round_label_map[$round_code]) && $slot !== '') {
+                /* translators: 1: playoff round label, 2: playoff game slot. */
+                $source_label = sprintf(__('Game %1$s-%2$s', 'lllm'), $round_label_map[$round_code], $slot);
+            } else {
+                $source_label = $source_game_uid;
+            }
+        } else {
+            $source_label = $source_game_uid;
+        }
+
+        /* translators: %s: source game label. */
+        return sprintf(__('Winner of %s', 'lllm'), $source_label);
+    }
+
+    /**
+     * Resolves the display label for a playoff game side, including feeder placeholders.
+     *
+     * @param object               $game         Game row.
+     * @param string               $side         Side key (`home` or `away`).
+     * @param array<string,object> $games_by_uid Game rows indexed by UID.
+     * @return string Team label for display.
+     */
+    private static function get_playoff_team_label($game, $side, $games_by_uid) {
+        $team_name_field = $side . '_name';
+        $source_uid_field = $side === 'home' ? 'source_game_uid_1' : 'source_game_uid_2';
+        $source_game_uid = isset($game->{$source_uid_field}) ? (string) $game->{$source_uid_field} : '';
+        $team_name = isset($game->{$team_name_field}) ? (string) $game->{$team_name_field} : '';
+
+        if ($source_game_uid === '') {
+            return $team_name;
+        }
+
+        if (!empty($games_by_uid[$source_game_uid])) {
+            $source_game = $games_by_uid[$source_game_uid];
+            $home_score = isset($source_game->home_score) ? $source_game->home_score : null;
+            $away_score = isset($source_game->away_score) ? $source_game->away_score : null;
+            $is_played = isset($source_game->status) && $source_game->status === 'played';
+
+            if ($is_played && $home_score !== null && $away_score !== null && (int) $home_score !== (int) $away_score) {
+                return (int) $home_score > (int) $away_score ? (string) $source_game->home_name : (string) $source_game->away_name;
+            }
+        }
+
+        return self::get_playoff_placeholder_label($source_game_uid, $games_by_uid);
     }
 
     /**
@@ -336,6 +407,122 @@ class LLLM_Shortcodes {
             $output .= '</li>';
         }
         $output .= '</ul>';
+
+        return $output;
+    }
+
+    /**
+     * Renders the playoff bracket shortcode output.
+     *
+     * Supported attributes:
+     * - `season`, `division` (slug filters)
+     *
+     * @param array<string,string> $atts Shortcode attributes.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return string HTML output.
+     */
+    public static function render_playoff_bracket($atts) {
+        $atts = shortcode_atts(
+            array(
+                'season' => '',
+                'division' => '',
+            ),
+            $atts,
+            'lllm_playoff_bracket'
+        );
+
+        list($season, $division) = self::resolve_context($atts);
+        if (!$season || !$division) {
+            return '<p>' . esc_html__('Playoff bracket is not available yet.', 'lllm') . '</p>';
+        }
+
+        global $wpdb;
+        $games = $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT g.*, home.name AS home_name, away.name AS away_name
+                 FROM ' . $wpdb->prefix . 'lllm_games g
+                 JOIN ' . $wpdb->prefix . 'lllm_team_instances hi ON g.home_team_instance_id = hi.id
+                 JOIN ' . $wpdb->prefix . 'lllm_team_instances ai ON g.away_team_instance_id = ai.id
+                 JOIN ' . $wpdb->prefix . 'lllm_team_masters home ON hi.team_master_id = home.id
+                 JOIN ' . $wpdb->prefix . 'lllm_team_masters away ON ai.team_master_id = away.id
+                 WHERE g.division_id = %d
+                   AND g.competition_type = %s
+                 ORDER BY FIELD(g.playoff_round, %s, %s, %s), CAST(g.playoff_slot AS UNSIGNED) ASC',
+                $division->id,
+                'playoff',
+                'r1',
+                'r2',
+                'championship'
+            )
+        );
+
+        if (!$games) {
+            return '<p>' . esc_html__('No playoff bracket available.', 'lllm') . '</p>';
+        }
+
+        $games_by_uid = array();
+        $games_by_round = array(
+            'r1' => array(),
+            'r2' => array(),
+            'championship' => array(),
+        );
+
+        foreach ($games as $game) {
+            $games_by_uid[$game->game_uid] = $game;
+            if (isset($games_by_round[$game->playoff_round])) {
+                $games_by_round[$game->playoff_round][] = $game;
+            }
+        }
+
+        $round_labels = array(
+            'r1' => __('Round 1', 'lllm'),
+            'r2' => __('Round 2', 'lllm'),
+            'championship' => __('Championship', 'lllm'),
+        );
+
+        $output = '<div class="lllm-playoff-bracket">';
+        foreach (array('r1', 'r2', 'championship') as $round_code) {
+            $output .= '<section class="lllm-playoff-round lllm-playoff-round-' . esc_attr($round_code) . '">';
+            $output .= '<h3>' . esc_html($round_labels[$round_code]) . '</h3>';
+
+            if (empty($games_by_round[$round_code])) {
+                $output .= '<p>' . esc_html__('No games in this round.', 'lllm') . '</p>';
+                $output .= '</section>';
+                continue;
+            }
+
+            $output .= '<table><thead><tr>';
+            $output .= '<th>' . esc_html__('Game', 'lllm') . '</th>';
+            $output .= '<th>' . esc_html__('Home', 'lllm') . '</th>';
+            $output .= '<th>' . esc_html__('Away', 'lllm') . '</th>';
+            $output .= '<th>' . esc_html__('Status', 'lllm') . '</th>';
+            $output .= '<th>' . esc_html__('Score', 'lllm') . '</th>';
+            $output .= '</tr></thead><tbody>';
+
+            foreach ($games_by_round[$round_code] as $game) {
+                $home_label = self::get_playoff_team_label($game, 'home', $games_by_uid);
+                $away_label = self::get_playoff_team_label($game, 'away', $games_by_uid);
+                $score = '—';
+                if ($game->status === 'played') {
+                    $score = $game->home_score . ' - ' . $game->away_score;
+                }
+
+                /* translators: %s: playoff game slot number. */
+                $game_label = sprintf(__('Game %s', 'lllm'), (string) $game->playoff_slot);
+
+                $output .= '<tr>';
+                $output .= '<td>' . esc_html($game_label) . '</td>';
+                $output .= '<td>' . esc_html($home_label) . '</td>';
+                $output .= '<td>' . esc_html($away_label) . '</td>';
+                $output .= '<td>' . esc_html((string) $game->status) . '</td>';
+                $output .= '<td>' . esc_html($score) . '</td>';
+                $output .= '</tr>';
+            }
+
+            $output .= '</tbody></table>';
+            $output .= '</section>';
+        }
+        $output .= '</div>';
 
         return $output;
     }
