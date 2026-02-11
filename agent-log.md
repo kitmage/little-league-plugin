@@ -493,3 +493,20 @@ Proceed to Phase 3 scoped doc-fix PR sequence.
 #### Next Step
 Proceed to Phase 3 PR 2:
 - CSV/import docs corrections (`documentation.md`)
+
+### PR 2 — CSV/import docs corrections
+**Status:** Completed
+**Scope updated:**
+- `documentation.md`
+
+#### Applied fixes
+- Corrected section 9.4 export header list to match current implementation exactly:
+  - Labeled date/time headers: `start_date(mm/dd/yyyy)`, `start_time(24HR)`
+  - Away-before-home team and score ordering
+
+#### Evidence basis
+- Prior Pass 1B mismatch record and evidence references in this log (code export/template headers and parser expectations).
+
+#### Next Step
+Proceed to Phase 3 PR 3:
+- Roles/access docs corrections (`documentation.md`)

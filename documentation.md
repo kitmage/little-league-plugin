@@ -416,7 +416,7 @@ Every validation + commit produces a log entry with:
 
 The “Download Current Games CSV” export should always include:
 
-* `game_uid`, `start_date`, `start_time`, `location`, `home_team_code`, `away_team_code`, `status`, `home_score`, `away_score`, `notes`
+* `game_uid`, `start_date(mm/dd/yyyy)`, `start_time(24HR)`, `location`, `away_team_code`, `home_team_code`, `status`, `away_score`, `home_score`, `notes`
 
 This becomes the canonical “edit and re-upload” file.
 
