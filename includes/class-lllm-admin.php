@@ -1237,6 +1237,11 @@ class LLLM_Admin {
         echo '</div>';
     }
 
+    /**
+     * Handles create/update submissions for seasons.
+     *
+     * @return void
+     */
     public static function handle_save_season() {
         if (!current_user_can('lllm_manage_seasons')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1291,6 +1296,11 @@ class LLLM_Admin {
         self::redirect_with_notice(admin_url('admin.php?page=lllm-seasons'), 'season_saved');
     }
 
+    /**
+     * Handles create/update submissions for divisions.
+     *
+     * @return void
+     */
     public static function handle_save_division() {
         if (!current_user_can('lllm_manage_divisions')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1333,6 +1343,11 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Handles create/update submissions for franchises.
+     *
+     * @return void
+     */
     public static function handle_save_team() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1382,6 +1397,11 @@ class LLLM_Admin {
         self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'team_saved');
     }
 
+    /**
+     * Handles assign/remove actions for teams within a division.
+     *
+     * @return void
+     */
     public static function handle_update_division_teams() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1482,6 +1502,11 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Handles inline quick-edit updates for a single game row.
+     *
+     * @return void
+     */
     public static function handle_quick_edit_game() {
         if (!current_user_can('lllm_manage_games')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1543,6 +1568,11 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Streams the games import CSV template download.
+     *
+     * @return void
+     */
     public static function handle_download_template() {
         if (!current_user_can('lllm_import_csv')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1567,6 +1597,11 @@ class LLLM_Admin {
         exit;
     }
 
+    /**
+     * Streams current games as CSV for the selected season/division.
+     *
+     * @return void
+     */
     public static function handle_download_current_games() {
         if (!current_user_can('lllm_manage_games')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1616,6 +1651,11 @@ class LLLM_Admin {
         exit;
     }
 
+    /**
+     * Streams the divisions CSV template download.
+     *
+     * @return void
+     */
     public static function handle_download_divisions_template() {
         if (!current_user_can('lllm_manage_divisions')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1630,6 +1670,11 @@ class LLLM_Admin {
         exit;
     }
 
+    /**
+     * Streams the franchises CSV template download.
+     *
+     * @return void
+     */
     public static function handle_download_teams_template() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1644,6 +1689,11 @@ class LLLM_Admin {
         exit;
     }
 
+    /**
+     * Exports all franchises as CSV.
+     *
+     * @return void
+     */
     public static function handle_export_franchises_csv() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1664,6 +1714,11 @@ class LLLM_Admin {
         exit;
     }
 
+    /**
+     * Streams the division-team assignment CSV template.
+     *
+     * @return void
+     */
     public static function handle_download_division_teams_template() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1678,6 +1733,11 @@ class LLLM_Admin {
         exit;
     }
 
+    /**
+     * Validates uploaded divisions CSV without applying database writes.
+     *
+     * @return void
+     */
     public static function handle_validate_divisions_csv() {
         if (!current_user_can('lllm_manage_divisions')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1721,6 +1781,11 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Validates uploaded franchises CSV without applying database writes.
+     *
+     * @return void
+     */
     public static function handle_validate_teams_csv() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1773,6 +1838,11 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Validates uploaded division-team assignment CSV.
+     *
+     * @return void
+     */
     public static function handle_validate_division_teams_csv() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1835,6 +1905,11 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Imports divisions from CSV into a season.
+     *
+     * @return void
+     */
     public static function handle_import_divisions_csv() {
         if (!current_user_can('lllm_manage_divisions')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1899,6 +1974,11 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Imports franchises from CSV.
+     *
+     * @return void
+     */
     public static function handle_import_teams_csv() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1975,6 +2055,11 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Imports division-team assignments from CSV.
+     *
+     * @return void
+     */
     public static function handle_import_division_teams_csv() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -2047,6 +2132,13 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Persists an import-log entry for audit/history reporting.
+     *
+     * @param array<string,mixed> $data Import log payload.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return void
+     */
     private static function log_import($data) {
         global $wpdb;
         $wpdb->insert(
@@ -2068,6 +2160,13 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Builds a normalized team-code to team-instance-id map for a division.
+     *
+     * @param int $division_id Division primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return array<string,int> Team code map.
+     */
     private static function build_team_map($division_id) {
         global $wpdb;
         $map = array();
@@ -2086,6 +2185,16 @@ class LLLM_Admin {
         return $map;
     }
 
+    /**
+     * Validates import rows and builds create/update operations for commit.
+     *
+     * @param int                 $season_id   Season primary key.
+     * @param int                 $division_id Division primary key.
+     * @param string              $import_type Import type key (`full` or `score`).
+     * @param array<int,array>    $rows        Parsed CSV rows.
+     * @return array{operations: array<int,array<string,mixed>>, errors: array<int,array<string,mixed>>}|WP_Error
+     *         Planned operations/errors payload or error.
+     */
     private static function validate_import($season_id, $division_id, $import_type, $rows) {
         global $wpdb;
         $errors = array();
@@ -2261,6 +2370,13 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Handles import wizard validation (step 2 -> review payload).
+     *
+     * Stores validation results in a transient token for later commit.
+     *
+     * @return void
+     */
     public static function handle_import_validate() {
         if (!current_user_can('lllm_import_csv')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -2340,6 +2456,11 @@ class LLLM_Admin {
         exit;
     }
 
+    /**
+     * Commits a previously-validated import token to the database.
+     *
+     * @return void
+     */
     public static function handle_import_commit() {
         if (!current_user_can('lllm_import_csv')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -2403,10 +2524,22 @@ class LLLM_Admin {
         );
     }
 
+    /**
+     * Checks whether delete confirmation text matches required sentinel value.
+     *
+     * @param string $text User-entered confirmation text.
+     * @return bool True when text equals `DELETE` case-insensitively.
+     */
     private static function is_delete_confirmed($text) {
         return strtoupper(trim($text)) === 'DELETE';
     }
 
+    /**
+     * Reads per-row delete confirmation text from request payload.
+     *
+     * @param int $id Entity id used as confirmation input key.
+     * @return string Sanitized confirmation text.
+     */
     private static function get_confirm_text($id) {
         if (!isset($_POST['confirm_text'])) {
             return '';
@@ -2421,6 +2554,13 @@ class LLLM_Admin {
         return '';
     }
 
+    /**
+     * Deletes a season row by id.
+     *
+     * @param int $season_id Season primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return void
+     */
     private static function delete_season_by_id($season_id) {
         global $wpdb;
         $division_ids = $wpdb->get_col($wpdb->prepare('SELECT id FROM ' . self::table('divisions') . ' WHERE season_id = %d', $season_id));
@@ -2433,6 +2573,11 @@ class LLLM_Admin {
         $wpdb->delete(self::table('seasons'), array('id' => $season_id));
     }
 
+    /**
+     * Handles single-season deletion with confirmation enforcement.
+     *
+     * @return void
+     */
     public static function handle_delete_season() {
         if (!current_user_can('lllm_manage_seasons')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -2450,6 +2595,11 @@ class LLLM_Admin {
         self::redirect_with_notice(admin_url('admin.php?page=lllm-seasons'), 'season_deleted');
     }
 
+    /**
+     * Handles bulk season deletion with shared confirmation text.
+     *
+     * @return void
+     */
     public static function handle_bulk_delete_seasons() {
         if (!current_user_can('lllm_manage_seasons')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -2469,6 +2619,13 @@ class LLLM_Admin {
         self::redirect_with_notice(admin_url('admin.php?page=lllm-seasons'), 'season_deleted');
     }
 
+    /**
+     * Deletes a division row by id.
+     *
+     * @param int $division_id Division primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return void
+     */
     private static function delete_division_by_id($division_id) {
         global $wpdb;
         $wpdb->delete(self::table('games'), array('division_id' => $division_id));
@@ -2476,6 +2633,11 @@ class LLLM_Admin {
         $wpdb->delete(self::table('divisions'), array('id' => $division_id));
     }
 
+    /**
+     * Handles single-division deletion and cache busting.
+     *
+     * @return void
+     */
     public static function handle_delete_division() {
         if (!current_user_can('lllm_manage_divisions')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -2496,6 +2658,11 @@ class LLLM_Admin {
         self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'division_deleted');
     }
 
+    /**
+     * Handles bulk division deletion and standings cache invalidation.
+     *
+     * @return void
+     */
     public static function handle_bulk_delete_divisions() {
         if (!current_user_can('lllm_manage_divisions')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -2517,11 +2684,23 @@ class LLLM_Admin {
         self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'division_deleted');
     }
 
+    /**
+     * Deletes a franchise row by id.
+     *
+     * @param int $team_id Franchise primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return void
+     */
     private static function delete_team_by_id($team_id) {
         global $wpdb;
         $wpdb->delete(self::table('team_masters'), array('id' => $team_id));
     }
 
+    /**
+     * Handles single-franchise deletion with assignment safety checks.
+     *
+     * @return void
+     */
     public static function handle_delete_team() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -2546,6 +2725,11 @@ class LLLM_Admin {
         self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'team_deleted');
     }
 
+    /**
+     * Handles bulk-franchise deletion, skipping rows still assigned to divisions.
+     *
+     * @return void
+     */
     public static function handle_bulk_delete_teams() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -2572,11 +2756,23 @@ class LLLM_Admin {
         self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'team_deleted');
     }
 
+    /**
+     * Deletes a game row by id.
+     *
+     * @param int $game_id Game primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return void
+     */
     private static function delete_game_by_id($game_id) {
         global $wpdb;
         $wpdb->delete(self::table('games'), array('id' => $game_id));
     }
 
+    /**
+     * Handles single-game deletion and standings cache busting.
+     *
+     * @return void
+     */
     public static function handle_delete_game() {
         if (!current_user_can('lllm_manage_games')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -2600,6 +2796,11 @@ class LLLM_Admin {
         self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'game_deleted');
     }
 
+    /**
+     * Handles bulk-game deletion and standings cache busting.
+     *
+     * @return void
+     */
     public static function handle_bulk_delete_games() {
         if (!current_user_can('lllm_manage_games')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));

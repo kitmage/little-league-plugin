@@ -375,3 +375,59 @@ Proceed to Phase 2 Chunk 5B:
 #### Next Step
 Proceed to Phase 2 Chunk 5C:
 - `includes/class-lllm-admin.php` action handler section (`handle_*`, validation/import helpers)
+
+### Function Documentation Audit — Chunk 5C (`includes/class-lllm-admin.php` handlers/import/delete section)
+**Status:** Completed  
+**Scope reviewed:**
+- `includes/class-lllm-admin.php` (`handle_*`, import validation/commit helpers, delete helpers)
+
+#### Classification summary
+- **A (well documented):** none prior to this pass in reviewed range
+- **B (needs PHPDoc):**
+  - `LLLM_Admin::handle_save_season`
+  - `LLLM_Admin::handle_save_division`
+  - `LLLM_Admin::handle_save_team`
+  - `LLLM_Admin::handle_update_division_teams`
+  - `LLLM_Admin::handle_quick_edit_game`
+  - `LLLM_Admin::handle_download_template`
+  - `LLLM_Admin::handle_download_current_games`
+  - `LLLM_Admin::handle_download_divisions_template`
+  - `LLLM_Admin::handle_download_teams_template`
+  - `LLLM_Admin::handle_export_franchises_csv`
+  - `LLLM_Admin::handle_download_division_teams_template`
+  - `LLLM_Admin::handle_validate_divisions_csv`
+  - `LLLM_Admin::handle_validate_teams_csv`
+  - `LLLM_Admin::handle_validate_division_teams_csv`
+  - `LLLM_Admin::handle_import_divisions_csv`
+  - `LLLM_Admin::handle_import_teams_csv`
+  - `LLLM_Admin::handle_import_division_teams_csv`
+  - `LLLM_Admin::log_import`
+  - `LLLM_Admin::build_team_map`
+  - `LLLM_Admin::validate_import`
+  - `LLLM_Admin::handle_import_validate`
+  - `LLLM_Admin::handle_import_commit`
+  - `LLLM_Admin::is_delete_confirmed`
+  - `LLLM_Admin::get_confirm_text`
+  - `LLLM_Admin::delete_season_by_id`
+  - `LLLM_Admin::handle_delete_season`
+  - `LLLM_Admin::handle_bulk_delete_seasons`
+  - `LLLM_Admin::delete_division_by_id`
+  - `LLLM_Admin::handle_delete_division`
+  - `LLLM_Admin::handle_bulk_delete_divisions`
+  - `LLLM_Admin::delete_team_by_id`
+  - `LLLM_Admin::handle_delete_team`
+  - `LLLM_Admin::handle_bulk_delete_teams`
+  - `LLLM_Admin::delete_game_by_id`
+  - `LLLM_Admin::handle_delete_game`
+  - `LLLM_Admin::handle_bulk_delete_games`
+- **C (needs inline comment):** none required
+- **D (misleading/stale docs):** none found
+
+#### Applied edits
+- Added PHPDoc coverage for action handlers in save/import/export/delete flows.
+- Documented key side effects: streaming CSV downloads, transient-backed import validation, DB commit behavior, and standings-cache invalidation in delete paths.
+- Preserved runtime behavior (documentation-only updates).
+
+#### Next Step
+Proceed to Phase 2 Chunk 6:
+- `includes/class-lllm-migrations.php`
