@@ -17,19 +17,45 @@ Create a reliable, repeatable process to:
 
 ---
 
-## Phase 0 — Define the Documentation Contract
-Before editing docs, confirm what “accurate” means.
+## Documentation Contract (Approved Baseline)
+Use this contract as the source of truth for all documentation passes.
 
-Checklist:
-- README reflects current admin screens and real behavior.
-- CSV headers in docs match template/export and accepted import headers.
-- Roles/capabilities documented correctly (Manager vs Admin).
-- Import wizard behavior and error handling are accurate.
-- Shortcode examples match current shortcode implementation.
-- Function-level docs exist for key handlers/helpers with non-obvious behavior.
+### A) Product & Navigation Accuracy
+- Docs must reflect the current plugin navigation and labels exactly (including Welcome screen and top-bar link behavior).
+- No screen, button, submenu, or workflow step may be documented if it does not exist in code.
+- If behavior differs by role/capability, docs must explicitly call that out.
 
-Deliverable:
-- A short “contract” checklist to validate in each subsequent pass.
+### B) CSV & Import/Export Accuracy
+- Every documented CSV header must match real template/export output exactly (name, order, casing, punctuation).
+- Every documented accepted import header must match parser/validator behavior.
+- Date/time format instructions in docs must match both UI guidance and parsing rules.
+- Examples in README/documentation must use valid headers for the current implementation.
+
+### C) Roles, Permissions, and Access Rules
+- Manager vs Admin permissions must be documented from actual capability checks in code.
+- Media Library behavior (upload/view/select scope) must match runtime filtering logic.
+- Login redirects and admin-bar visibility rules must be documented exactly as implemented.
+
+### D) Function Documentation Standard
+For each important function (especially handlers/helpers):
+- Public intent is documented (what it does).
+- Inputs/expected data are clear (query args, POST fields, CSV fields, return shape where relevant).
+- Side effects are called out (DB writes, redirects, cache busting, transient usage, file output).
+- Error/validation behavior is documented where non-obvious.
+
+### E) Evidence & Reporting Standard
+Every fact-check report must include:
+- ✅ Confirmed accurate items
+- ❌ Mismatches
+- 🔧 Exact replacement text (ready to apply)
+- 📌 File + line evidence for each finding
+
+### Contract Acceptance Criteria
+The documentation is considered “in contract” only if:
+1. No documented behavior contradicts code.
+2. CSV docs are executable as written.
+3. Role/access docs match capability checks and hooks.
+4. Key functions have clear, non-misleading documentation.
 
 ---
 
