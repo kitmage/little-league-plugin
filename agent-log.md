@@ -533,3 +533,23 @@ Proceed to Phase 3 PR 3:
 #### Next Step
 Proceed to Phase 3 PR 4:
 - Function PHPDoc + inline comment cleanup by module (complete remaining touch-ups if any)
+
+### PR 4 — Function PHPDoc + inline comment cleanup by module
+**Status:** Completed
+**Scope validated:**
+- `little-league-manager.php`
+- `includes/class-lllm-roles.php`
+- `includes/class-lllm-import.php`
+- `includes/class-lllm-standings.php`
+- `includes/class-lllm-shortcodes.php`
+- `includes/class-lllm-admin.php` (split chunks 5A/5B/5C)
+- `includes/class-lllm-migrations.php`
+- `includes/class-lllm-activator.php`
+
+#### Applied status
+- Phase 2 documentation edits already delivered and committed across module chunks.
+- Ran full PHP syntax sweep across all Phase 2 touched PHP files to validate doc-edit safety.
+- No additional function-doc touch-ups required in this pass.
+
+#### Next Step
+Proceed to Phase 4 final consistency sweep (README + `documentation.md` terminology/behavior drift checks).
