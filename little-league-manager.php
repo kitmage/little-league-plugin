@@ -39,13 +39,15 @@ function autoload_lllm() {
 }
 
 function lllm_maybe_upgrade() {
+    // Always resync role capabilities so existing Manager users receive new caps immediately.
+    LLLM_Roles::sync_roles();
+
     $stored_version = get_option('lllm_plugin_version');
     if ($stored_version === LLLM_VERSION) {
         return;
     }
 
     LLLM_Migrations::run();
-    LLLM_Roles::sync_roles();
     update_option('lllm_plugin_version', LLLM_VERSION);
 }
 
