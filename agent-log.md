@@ -79,3 +79,64 @@ With:
 
 ## Next Step
 Proceed to **Pass 1C: Roles, permissions, and access** and produce mismatch list in same format.
+
+### Pass 1C — Roles, Permissions, and Access (Started/Completed)
+**Status:** Completed  
+**Scope reviewed:**
+- `documentation.md`
+- `includes/class-lllm-roles.php`
+- `little-league-manager.php`
+- `includes/class-lllm-admin.php`
+
+#### ✅ Accurate items
+- Core custom capabilities documented in section 2 are present in code (`lllm_manage_seasons`, `lllm_manage_divisions`, `lllm_manage_teams`, `lllm_manage_games`, `lllm_import_csv`, `lllm_view_logs`).
+- Admin and Manager both receive plugin capabilities via role sync.
+
+#### ❌ Mismatches found
+1. `documentation.md` says Managers see only a top-level menu named **Little League**.
+   - **Code reality:** top-level menu label is **League Manager**.
+
+2. `documentation.md` says standard WP menus are hidden for Managers (Posts/Pages/Plugins/etc.).
+   - **Code reality:** no menu-hiding implementation exists for Managers.
+
+3. `documentation.md` capability list omits newer capabilities that are active in code:
+   - `upload_files`
+   - `lllm_manage_media_library`
+
+4. Role/access docs do not currently document implemented behavior for:
+   - admin-bar link (`⚾ League Manager`) visibility based on `lllm_manage_seasons`
+   - manager login redirect to Welcome
+   - manager sitewide media-library query behavior via hooks
+
+#### 🔧 Suggested replacement text (not yet applied)
+- In roles/UI section, replace:
+  > "Managers see only a top-level menu: **Little League** with the plugin pages."
+  with:
+  > "Managers see the plugin top-level menu: **League Manager** with the plugin pages."
+
+- Replace/harden menu-visibility claim:
+  > "Hide standard WP menus for Managers: Posts, Pages, Comments, Appearance, Plugins, Tools, Settings, etc."
+  with:
+  > "Managers are intended to work primarily in League Manager screens. (If strict WP menu hiding is required, it should be explicitly implemented and documented.)"
+
+- Add missing capabilities to section 2 list:
+  - `upload_files`
+  - `lllm_manage_media_library`
+
+- Add a short "Access behavior" subsection documenting:
+  - admin-bar node `⚾ League Manager` is shown to logged-in users with `lllm_manage_seasons`
+  - users with role `lllm_manager` are redirected on login to `admin.php?page=lllm-welcome`
+  - manager media-library hooks allow sitewide browsing/selecting in modal/list views
+
+#### 📌 Evidence references
+- Top-level menu label in code: `includes/class-lllm-admin.php` lines 9–12.
+- Docs "Little League" claim: `documentation.md` line 83.
+- Docs menu-hiding claim: `documentation.md` line 82.
+- Capabilities in code include media caps: `includes/class-lllm-roles.php` lines 16–17.
+- Admin-bar/link and login redirect hooks: `little-league-manager.php` lines 25–27 and 71–78.
+- Media library hook behavior for managers: `little-league-manager.php` lines 84–120.
+
+---
+
+## Next Step
+Proceed to **Pass 1D: UI flow correctness** and produce mismatch list in same format.
