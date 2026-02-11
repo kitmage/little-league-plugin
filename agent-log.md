@@ -231,3 +231,32 @@ Phase 1 fact-check passes complete (1A–1D). Next: prepare scoped doc-fix PRs p
 #### Next Step
 Proceed to Phase 2 Chunk 2:
 - `includes/class-lllm-import.php`
+
+### Function Documentation Audit — Chunk 2 (`includes/class-lllm-import.php`)
+**Status:** Completed  
+**Scope reviewed:**
+- `includes/class-lllm-import.php`
+
+#### Classification summary
+- **A (well documented):** none prior to this pass
+- **B (needs PHPDoc):**
+  - `LLLM_Import::normalize_csv_header`
+  - `LLLM_Import::get_import_types`
+  - `LLLM_Import::parse_csv`
+  - `LLLM_Import::get_upload_dir`
+  - `LLLM_Import::save_error_report`
+  - `LLLM_Import::generate_game_uid`
+  - `LLLM_Import::unique_game_uid`
+  - `LLLM_Import::get_season_timezone`
+  - `LLLM_Import::parse_datetime_to_utc`
+- **C (needs inline comment):** none required
+- **D (misleading/stale docs):** none found
+
+#### Applied edits
+- Added PHPDoc blocks for every method in `LLLM_Import` with clear method intent.
+- Documented parameter and return contracts, including `WP_Error`/array return shape for CSV parsing and `string|false` for datetime parsing failures.
+- Documented side effects where relevant (upload directory creation, DB uniqueness lookup, report file output).
+
+#### Next Step
+Proceed to Phase 2 Chunk 3:
+- `includes/class-lllm-standings.php`

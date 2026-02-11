@@ -5,6 +5,15 @@ if (!defined('ABSPATH')) {
 }
 
 class LLLM_Import {
+    /**
+     * Normalizes CSV headers to canonical internal keys.
+     *
+     * Supports labeled variants like `start_date(mm/dd/yyyy)` and
+     * `start_time(24HR)` by mapping them to `start_date`/`start_time`.
+     *
+     * @param string $header Raw header value read from CSV.
+     * @return string Canonicalized header key.
+     */
     private static function normalize_csv_header($header) {
         $header = strtolower(trim((string) $header));
         if (preg_match('/^start_date\s*\(.*\)$/', $header)) {
@@ -16,6 +25,11 @@ class LLLM_Import {
         return $header;
     }
 
+    /**
+     * Returns available import mode labels used by the import wizard.
+     *
+     * @return array<string,string> Map of import type key to localized label.
+     */
     public static function get_import_types() {
         return array(
             'full' => __('Full Schedule Import', 'lllm'),
@@ -23,6 +37,12 @@ class LLLM_Import {
         );
     }
 
+    /**
+     * Parses a CSV file into normalized headers and row maps.
+     *
+     * @param string $file_path Absolute path to uploaded CSV file.
+     * @return array{headers: array<int,string>, rows: array<int,array<string,string>>}|WP_Error Parsed payload or error.
+     */
     public static function parse_csv($file_path) {
         $rows = array();
         $handle = fopen($file_path, 'r');
@@ -57,6 +77,11 @@ class LLLM_Import {
         );
     }
 
+    /**
+     * Returns the plugin-specific upload directory path and creates it if needed.
+     *
+     * @return string Absolute path to `wp-content/uploads/lllm`.
+     */
     public static function get_upload_dir() {
         $upload = wp_upload_dir();
         $dir = trailingslashit($upload['basedir']) . 'lllm';
@@ -66,6 +91,12 @@ class LLLM_Import {
         return $dir;
     }
 
+    /**
+     * Writes import validation errors to a CSV report file.
+     *
+     * @param array<int,array{row:mixed,message:mixed}> $errors Error rows keyed with `row` and `message`.
+     * @return string Absolute report path, or empty string if the file could not be created.
+     */
     public static function save_error_report($errors) {
         $dir = self::get_upload_dir();
         $filename = 'import-errors-' . gmdate('Ymd-His') . '-' . wp_generate_password(6, false) . '.csv';
@@ -84,6 +115,11 @@ class LLLM_Import {
         return $path;
     }
 
+    /**
+     * Generates a 12-character base32-like game identifier.
+     *
+     * @return string Candidate game UID.
+     */
     public static function generate_game_uid() {
         $alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
         $uid = '';
@@ -107,6 +143,12 @@ class LLLM_Import {
         return $uid;
     }
 
+    /**
+     * Generates a game UID guaranteed to be unique in the games table.
+     *
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return string Unique game UID.
+     */
     public static function unique_game_uid() {
         global $wpdb;
         $table = $wpdb->prefix . 'lllm_games';
@@ -118,6 +160,13 @@ class LLLM_Import {
         return $uid;
     }
 
+    /**
+     * Resolves a season timezone, falling back to the site timezone when unset.
+     *
+     * @param int $season_id Season primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return string IANA timezone string.
+     */
     public static function get_season_timezone($season_id) {
         global $wpdb;
         $timezone = $wpdb->get_var(
@@ -134,6 +183,13 @@ class LLLM_Import {
         return $timezone;
     }
 
+    /**
+     * Parses a local datetime string in a source timezone and converts to UTC.
+     *
+     * @param string $datetime Date/time string parseable by PHP DateTime.
+     * @param string $timezone Source timezone name.
+     * @return string|false UTC datetime (`Y-m-d H:i:s`) or false when parsing fails.
+     */
     public static function parse_datetime_to_utc($datetime, $timezone) {
         try {
             $dt = new DateTime($datetime, new DateTimeZone($timezone));
