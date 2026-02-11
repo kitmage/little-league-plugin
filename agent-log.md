@@ -349,3 +349,29 @@ Proceed to Phase 2 Chunk 5:
 #### Next Step
 Proceed to Phase 2 Chunk 5B:
 - `includes/class-lllm-admin.php` next method block (remaining render/handler sections)
+
+### Function Documentation Audit — Chunk 5B (`includes/class-lllm-admin.php` render section)
+**Status:** Completed  
+**Scope reviewed:**
+- `includes/class-lllm-admin.php` (render methods for franchises/teams/games/import UI)
+
+#### Classification summary
+- **A (well documented):** none prior to this pass in reviewed range
+- **B (needs PHPDoc):**
+  - `LLLM_Admin::render_teams`
+  - `LLLM_Admin::render_division_teams`
+  - `LLLM_Admin::render_games`
+  - `LLLM_Admin::render_import_wizard_inline`
+  - `LLLM_Admin::render_import_wizard`
+  - `LLLM_Admin::render_import_logs`
+- **C (needs inline comment):** none required
+- **D (misleading/stale docs):** none found
+
+#### Applied edits
+- Added PHPDoc blocks for core render methods in the admin UI section.
+- Documented major responsibilities for each renderer, including inline import wizard argument contracts.
+- Preserved runtime behavior (documentation-only updates).
+
+#### Next Step
+Proceed to Phase 2 Chunk 5C:
+- `includes/class-lllm-admin.php` action handler section (`handle_*`, validation/import helpers)

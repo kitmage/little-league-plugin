@@ -610,6 +610,11 @@ class LLLM_Admin {
         echo '</div>';
     }
 
+    /**
+     * Renders the Franchises admin screen and franchise CSV helpers.
+     *
+     * @return void
+     */
     public static function render_teams() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -734,6 +739,13 @@ class LLLM_Admin {
         echo '</div>';
     }
 
+    /**
+     * Renders the Teams-by-Division assignment screen.
+     *
+     * Supports manual assign/remove actions plus CSV validate/import helpers.
+     *
+     * @return void
+     */
     public static function render_division_teams() {
         if (!current_user_can('lllm_manage_teams')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -851,6 +863,11 @@ class LLLM_Admin {
         echo '</div>';
     }
 
+    /**
+     * Renders the Games admin screen with quick-edit and import wizard sections.
+     *
+     * @return void
+     */
     public static function render_games() {
         if (!current_user_can('lllm_manage_games')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
@@ -1022,6 +1039,15 @@ class LLLM_Admin {
         echo '</div>';
     }
 
+    /**
+     * Renders the inline import wizard block for the Games screen.
+     *
+     * @param array<int,object> $seasons     Available season rows.
+     * @param array<int,object> $divisions   Available division rows for selected season.
+     * @param int               $season_id   Selected season id.
+     * @param int               $division_id Selected division id.
+     * @return void
+     */
     private static function render_import_wizard_inline($seasons, $divisions, $season_id, $division_id) {
         $step = isset($_GET['step']) ? absint($_GET['step']) : 1;
         $import_type = isset($_GET['import_type']) ? sanitize_text_field(wp_unslash($_GET['import_type'])) : 'full';
@@ -1125,6 +1151,11 @@ class LLLM_Admin {
         }
     }
 
+    /**
+     * Renders the standalone Import Wizard admin page wrapper.
+     *
+     * @return void
+     */
     public static function render_import_wizard() {
         $season_id = isset($_GET['season_id']) ? absint($_GET['season_id']) : 0;
         $division_id = isset($_GET['division_id']) ? absint($_GET['division_id']) : 0;
@@ -1138,6 +1169,11 @@ class LLLM_Admin {
         exit;
     }
 
+    /**
+     * Renders the Import Logs screen with filter controls and details table.
+     *
+     * @return void
+     */
     public static function render_import_logs() {
         if (!current_user_can('lllm_view_logs')) {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
