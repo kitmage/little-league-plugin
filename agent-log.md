@@ -453,3 +453,23 @@ Proceed to Phase 2 Chunk 6:
 #### Next Step
 Proceed to Phase 2 Chunk 7:
 - `includes/class-lllm-activator.php`
+
+### Function Documentation Audit — Chunk 7 (`includes/class-lllm-activator.php`)
+**Status:** Completed  
+**Scope reviewed:**
+- `includes/class-lllm-activator.php`
+
+#### Classification summary
+- **A (well documented):** none prior to this pass
+- **B (needs PHPDoc):**
+  - `LLLM_Activator::activate`
+- **C (needs inline comment):** none required
+- **D (misleading/stale docs):** none found
+
+#### Applied edits
+- Added PHPDoc for activation flow to document setup side effects (schema migration, version update, role sync).
+- Preserved runtime behavior (documentation-only updates).
+
+#### Next Step
+Phase 2 function documentation audit complete for planned file order (chunks 1–7 + split admin chunks 5A/5B/5C).
+Proceed to Phase 3 scoped doc-fix PR sequence.
