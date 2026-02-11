@@ -236,6 +236,137 @@ class LLLM_Admin {
         return preg_replace('/[^a-z0-9]+/', '', $value);
     }
 
+
+    /**
+     * Normalizes a game UID to uppercase alphanumeric value.
+     *
+     * @param string $value Raw game UID input.
+     * @return string Normalized game UID.
+     */
+    private static function normalize_game_uid($value) {
+        $value = strtoupper((string) $value);
+        return preg_replace('/[^A-Z0-9]+/', '', $value);
+    }
+
+    /**
+     * Normalizes playoff metadata values to lowercase slug-like tokens.
+     *
+     * @param string $value Raw metadata value.
+     * @return string Normalized metadata token.
+     */
+    private static function normalize_playoff_meta_value($value) {
+        $value = strtolower((string) $value);
+        return preg_replace('/[^a-z0-9_-]+/', '', $value);
+    }
+
+    /**
+     * Validates and sanitizes game competition/playoff metadata.
+     *
+     * @param array<string,mixed> $data Candidate game payload.
+     * @return array{valid:bool,error:string,data:array<string,mixed>} Validation result.
+     */
+    private static function validate_game_competition_data($data) {
+        $competition_type = isset($data['competition_type']) ? self::normalize_playoff_meta_value($data['competition_type']) : 'regular';
+        if ($competition_type === '') {
+            $competition_type = 'regular';
+        }
+
+        $playoff_round = isset($data['playoff_round']) ? self::normalize_playoff_meta_value($data['playoff_round']) : '';
+        $playoff_slot = isset($data['playoff_slot']) ? self::normalize_playoff_meta_value($data['playoff_slot']) : '';
+
+        $source_game_uid_1 = isset($data['source_game_uid_1']) ? self::normalize_game_uid($data['source_game_uid_1']) : '';
+        $source_game_uid_2 = isset($data['source_game_uid_2']) ? self::normalize_game_uid($data['source_game_uid_2']) : '';
+
+        if (!in_array($competition_type, array('regular', 'playoff'), true)) {
+            return array(
+                'valid' => false,
+                'error' => __('Invalid competition type.', 'lllm'),
+                'data' => $data,
+            );
+        }
+
+        if ($competition_type === 'regular') {
+            if ($playoff_round !== '' || $playoff_slot !== '' || $source_game_uid_1 !== '' || $source_game_uid_2 !== '') {
+                return array(
+                    'valid' => false,
+                    'error' => __('Regular games cannot include playoff metadata.', 'lllm'),
+                    'data' => $data,
+                );
+            }
+
+            $data['competition_type'] = 'regular';
+            $data['playoff_round'] = null;
+            $data['playoff_slot'] = null;
+            $data['source_game_uid_1'] = null;
+            $data['source_game_uid_2'] = null;
+
+            return array(
+                'valid' => true,
+                'error' => '',
+                'data' => $data,
+            );
+        }
+
+        $round_slots = array(
+            'r1' => array('1', '2', '3', '4'),
+            'r2' => array('1', '2'),
+            'championship' => array('1'),
+        );
+
+        if ($playoff_round === '' || !isset($round_slots[$playoff_round])) {
+            return array(
+                'valid' => false,
+                'error' => __('Playoff games require a valid playoff round.', 'lllm'),
+                'data' => $data,
+            );
+        }
+
+        if ($playoff_slot === '' || !in_array($playoff_slot, $round_slots[$playoff_round], true)) {
+            return array(
+                'valid' => false,
+                'error' => __('Playoff games require a valid playoff slot for the selected round.', 'lllm'),
+                'data' => $data,
+            );
+        }
+
+        $allow_source_uids = in_array($playoff_round, array('r2', 'championship'), true);
+        if (!$allow_source_uids && ($source_game_uid_1 !== '' || $source_game_uid_2 !== '')) {
+            return array(
+                'valid' => false,
+                'error' => __('Feeder source game UIDs are only allowed for R2 or Championship playoff games.', 'lllm'),
+                'data' => $data,
+            );
+        }
+
+        if ($source_game_uid_1 !== '' && strlen($source_game_uid_1) !== 12) {
+            return array(
+                'valid' => false,
+                'error' => __('source_game_uid_1 must be exactly 12 characters when provided.', 'lllm'),
+                'data' => $data,
+            );
+        }
+
+        if ($source_game_uid_2 !== '' && strlen($source_game_uid_2) !== 12) {
+            return array(
+                'valid' => false,
+                'error' => __('source_game_uid_2 must be exactly 12 characters when provided.', 'lllm'),
+                'data' => $data,
+            );
+        }
+
+        $data['competition_type'] = 'playoff';
+        $data['playoff_round'] = $playoff_round;
+        $data['playoff_slot'] = $playoff_slot;
+        $data['source_game_uid_1'] = $source_game_uid_1 !== '' ? $source_game_uid_1 : null;
+        $data['source_game_uid_2'] = $source_game_uid_2 !== '' ? $source_game_uid_2 : null;
+
+        return array(
+            'valid' => true,
+            'error' => '',
+            'data' => $data,
+        );
+    }
+
     /**
      * Redirects to an admin URL with standard League Manager notice args.
      *
@@ -2218,7 +2349,7 @@ class LLLM_Admin {
                     continue;
                 }
 
-                $game_uid = isset($row['game_uid']) ? trim($row['game_uid']) : '';
+                $game_uid = isset($row['game_uid']) ? self::normalize_game_uid(trim($row['game_uid'])) : '';
                 if (!$game_uid) {
                     $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: game_uid is required.', 'lllm'), $row_number));
                     continue;
@@ -2312,7 +2443,7 @@ class LLLM_Admin {
             }
             $seen_keys[$key] = true;
 
-            $game_uid = isset($row['game_uid']) ? trim($row['game_uid']) : '';
+            $game_uid = isset($row['game_uid']) ? self::normalize_game_uid(trim($row['game_uid'])) : '';
             $existing = null;
             if ($game_uid) {
                 $existing = $wpdb->get_row(
@@ -2348,7 +2479,19 @@ class LLLM_Admin {
                 'home_score' => $home_score,
                 'away_score' => $away_score,
                 'notes' => isset($row['notes']) ? sanitize_text_field($row['notes']) : '',
+                'competition_type' => isset($row['competition_type']) ? $row['competition_type'] : 'regular',
+                'playoff_round' => isset($row['playoff_round']) ? $row['playoff_round'] : '',
+                'playoff_slot' => isset($row['playoff_slot']) ? $row['playoff_slot'] : '',
+                'source_game_uid_1' => isset($row['source_game_uid_1']) ? $row['source_game_uid_1'] : '',
+                'source_game_uid_2' => isset($row['source_game_uid_2']) ? $row['source_game_uid_2'] : '',
             );
+
+            $competition_validation = self::validate_game_competition_data($data);
+            if (!$competition_validation['valid']) {
+                $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: %s', 'lllm'), $row_number, $competition_validation['error']));
+                continue;
+            }
+            $data = $competition_validation['data'];
 
             if ($existing) {
                 $operations[] = array(
