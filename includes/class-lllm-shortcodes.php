@@ -35,6 +35,7 @@ class LLLM_Shortcodes {
             $round_code = isset($source_game->playoff_round) ? (string) $source_game->playoff_round : '';
             $slot = isset($source_game->playoff_slot) ? (string) $source_game->playoff_slot : '';
 
+            // Keep feeder placeholders readable without exposing raw UIDs.
             $round_label_map = array(
                 'r1' => __('R1', 'lllm'),
                 'r2' => __('R2', 'lllm'),
@@ -461,6 +462,7 @@ class LLLM_Shortcodes {
         }
 
         $games_by_uid = array();
+        // Initialize every supported round so rendering stays deterministic.
         $games_by_round = array(
             'r1' => array(),
             'r2' => array(),
@@ -481,6 +483,7 @@ class LLLM_Shortcodes {
         );
 
         $output = '<div class="lllm-playoff-bracket">';
+        // Round order matches bracket progression from opening round to final.
         foreach (array('r1', 'r2', 'championship') as $round_code) {
             $output .= '<section class="lllm-playoff-round lllm-playoff-round-' . esc_attr($round_code) . '">';
             $output .= '<h3>' . esc_html($round_labels[$round_code]) . '</h3>';

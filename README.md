@@ -30,6 +30,19 @@ LLLM is a WordPress plugin that helps Little League volunteers manage seasons, d
 4. **Teams** → Assign franchises to a division.
 5. **Import Wizard** → Upload the schedule CSV.
 
+## Games quick edit options
+
+On the **Games** screen, each row includes Quick Edit controls for game metadata and result entry.
+
+### Game Type options
+
+- `Regular Game` → regular season game (`competition_type=regular`)
+- `Playoff R1` → playoff round 1 (`competition_type=playoff`, `playoff_round=r1`)
+- `Playoff R2` → playoff round 2 (`competition_type=playoff`, `playoff_round=r2`)
+- `Championship` → final game (`competition_type=playoff`, `playoff_round=championship`)
+
+For playoff types, Quick Edit also exposes the round slot (`playoff_slot`) used for bracket ordering.
+
 ## CSV imports
 
 There are two import modes:
@@ -115,6 +128,28 @@ Optional filter by franchise code (`team_code`):
 ```
 [lllm_teams season="spring-2026" division="8u" show_logos="1"]
 ```
+
+### Playoff bracket
+
+```
+[lllm_playoff_bracket season="spring-2026" division="8u"]
+```
+
+This shortcode renders the generated 6-team playoff bracket for the selected season/division.
+
+## Playoff Bracket (6-team)
+
+The built-in bracket generator uses a fixed, single-elimination 6-team format based on standings order (seeds 1–6):
+
+- **R1 Game 1:** Seed 3 vs Seed 6
+- **R1 Game 2:** Seed 4 vs Seed 5
+- **R2 Game 1:** Seed 1 vs winner of R1 Game 2
+- **R2 Game 2:** Seed 2 vs winner of R1 Game 1
+- **Championship:** winner of R2 Game 1 vs winner of R2 Game 2
+
+### Unresolved feeder behavior
+
+When a downstream playoff game references a feeder game that has not been played yet, bracket display shows a placeholder in the form `Winner of Game <round>-<slot>` until that feeder game status is `played`.
 
 ## Documentation
 
