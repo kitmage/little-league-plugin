@@ -238,6 +238,34 @@ class LLLM_Admin {
         return preg_replace('/[^a-z0-9]+/', '', $value);
     }
 
+    /**
+     * Normalizes a CSV matrix header token for case-insensitive matching.
+     *
+     * @param string $value Raw header value.
+     * @return string Normalized header key.
+     */
+    private static function normalize_csv_matrix_header($value) {
+        return strtolower(trim((string) $value));
+    }
+
+    /**
+     * Returns whether a matrix cell should be treated as unassigned.
+     *
+     * Blank cells and the literal token FALSE (case-insensitive) are considered
+     * unassigned; any other non-empty token is treated as assigned.
+     *
+     * @param string $value Raw cell value.
+     * @return bool True when the cell means "unassigned".
+     */
+    private static function matrix_cell_is_unassigned($value) {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return true;
+        }
+
+        return strtolower($value) === 'false';
+    }
+
 
     /**
      * Normalizes a game UID to uppercase alphanumeric value.
@@ -1070,11 +1098,17 @@ class LLLM_Admin {
         }
 
         $template_url = wp_nonce_url(
-            admin_url('admin-post.php?action=lllm_download_division_teams_template'),
+            add_query_arg(
+                array(
+                    'action' => 'lllm_download_division_teams_template',
+                    'season_id' => $season_id,
+                ),
+                admin_url('admin-post.php')
+            ),
             'lllm_download_division_teams_template'
         );
         echo '<h2>' . esc_html__('Teams CSV Import', 'lllm') . '</h2>';
-        echo '<p>' . esc_html__('Import team assignments for this division.', 'lllm') . '</p>';
+        echo '<p>' . esc_html__('Import team assignments for all divisions in this season. Any non-empty value means assigned; leave blank or enter FALSE to unassign.', 'lllm') . '</p>';
         echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a></p>';
         echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('lllm_import_division_teams_csv');
@@ -2081,13 +2115,42 @@ class LLLM_Admin {
         }
 
         check_admin_referer('lllm_download_division_teams_template');
+        $season_id = isset($_GET['season_id']) ? absint($_GET['season_id']) : 0;
+        if (!$season_id) {
+            wp_die(esc_html__('Season is required.', 'lllm'));
+        }
+
+        global $wpdb;
+        $divisions = $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT id, name FROM ' . self::table('divisions') . ' WHERE season_id = %d ORDER BY name ASC',
+                $season_id
+            )
+        );
+        $teams = $wpdb->get_results('SELECT team_code FROM ' . self::table('team_masters') . ' ORDER BY team_code ASC');
+
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=teams-template.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('franchise_code'));
+
+        $headers = array('franchise_code');
+        foreach ($divisions as $division) {
+            $headers[] = $division->name;
+        }
+        fputcsv($output, $headers);
+
+        foreach ($teams as $team) {
+            $row = array($team->team_code);
+            foreach ($divisions as $division) {
+                $row[] = '';
+            }
+            fputcsv($output, $row);
+        }
+
         fclose($output);
         exit;
     }
+
 
     /**
      * Validates uploaded divisions CSV without applying database writes.
@@ -2425,8 +2488,28 @@ class LLLM_Admin {
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
         $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
         $return_url = admin_url('admin.php?page=lllm-division-teams&season_id=' . $season_id . '&division_id=' . $division_id);
-        if (!$division_id) {
-            self::redirect_with_notice($return_url, 'error', __('Division is required.', 'lllm'));
+        if (!$season_id) {
+            self::redirect_with_notice($return_url, 'error', __('Season is required.', 'lllm'));
+        }
+
+        global $wpdb;
+        $divisions = $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT id, name FROM ' . self::table('divisions') . ' WHERE season_id = %d ORDER BY name ASC',
+                $season_id
+            )
+        );
+        if (!$divisions) {
+            self::redirect_with_notice($return_url, 'error', __('No divisions found for this season.', 'lllm'));
+        }
+
+        $division_map = array();
+        foreach ($divisions as $division) {
+            $key = self::normalize_csv_matrix_header($division->name);
+            if ($key === '' || isset($division_map[$key])) {
+                self::redirect_with_notice($return_url, 'error', __('Division names must be unique for CSV import.', 'lllm'));
+            }
+            $division_map[$key] = (int) $division->id;
         }
 
         $parsed = self::parse_uploaded_csv();
@@ -2439,54 +2522,154 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
 
-        global $wpdb;
-        $created = 0;
+        $headers = array_map(array(__CLASS__, 'normalize_csv_matrix_header'), $parsed['headers']);
+        $csv_division_headers = array();
+        foreach ($headers as $header) {
+            if ($header === 'franchise_code') {
+                continue;
+            }
+            $csv_division_headers[$header] = true;
+        }
+
+        $expected_headers = array_keys($division_map);
+        $missing_headers = array_diff($expected_headers, array_keys($csv_division_headers));
+        if ($missing_headers) {
+            self::redirect_with_notice(
+                $return_url,
+                'error',
+                sprintf(__('Missing required division columns: %s', 'lllm'), implode(', ', $missing_headers))
+            );
+        }
+
+        $unknown_headers = array_diff(array_keys($csv_division_headers), $expected_headers);
+        if ($unknown_headers) {
+            self::redirect_with_notice(
+                $return_url,
+                'error',
+                sprintf(__('Unknown division columns in CSV: %s', 'lllm'), implode(', ', $unknown_headers))
+            );
+        }
+
+        $team_rows = $wpdb->get_results('SELECT id, team_code FROM ' . self::table('team_masters'));
+        $team_map = array();
+        foreach ($team_rows as $team_row) {
+            $team_map[$team_row->team_code] = (int) $team_row->id;
+        }
+
+        $division_ids = array_values($division_map);
+        $placeholders = implode(',', array_fill(0, count($division_ids), '%d'));
+        $existing_rows = $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT id, division_id, team_master_id FROM ' . self::table('team_instances') . " WHERE division_id IN ($placeholders)",
+                $division_ids
+            )
+        );
+        $existing = array();
+        foreach ($existing_rows as $existing_row) {
+            $mapped_division_id = (int) $existing_row->division_id;
+            $mapped_team_id = (int) $existing_row->team_master_id;
+            if (!isset($existing[$mapped_division_id])) {
+                $existing[$mapped_division_id] = array();
+            }
+            $existing[$mapped_division_id][$mapped_team_id] = (int) $existing_row->id;
+        }
+
+        $desired = array();
+        $seen_codes = array();
         $skipped = 0;
         foreach ($parsed['rows'] as $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
             $code = isset($row_lower['franchise_code']) ? self::normalize_team_code(trim($row_lower['franchise_code'])) : '';
-            if ($code === '') {
+            if ($code === '' || isset($seen_codes[$code]) || !isset($team_map[$code])) {
                 $skipped++;
                 continue;
             }
-            $team_id = $wpdb->get_var(
-                $wpdb->prepare('SELECT id FROM ' . self::table('team_masters') . ' WHERE team_code = %s', $code)
-            );
-            if (!$team_id) {
-                $skipped++;
-                continue;
+            $seen_codes[$code] = true;
+            $team_id = (int) $team_map[$code];
+
+            foreach ($division_map as $division_header => $mapped_division_id) {
+                $cell_value = isset($row_lower[$division_header]) ? $row_lower[$division_header] : '';
+                if (self::matrix_cell_is_unassigned($cell_value)) {
+                    continue;
+                }
+
+                if (!isset($desired[$mapped_division_id])) {
+                    $desired[$mapped_division_id] = array();
+                }
+                $desired[$mapped_division_id][$team_id] = true;
             }
-            $existing = $wpdb->get_var(
-                $wpdb->prepare(
-                    'SELECT id FROM ' . self::table('team_instances') . ' WHERE division_id = %d AND team_master_id = %d',
-                    $division_id,
-                    $team_id
-                )
-            );
-            if ($existing) {
-                $skipped++;
-                continue;
+        }
+
+        $created = 0;
+        $removed = 0;
+        $blocked = 0;
+        $touched_divisions = array();
+        $timestamp = current_time('mysql', true);
+
+        foreach ($division_ids as $mapped_division_id) {
+            $existing_for_division = isset($existing[$mapped_division_id]) ? $existing[$mapped_division_id] : array();
+            $desired_for_division = isset($desired[$mapped_division_id]) ? $desired[$mapped_division_id] : array();
+
+            foreach ($desired_for_division as $team_id => $assigned_true) {
+                if (isset($existing_for_division[$team_id])) {
+                    continue;
+                }
+
+                $wpdb->insert(
+                    self::table('team_instances'),
+                    array(
+                        'division_id' => $mapped_division_id,
+                        'team_master_id' => $team_id,
+                        'display_name' => null,
+                        'created_at' => $timestamp,
+                        'updated_at' => $timestamp,
+                    )
+                );
+                $created++;
+                $touched_divisions[$mapped_division_id] = true;
             }
-            $timestamp = current_time('mysql', true);
-            $wpdb->insert(
-                self::table('team_instances'),
-                array(
-                    'division_id' => $division_id,
-                    'team_master_id' => $team_id,
-                    'display_name' => null,
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                )
-            );
-            $created++;
+
+            foreach ($existing_for_division as $team_id => $instance_id) {
+                if (isset($desired_for_division[$team_id])) {
+                    continue;
+                }
+
+                $game_count = (int) $wpdb->get_var(
+                    $wpdb->prepare(
+                        'SELECT COUNT(*) FROM ' . self::table('games') . ' WHERE division_id = %d AND (home_team_instance_id = %d OR away_team_instance_id = %d)',
+                        $mapped_division_id,
+                        $instance_id,
+                        $instance_id
+                    )
+                );
+                if ($game_count > 0) {
+                    $blocked++;
+                    continue;
+                }
+
+                $wpdb->delete(self::table('team_instances'), array('id' => $instance_id));
+                $removed++;
+                $touched_divisions[$mapped_division_id] = true;
+            }
+        }
+
+        foreach (array_keys($touched_divisions) as $touched_division_id) {
+            LLLM_Standings::bust_cache((int) $touched_division_id);
         }
 
         self::redirect_with_notice(
             $return_url,
             'import_complete',
-            sprintf(__('Teams imported: %d created, %d skipped.', 'lllm'), $created, $skipped)
+            sprintf(
+                __('Teams import synced: %d assigned, %d unassigned, %d blocked, %d skipped.', 'lllm'),
+                $created,
+                $removed,
+                $blocked,
+                $skipped
+            )
         );
     }
+
 
     /**
      * Persists an import-log entry for audit/history reporting.
