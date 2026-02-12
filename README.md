@@ -74,11 +74,16 @@ Required headers:
 game_uid,away_score,home_score,status,notes
 ```
 
+Behavior notes:
+- `status` is still required and must be one of: `scheduled`, `played`, `canceled`, `postponed`.
+- If either score column is populated, import validation will automatically set the game to `played` and apply both scores.
+- If a row is treated as `played`, both score columns must be provided.
+
 Example:
 
 ```
 game_uid,away_score,home_score,status,notes
-G8K4Q2M9T1A3,6,4,played,
+G8K4Q2M9T1A3,6,4,scheduled,Final entered via score update
 K2P7N6D4R9B1,3,3,played,Tie game
 ```
 
