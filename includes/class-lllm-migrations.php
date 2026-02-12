@@ -6,6 +6,37 @@ if (!defined('ABSPATH')) {
 
 class LLLM_Migrations {
     /**
+     * Returns whether the games table contains newer competition metadata columns.
+     *
+     * Some installations can run code newer than their schema when plugin version
+     * metadata is stale. This guard lets runtime upgrade checks self-heal.
+     *
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return bool True when required columns are present.
+     */
+    public static function has_required_game_columns() {
+        global $wpdb;
+
+        $games_table = $wpdb->prefix . 'lllm_games';
+        $required_columns = array(
+            'competition_type',
+            'playoff_round',
+            'playoff_slot',
+            'source_game_uid_1',
+            'source_game_uid_2',
+        );
+
+        foreach ($required_columns as $column) {
+            $exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$games_table} LIKE %s", $column));
+            if (!$exists) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Creates or updates plugin database tables using WordPress dbDelta.
      *
      * Tables managed:

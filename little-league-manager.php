@@ -55,7 +55,9 @@ function lllm_maybe_upgrade() {
     LLLM_Roles::sync_roles();
 
     $stored_version = get_option('lllm_plugin_version');
-    if ($stored_version === LLLM_VERSION) {
+    $schema_outdated = !LLLM_Migrations::has_required_game_columns();
+
+    if ($stored_version === LLLM_VERSION && !$schema_outdated) {
         return;
     }
 

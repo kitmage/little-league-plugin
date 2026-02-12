@@ -591,10 +591,52 @@ class LLLM_Admin {
 
         $inserted = $wpdb->insert(self::table('games'), $payload);
         if (!$inserted) {
+            $last_error = (string) $wpdb->last_error;
+
+            // If the row already exists by natural unique key, treat this as an update.
+            // This avoids hard-failing commits when duplicate creates slip through preview.
+            if (
+                strpos($last_error, 'Duplicate entry') !== false
+                && strpos($last_error, 'game_unique') !== false
+            ) {
+                $existing_id = (int) $wpdb->get_var(
+                    $wpdb->prepare(
+                        'SELECT id FROM ' . self::table('games') . ' WHERE division_id = %d AND start_datetime_utc = %s AND home_team_instance_id = %d AND away_team_instance_id = %d',
+                        $payload['division_id'],
+                        $payload['start_datetime_utc'],
+                        $payload['home_team_instance_id'],
+                        $payload['away_team_instance_id']
+                    )
+                );
+
+                if ($existing_id > 0) {
+                    $update_payload = $payload;
+                    unset($update_payload['game_uid']);
+                    $update_payload['updated_at'] = current_time('mysql', true);
+                    $updated = $wpdb->update(self::table('games'), $update_payload, array('id' => $existing_id));
+                    if ($updated !== false) {
+                        $resolved_uid = (string) $wpdb->get_var(
+                            $wpdb->prepare('SELECT game_uid FROM ' . self::table('games') . ' WHERE id = %d', $existing_id)
+                        );
+
+                        return array(
+                            'ok' => true,
+                            'uid' => $resolved_uid,
+                            'error' => '',
+                        );
+                    }
+                }
+            }
+
+            $error_message = __('Unable to create game record.', 'lllm');
+            if ($last_error !== '') {
+                $error_message .= ' ' . sprintf(__('Database error: %s', 'lllm'), $last_error);
+            }
+
             return array(
                 'ok' => false,
                 'uid' => '',
-                'error' => __('Unable to create game record.', 'lllm'),
+                'error' => $error_message,
             );
         }
 
