@@ -270,7 +270,7 @@ The plugin includes a dedicated **League Manager → Shortcode Generator** subme
 
 - Capability: `lllm_manage_seasons`
 - Page title/menu label: `Shortcode Generator`
-- Renders a shortcode-type dropdown, dynamic attribute controls, generated preview textarea, and copy button.
+- Renders a shortcode-type dropdown, dynamic attribute controls (primarily dropdown-first), generated preview textarea, and copy button.
 - Uses page-scoped admin assets only on this screen (`assets/shortcode-generator-admin.js` and `assets/shortcode-generator-admin.css`).
 - Uses shared shortcode definitions from `LLLM_Admin::get_shortcode_definition_map()` plus dynamic value sources from plugin data to keep labels, control types, defaults, and attribute order consistent.
 - Dynamic dropdown value sources are fetched via `wp_ajax_lllm_shortcode_generator_value_source` and returned as `{label, value}` option arrays.
@@ -278,6 +278,7 @@ The plugin includes a dedicated **League Manager → Shortcode Generator** subme
 - When a parent field changes, child dynamic selects are refetched with mapped filters, stale child values are cleared if no longer valid, and preview shortcode output updates immediately.
 - Client-side option payloads are cached per source+filter key for the admin page session to avoid repeat requests.
 - Dynamic selects expose loading, empty, and retryable error states for better resilience.
+- Primary user flow is: choose shortcode type → select attributes from dropdowns → copy shortcode.
 
 ---
 
@@ -565,6 +566,54 @@ Builder requirements:
 * Preview and copy must always serialize shortcode attribute `value` (never `label`) to preserve shortcode compatibility.
 * Build final shortcode string from this map in the exact configured attribute order.
 * Omit optional attributes when their values are empty.
+
+
+#### Maintaining shortcode schema + dropdown options
+
+Implementation source of truth lives in `LLLM_Admin::get_shortcode_definition_map()` and `LLLM_Admin::get_shortcode_generator_value_source_options()`.
+
+When adding or maintaining dropdown options:
+
+1. In the shortcode definition map, add/update the attribute in both:
+   - `attributes` ordered list (controls output order), and
+   - `attribute_meta` entry.
+2. For dropdowns, set:
+   - `control_type => select`
+   - `value_source => { type: static|dynamic, ... }`
+   - `optional`, `default_value`, and optional `allow_custom_value`.
+3. For static dropdowns, maintain curated options inline under `value_source.options` as `{label, value}` pairs.
+4. For dependent dropdowns, wire dependency metadata:
+   - `dependsOn` for parent attribute names.
+   - `filterBy` mapping from parent attribute to provider filter key.
+
+#### Wiring dynamic option providers
+
+Dynamic providers are keyed by `value_source.key` and served via the AJAX route `wp_ajax_lllm_shortcode_generator_value_source`.
+
+- Add/maintain provider logic in `get_shortcode_generator_value_source_options($source_key, $filters)`.
+- Normalize/validate incoming filter keys with `sanitize_key` and values with `sanitize_text_field`.
+- Return options as `{ label, value }` arrays only.
+- Keep provider keys aligned across:
+  - schema `value_source.key`,
+  - AJAX request `source_key`,
+  - PHP provider switch branches.
+
+Current provider keys:
+- `season_slugs`
+- `division_slugs` (supports `season_slug` filter)
+- `team_codes` (supports `season_slug` and `division_slug` filters)
+
+#### Troubleshooting notes (generator)
+
+Empty dropdowns / no options:
+- Verify backing records exist in DB/admin screens (for example, no divisions exist yet for selected season).
+- Verify dependency order: parent value must be selected before child options can resolve.
+- Use inline **Retry** when fetch errors occur; if still empty, reload the admin page to reset in-memory option cache.
+
+Custom-value override behavior:
+- If `allow_custom_value` is enabled for an attribute, custom mode overrides curated dropdown selection.
+- Override is intentional and should be treated as advanced/manual path.
+- Sanitization strips everything outside `[A-Za-z0-9_-]` before shortcode serialization.
 
 ### 12.2 Display rules (dad-proof)
 

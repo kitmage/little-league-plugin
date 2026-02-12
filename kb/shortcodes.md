@@ -19,8 +19,8 @@ If you leave out season/division attributes, the plugin defaults to the **active
 
 If you prefer a guided workflow, go to **League Manager → Shortcode Generator**:
 
-1. Select the shortcode type.
-2. Fill any attributes you want.
+1. Choose the shortcode type.
+2. Select attributes from the dropdowns.
 3. Use **Copy Shortcode** to copy the generated preview into your page/post.
 
 When you switch shortcode types, the builder clears prior attribute controls/state, renders only fields for the selected type, maps schema control types to matching UI controls, initializes from schema defaults, and refreshes preview output on every field change.
@@ -43,6 +43,22 @@ Each dynamic field includes explicit states:
 - **Loading**: disabled select with a loading placeholder.
 - **Empty**: disabled select with **No options available**.
 - **Error**: inline message plus a **Retry** action that attempts the request again.
+
+
+### Generator troubleshooting (empty dropdowns + custom overrides)
+
+If dropdown attributes are empty, disabled, or showing **No options available**:
+
+1. Confirm source records exist in League Manager (seasons/divisions/teams).
+2. Select parent fields first (for example, season before division; season + division before team code).
+3. If a field shows an inline load error, click **Retry**.
+4. Refresh the Shortcode Generator page to clear stale in-memory option cache for the current session.
+
+If you must use a slug/code not shown in curated options:
+
+- Enable **Advanced: custom value** for that attribute.
+- In custom mode, the manual input overrides dropdown selection for shortcode output.
+- Custom values are sanitized to letters, numbers, dashes, and underscores before preview/copy.
 
 ---
 
