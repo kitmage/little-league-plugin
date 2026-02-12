@@ -23,6 +23,32 @@
 
     var activeAttributeState = {};
 
+    var normalizeOptionConfig = function (optionConfig) {
+        if (optionConfig && typeof optionConfig === 'object') {
+            var normalizedValue = String(typeof optionConfig.value === 'undefined' ? '' : optionConfig.value);
+            var normalizedLabel = String(typeof optionConfig.label === 'undefined' ? normalizedValue : optionConfig.label);
+
+            return {
+                label: normalizedLabel,
+                value: normalizedValue
+            };
+        }
+
+        return {
+            label: String(optionConfig),
+            value: String(optionConfig)
+        };
+    };
+
+    var getAttributeValue = function (attributeName) {
+        var entry = activeAttributeState[attributeName];
+        if (entry && typeof entry === 'object' && Object.prototype.hasOwnProperty.call(entry, 'value')) {
+            return String(entry.value || '');
+        }
+
+        return String(entry || '');
+    };
+
     var setCopyNotice = function (message) {
         copyNotice.textContent = message || '';
     };
@@ -62,8 +88,7 @@
         var parts = ['[' + selected];
         (definition.attributes || []).forEach(function (attributeName) {
             var meta = (definition.attribute_meta && definition.attribute_meta[attributeName]) ? definition.attribute_meta[attributeName] : {};
-            var rawValue = (typeof activeAttributeState[attributeName] === 'undefined') ? '' : activeAttributeState[attributeName];
-            var value = String(rawValue).trim();
+            var value = getAttributeValue(attributeName).trim();
 
             if (meta.optional && value === '') {
                 return;
@@ -156,9 +181,13 @@
                 }
 
                 options.forEach(function (optionConfig) {
+                    var optionState = normalizeOptionConfig(optionConfig);
                     var option = document.createElement('option');
-                    option.value = String(typeof optionConfig.value === 'undefined' ? '' : optionConfig.value);
-                    option.textContent = String(typeof optionConfig.label === 'undefined' ? option.value : optionConfig.label);
+                    option.value = optionState.value;
+                    option.dataset.label = optionState.label;
+                    option.textContent = optionState.label === optionState.value
+                        ? optionState.label
+                        : optionState.label + ' (' + optionState.value + ')';
                     input.appendChild(option);
                 });
             } else if (controlType === 'checkbox') {
@@ -178,14 +207,34 @@
                 input.className = 'regular-text';
                 input.value = defaultValue;
             }
-            activeAttributeState[attributeName] = controlType === 'checkbox'
-                ? (input.checked ? '1' : '0')
-                : defaultValue;
+            if (controlType === 'select') {
+                var initialOption = input.options[input.selectedIndex] || null;
+                activeAttributeState[attributeName] = {
+                    label: initialOption ? String(initialOption.dataset.label || '') : '',
+                    value: String(input.value || '')
+                };
+            } else {
+                activeAttributeState[attributeName] = {
+                    value: controlType === 'checkbox'
+                        ? (input.checked ? '1' : '0')
+                        : defaultValue
+                };
+            }
 
             var onFieldChange = function () {
-                activeAttributeState[attributeName] = controlType === 'checkbox'
-                    ? (input.checked ? '1' : '0')
-                    : String(input.value || '');
+                if (controlType === 'select') {
+                    var selectedOption = input.options[input.selectedIndex] || null;
+                    activeAttributeState[attributeName] = {
+                        label: selectedOption ? String(selectedOption.dataset.label || '') : '',
+                        value: String(input.value || '')
+                    };
+                } else {
+                    activeAttributeState[attributeName] = {
+                        value: controlType === 'checkbox'
+                            ? (input.checked ? '1' : '0')
+                            : String(input.value || '')
+                    };
+                }
                 buildShortcode();
             };
 

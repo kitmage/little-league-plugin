@@ -25,6 +25,8 @@ If you prefer a guided workflow, go to **League Manager → Shortcode Generator*
 
 When you switch shortcode types, the builder clears prior attribute controls/state, renders only fields for the selected type, maps schema control types to matching UI controls, initializes from schema defaults, and refreshes preview output on every field change.
 
+For dropdown attributes, each option stores both a display `label` and shortcode `value`. The menu shows both, while generated/copy-ready shortcode output always inserts the `value`.
+
 The copy button first tries your browser clipboard API. If that fails, the preview text is auto-selected and the UI tells you to press **Ctrl/Cmd+C**.
 
 Optional attributes that are left blank are omitted from the generated shortcode output.

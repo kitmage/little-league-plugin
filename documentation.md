@@ -545,10 +545,12 @@ Builder requirements:
 * On type change, clear previous attribute UI and previous attribute state.
 * Render only attribute controls declared for the selected shortcode type by mapping `control_type` to UI component (`select`, `text`, `number`, `checkbox`).
 * Resolve select options from `value_source` (`static` options in schema or `dynamic` source keys from plugin data), then initialize each rendered field from `default_value`.
+* Treat every select option as `{ label, value }`: render menu text from `label` (optionally showing `value` for clarity), but store both in state.
 * Recompute shortcode preview output on every field change.
 * Render preview in a readonly field at the bottom of the builder.
 * Add a **Copy Shortcode** action that is idempotent and does not reload the page.
 * Copy behavior: try `navigator.clipboard.writeText(previewValue)`, show success notice on resolve, and on rejection/select-failure select preview text and show `Press Ctrl/Cmd+C` fallback guidance.
+* Preview and copy must always serialize shortcode attribute `value` (never `label`) to preserve shortcode compatibility.
 * Build final shortcode string from this map in the exact configured attribute order.
 * Omit optional attributes when their values are empty.
 

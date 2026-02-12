@@ -166,7 +166,7 @@ class LLLM_Admin {
         $season_rows = $wpdb->get_results('SELECT slug, name FROM ' . self::table('seasons') . ' ORDER BY name ASC');
         foreach ($season_rows as $season_row) {
             $sources['season_slugs'][] = array(
-                'label' => $season_row->name . ' (' . $season_row->slug . ')',
+                'label' => $season_row->name,
                 'value' => $season_row->slug,
             );
         }
@@ -179,7 +179,7 @@ class LLLM_Admin {
         );
         foreach ($division_rows as $division_row) {
             $season_name = isset($division_row->season_name) ? $division_row->season_name : '';
-            $label = $division_row->name . ' (' . $division_row->slug . ')';
+            $label = $division_row->name;
             if ($season_name !== '') {
                 $label .= ' — ' . $season_name;
             }
@@ -193,7 +193,7 @@ class LLLM_Admin {
         $team_rows = $wpdb->get_results('SELECT team_code, name FROM ' . self::table('team_masters') . ' ORDER BY name ASC');
         foreach ($team_rows as $team_row) {
             $sources['team_codes'][] = array(
-                'label' => $team_row->name . ' (' . $team_row->team_code . ')',
+                'label' => $team_row->name,
                 'value' => $team_row->team_code,
             );
         }
