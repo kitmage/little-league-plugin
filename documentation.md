@@ -454,14 +454,15 @@ Every validation + commit produces a log entry with:
 1. `game_uid` (required)
 2. `away_score` (required)
 3. `home_score` (required)
-4. `status` (required; typically `played`)
+4. `status` (optional; typically `played`)
 5. `notes` (optional)
 
 **Rules**
 
 * Must only update existing games in this division.
 * If `status=played`, scores required.
-* If `status` is not played, scores must be blank (to prevent accidental “0-0 played”).
+* If either score is supplied, the row is treated as `played` and both scores must be present (even when status is blank).
+* If no scores are provided, status is required.
 
 ### 9.4 Export format
 
