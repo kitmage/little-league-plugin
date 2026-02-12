@@ -3241,8 +3241,15 @@ class LLLM_Admin {
             $status = isset($row['status']) ? strtolower(trim($row['status'])) : '';
 
             if ($import_type === 'score') {
+                $has_home_score = $row['home_score'] !== '';
+                $has_away_score = $row['away_score'] !== '';
+
+                if ($status === '' && ($has_home_score || $has_away_score)) {
+                    $status = 'played';
+                }
+
                 if ($status === '') {
-                    $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: status is required for score updates.', 'lllm'), $row_number));
+                    $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: status is required for score updates when no scores are provided.', 'lllm'), $row_number));
                     continue;
                 }
                 if (!in_array($status, $allowed_status, true)) {
@@ -3268,14 +3275,8 @@ class LLLM_Admin {
                     continue;
                 }
 
-                $has_home_score = $row['home_score'] !== '';
-                $has_away_score = $row['away_score'] !== '';
                 $home_score = $has_home_score ? intval($row['home_score']) : null;
                 $away_score = $has_away_score ? intval($row['away_score']) : null;
-
-                if ($has_home_score || $has_away_score) {
-                    $status = 'played';
-                }
 
                 if ($status === 'played' && ($home_score === null || $away_score === null)) {
                     $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: scores required for played games.', 'lllm'), $row_number));

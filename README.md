@@ -75,8 +75,8 @@ game_uid,away_score,home_score,status,notes
 ```
 
 Behavior notes:
-- `status` is still required and must be one of: `scheduled`, `played`, `canceled`, `postponed`.
-- If either score column is populated, import validation will automatically set the game to `played` and apply both scores.
+- `status` must be one of: `scheduled`, `played`, `canceled`, `postponed` when provided.
+- If either score column is populated, import validation will automatically set the game to `played` and apply both scores (even when `status` is blank).
 - If a row is treated as `played`, both score columns must be provided.
 
 Example:
