@@ -1,0 +1,16 @@
+.lllm-shortcode-generator {
+    max-width: 860px;
+}
+
+.lllm-shortcode-generator .form-table {
+    margin-bottom: 0;
+}
+
+.lllm-shortcode-attribute-optional {
+    margin-left: 6px;
+    font-weight: 400;
+}
+
+#lllm-shortcode-output {
+    min-height: 80px;
+}

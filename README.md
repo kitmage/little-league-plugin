@@ -10,7 +10,7 @@ LLLM is a WordPress plugin that helps Little League volunteers manage seasons, d
 - Import schedules and weekly score updates via CSV
 - View games in the admin with quick edit
 - Render schedules and standings via shortcodes
-- Build shortcodes in wp-admin via a schema-driven Shortcode Builder
+- Build shortcodes in wp-admin via a schema-driven Shortcode Generator
 
 ## Requirements
 
@@ -114,9 +114,9 @@ Import behavior:
 - Empty cells and the literal value `FALSE` (case-insensitive) mean unassigned.
 - Import syncs the full season matrix (adds missing assignments and removes assignments that are unassigned in the file, unless blocked by existing games).
 
-## Admin shortcode builder
+## Admin shortcode generator
 
-On **League Manager → Welcome**, use the built-in **Shortcode Builder** to generate valid shortcode strings.
+On **League Manager → Shortcode Generator**, use the built-in generator to create valid shortcode strings.
 
 - Choose a shortcode type from a dropdown populated from a shortcode definition map.
 - Switching shortcode types clears previously rendered attribute controls and prior attribute state.
