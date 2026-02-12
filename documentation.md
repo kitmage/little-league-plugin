@@ -536,6 +536,9 @@ Builder requirements:
 * Render only attribute controls declared for the selected shortcode type.
 * Initialize each rendered field from `default_value` in schema metadata.
 * Recompute shortcode preview output on every field change.
+* Render preview in a readonly field at the bottom of the builder.
+* Add a **Copy Shortcode** action that is idempotent and does not reload the page.
+* Copy behavior: try `navigator.clipboard.writeText(previewValue)`, show success notice on resolve, and on rejection/select-failure select preview text and show `Press Ctrl/Cmd+C` fallback guidance.
 * Build final shortcode string from this map in the exact configured attribute order.
 * Omit optional attributes when their values are empty.
 

@@ -121,7 +121,9 @@ On **League Manager → Welcome**, use the built-in **Shortcode Builder** to gen
 - Choose a shortcode type from a dropdown populated from a shortcode definition map.
 - Switching shortcode types clears previously rendered attribute controls and prior attribute state.
 - Attribute fields render dynamically for only the selected shortcode type and initialize from schema default values.
-- Preview output recomputes on every attribute field change.
+- Preview output recomputes on every attribute field change in a readonly preview area.
+- Use **Copy Shortcode** to copy the generated preview without reloading the page.
+- If clipboard copy is blocked, the preview text is selected and a keyboard fallback prompt is shown (Ctrl/Cmd+C).
 - Generated shortcode output follows a consistent attribute order based on the shared schema and omits empty optional attributes.
 
 This keeps shortcode labels, supported attributes, defaults, and output formatting aligned in one place.
