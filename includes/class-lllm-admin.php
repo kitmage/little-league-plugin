@@ -2469,12 +2469,30 @@ class LLLM_Admin {
             )
         );
 
+        $season_timezone = $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT s.timezone
+                 FROM ' . self::table('divisions') . ' d
+                 JOIN ' . self::table('seasons') . ' s ON s.id = d.season_id
+                 WHERE d.id = %d',
+                $division_id
+            )
+        );
+        if (!$season_timezone) {
+            $season_timezone = wp_timezone_string();
+        }
+        if (!$season_timezone) {
+            $season_timezone = 'UTC';
+        }
+        $export_timezone = new DateTimeZone($season_timezone);
+
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=current-games.csv');
         $output = fopen('php://output', 'w');
         fputcsv($output, array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'status', 'away_score', 'home_score', 'notes'));
         foreach ($games as $game) {
             $datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
+            $datetime->setTimezone($export_timezone);
             fputcsv($output, array(
                 $game->game_uid,
                 $datetime->format('m/d/Y'),

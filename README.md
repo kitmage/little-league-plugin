@@ -51,6 +51,11 @@ There are two import modes:
 ### Full Schedule Import
 Use at season start or when the schedule changes.
 
+Date/time normalization:
+- `start_date` + `start_time` are interpreted in the selected season's timezone.
+- `Export Current Games CSV` writes those fields back in that same season timezone.
+- This means import/export round trips keep the same local schedule times.
+
 Required headers:
 
 ```
