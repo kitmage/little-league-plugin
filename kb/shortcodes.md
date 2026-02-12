@@ -33,7 +33,9 @@ Optional attributes that are left blank are omitted from the generated shortcode
 
 The builder uses the same shortcode schema for labels, attributes, control types, value sources, defaults, and attribute order, so generated strings stay consistent.
 
-Dynamic dropdown attributes (for example season/division/team code) are loaded from plugin admin AJAX data and normalized as `{label, value}` options. The page caches each dynamic option source for the current admin session to reduce repeat network requests while you switch shortcode types.
+Dynamic dropdown attributes (for example season/division/team code) are loaded from plugin admin AJAX data and normalized as `{label, value}` options. The page caches each dynamic option source+filter combination for the current admin session to reduce repeat network requests while you switch shortcode types.
+
+The shortcode schema can define attribute dependencies with `dependsOn` + `filterBy` (for example `season -> division -> team_code`). When a parent field changes, child option lists are recalculated/refetched immediately, invalid child selections are cleared, and the preview shortcode recomputes right away.
 
 Each dynamic field includes explicit states:
 - **Loading**: disabled select with a loading placeholder.
