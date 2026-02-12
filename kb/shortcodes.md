@@ -15,9 +15,9 @@ If you leave out season/division attributes, the plugin defaults to the **active
 
 ---
 
-## Optional: use the admin Shortcode Builder
+## Optional: use the admin Shortcode Generator
 
-If you prefer a guided workflow, go to **League Manager → Welcome** and use **Shortcode Builder**:
+If you prefer a guided workflow, go to **League Manager → Shortcode Generator**:
 
 1. Select the shortcode type.
 2. Fill any attributes you want.

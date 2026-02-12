@@ -250,13 +250,23 @@ Subpages:
 
 1. Seasons
 2. Divisions
-3. Teams
+3. Franchises
 4. Teams (team assignment + cloning)
 5. Games (view + quick edit)
-6. Import Wizard
-7. Import Logs
+6. Import Logs
+7. Shortcode Generator
 
 Managers should never need WP’s standard editor screens.
+
+### 6.2 Shortcode Generator screen
+
+The plugin includes a dedicated **League Manager → Shortcode Generator** submenu page for building shortcodes.
+
+- Capability: `lllm_manage_seasons`
+- Page title/menu label: `Shortcode Generator`
+- Renders a shortcode-type dropdown, dynamic attribute controls, generated preview textarea, and copy button.
+- Uses page-scoped admin assets only on this screen (`assets/shortcode-generator-admin.js` and `assets/shortcode-generator-admin.css`).
+- Uses shared shortcode definitions from `LLLM_Admin::get_shortcode_definition_map()` to keep labels, defaults, and attribute order consistent.
 
 ---
 

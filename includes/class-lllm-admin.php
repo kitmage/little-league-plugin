@@ -209,6 +209,15 @@ class LLLM_Admin {
             array(__CLASS__, 'render_import_logs')
         );
 
+        add_submenu_page(
+            'lllm-seasons',
+            __('Shortcode Generator', 'lllm'),
+            __('Shortcode Generator', 'lllm'),
+            'lllm_manage_seasons',
+            'lllm-shortcode-generator',
+            array(__CLASS__, 'render_shortcode_generator')
+        );
+
         // Remove the duplicate auto-generated first submenu item that points to the parent slug.
         remove_submenu_page('lllm-seasons', 'lllm-seasons');
     }
@@ -259,14 +268,63 @@ class LLLM_Admin {
      * @return void
      */
     public static function enqueue_assets($hook) {
-        if (empty($_GET['page']) || $_GET['page'] !== 'lllm-franchises') {
-            return;
+        if (!empty($_GET['page']) && $_GET['page'] === 'lllm-franchises') {
+            self::enqueue_franchise_assets();
         }
 
+        if (!empty($_GET['page']) && $_GET['page'] === 'lllm-shortcode-generator') {
+            self::enqueue_shortcode_generator_assets();
+        }
+    }
+
+    /**
+     * Enqueues media picker assets for the Franchises admin screen.
+     *
+     * @return void
+     */
+    private static function enqueue_franchise_assets() {
         wp_enqueue_media();
         wp_add_inline_script(
             'jquery',
             '(function($){$(function(){var frame;function setLogo(id,url){$("#lllm-team-logo-id").val(id||"");if(url){$("#lllm-team-logo-preview").attr("src",url).show();}else{$("#lllm-team-logo-preview").attr("src","").hide();}}$("#lllm-team-logo-select").on("click",function(e){e.preventDefault();if(frame){frame.open();return;}frame=wp.media({title:"' . esc_js(__('Select Franchise Logo', 'lllm')) . '",button:{text:"' . esc_js(__('Use this logo', 'lllm')) . '"},multiple:false});frame.on("select",function(){var attachment=frame.state().get("selection").first().toJSON();setLogo(attachment.id,attachment.sizes&&attachment.sizes.thumbnail?attachment.sizes.thumbnail.url:attachment.url);});frame.open();});$("#lllm-team-logo-remove").on("click",function(e){e.preventDefault();setLogo("", "");});});})(jQuery);'
+        );
+    }
+
+    /**
+     * Enqueues script and styles only for the Shortcode Generator admin screen.
+     *
+     * @return void
+     */
+    private static function enqueue_shortcode_generator_assets() {
+        $asset_base_url = plugin_dir_url(LLLM_PLUGIN_FILE) . 'assets/';
+
+        wp_enqueue_style(
+            'lllm-shortcode-generator-admin',
+            $asset_base_url . 'shortcode-generator-admin.css',
+            array(),
+            LLLM_VERSION
+        );
+
+        wp_enqueue_script(
+            'lllm-shortcode-generator-admin',
+            $asset_base_url . 'shortcode-generator-admin.js',
+            array(),
+            LLLM_VERSION,
+            true
+        );
+
+        wp_localize_script(
+            'lllm-shortcode-generator-admin',
+            'lllmShortcodeGeneratorConfig',
+            array(
+                'shortcodeMap' => self::get_shortcode_definition_map(),
+                'messages' => array(
+                    'optional' => __('optional', 'lllm'),
+                    'allowedValues' => __('Allowed values:', 'lllm'),
+                    'copied' => __('Copied!', 'lllm'),
+                    'copyFallback' => __('Press Ctrl/Cmd+C to copy.', 'lllm'),
+                ),
+            )
         );
     }
 
@@ -832,10 +890,24 @@ class LLLM_Admin {
         echo '<p>' . esc_html__('League Manager helps you run your Little League season with a simple workflow: set up seasons/divisions/franchises, assign teams, import schedules, and post weekly scores.', 'lllm') . '</p>';
         echo '<p>' . esc_html__('Managers can keep data consistent by using the CSV templates and import tools, while viewing game results and standings in one place for each division.', 'lllm') . '</p>';
         echo '<p>' . esc_html__('To get started, use the submenu on the left beginning with Seasons, then Divisions, Franchises, Teams, and Games.', 'lllm') . '</p>';
+        echo '<p>' . esc_html__('Need shortcode help? Open the Shortcode Generator submenu to build and copy shortcode snippets.', 'lllm') . '</p>';
+        echo '</div>';
+    }
 
-        echo '<hr>';
-        echo '<h2>' . esc_html__('Shortcode Builder', 'lllm') . '</h2>';
+    /**
+     * Renders the Shortcode Generator admin screen.
+     *
+     * @return void
+     */
+    public static function render_shortcode_generator() {
+        if (!current_user_can('lllm_manage_seasons')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__('Shortcode Generator', 'lllm') . '</h1>';
         echo '<p>' . esc_html__('Build a shortcode by selecting a type and filling in attributes. Leave optional fields blank to omit them.', 'lllm') . '</p>';
+        echo '<div class="lllm-shortcode-generator" data-lllm-shortcode-generator="true">';
         echo '<table class="form-table" role="presentation"><tbody>';
         echo '<tr><th scope="row"><label for="lllm-shortcode-type">' . esc_html__('Shortcode Type', 'lllm') . '</label></th>';
         echo '<td><select id="lllm-shortcode-type"><option value="">' . esc_html__('Select a shortcode', 'lllm') . '</option></select></td></tr>';
@@ -845,140 +917,7 @@ class LLLM_Admin {
         echo '<p><textarea id="lllm-shortcode-output" class="large-text code" readonly rows="3"></textarea></p>';
         echo '<p><button type="button" id="lllm-shortcode-copy" class="button button-secondary">' . esc_html__('Copy Shortcode', 'lllm') . '</button></p>';
         echo '<p id="lllm-shortcode-copy-notice" class="description" aria-live="polite"></p>';
-
-        $shortcode_map = self::get_shortcode_definition_map();
-        $shortcode_builder_script = '(function(){'
-            . 'var map=' . wp_json_encode($shortcode_map) . ';'
-            . 'var typeSelect=document.getElementById("lllm-shortcode-type");'
-            . 'var attributesRoot=document.getElementById("lllm-shortcode-attributes");'
-            . 'var output=document.getElementById("lllm-shortcode-output");'
-            . 'var copyButton=document.getElementById("lllm-shortcode-copy");'
-            . 'var copyNotice=document.getElementById("lllm-shortcode-copy-notice");'
-            . 'var optionalLabel=' . wp_json_encode(__('optional', 'lllm')) . ';'
-            . 'var allowedValuesLabel=' . wp_json_encode(__('Allowed values:', 'lllm')) . ';'
-            . 'var copiedLabel=' . wp_json_encode(__('Copied!', 'lllm')) . ';'
-            . 'var copyFallbackLabel=' . wp_json_encode(__('Press Ctrl/Cmd+C to copy.', 'lllm')) . ';'
-            . 'if(!typeSelect||!attributesRoot||!output||!copyButton||!copyNotice){return;}'
-            . 'var activeAttributeState={};'
-            . 'var setCopyNotice=function(message){copyNotice.textContent=message||"";};'
-            . 'Object.keys(map).forEach(function(shortcodeName){'
-                . 'var definition=map[shortcodeName]||{};'
-                . 'var option=document.createElement("option");'
-                . 'option.value=shortcodeName;'
-                . 'option.textContent=definition.display_label?definition.display_label+" ("+shortcodeName+")":shortcodeName;'
-                . 'typeSelect.appendChild(option);'
-            . '});'
-            . 'var esc=function(value){return String(value).replace(/["\\]/g,"\\$&");};'
-            . 'var clearAttributeUiAndState=function(){activeAttributeState={};attributesRoot.innerHTML="";};'
-            . 'var buildShortcode=function(){'
-                . 'var selected=typeSelect.value;'
-                . 'var definition=map[selected];'
-                . 'if(!definition){output.value="";setCopyNotice("");return;}'
-                . 'var parts=["["+selected];'
-                . '(definition.attributes||[]).forEach(function(attributeName){'
-                    . 'var meta=(definition.attribute_meta&&definition.attribute_meta[attributeName])?definition.attribute_meta[attributeName]:{};'
-                    . 'var rawValue=(typeof activeAttributeState[attributeName]==="undefined")?"":activeAttributeState[attributeName];'
-                    . 'var value=String(rawValue).trim();'
-                    . 'if(meta.optional&&value===""){return;}'
-                    . 'parts.push(attributeName+"=\""+esc(value)+"\"");'
-                . '});'
-                . 'parts.push("]");'
-                . 'output.value=parts.join(" ");'
-            . '};'
-            . 'var selectOutputForManualCopy=function(){'
-                . 'output.focus();'
-                . 'output.select();'
-                . 'if(typeof output.setSelectionRange==="function"){output.setSelectionRange(0,output.value.length);}'
-            . '};'
-            . 'var handleCopyClick=function(event){'
-                . 'event.preventDefault();'
-                . 'var previewValue=String(output.value||"");'
-                . 'if(previewValue===""){setCopyNotice("");return;}'
-                . 'if(!navigator.clipboard||typeof navigator.clipboard.writeText!=="function"){' 
-                    . 'selectOutputForManualCopy();'
-                    . 'setCopyNotice(copyFallbackLabel);'
-                    . 'return;'
-                . '}'
-                . 'navigator.clipboard.writeText(previewValue).then(function(){'
-                    . 'setCopyNotice(copiedLabel);'
-                . '}).catch(function(){'
-                    . 'selectOutputForManualCopy();'
-                    . 'setCopyNotice(copyFallbackLabel);'
-                . '});'
-            . '};'
-            . 'var renderAttributes=function(){'
-                . 'clearAttributeUiAndState();'
-                . 'setCopyNotice("");'
-                . 'var selected=typeSelect.value;'
-                . 'var definition=map[selected];'
-                . 'if(!definition){output.value="";return;}'
-                . 'var table=document.createElement("table");'
-                . 'table.className="form-table";'
-                . 'table.setAttribute("role","presentation");'
-                . 'var tbody=document.createElement("tbody");'
-                . '(definition.attributes||[]).forEach(function(attributeName){'
-                    . 'var meta=(definition.attribute_meta&&definition.attribute_meta[attributeName])?definition.attribute_meta[attributeName]:{};'
-                    . 'var row=document.createElement("tr");'
-                    . 'var header=document.createElement("th");'
-                    . 'header.setAttribute("scope","row");'
-                    . 'var label=document.createElement("label");'
-                    . 'var inputId="lllm-shortcode-attr-"+attributeName;'
-                    . 'label.setAttribute("for",inputId);'
-                    . 'label.textContent=meta.label||attributeName;'
-                    . 'header.appendChild(label);'
-                    . 'if(meta.optional){'
-                        . 'var help=document.createElement("span");'
-                        . 'help.style.marginLeft="6px";'
-                        . 'help.style.fontWeight="normal";'
-                        . 'help.textContent="("+optionalLabel+")";'
-                        . 'header.appendChild(help);'
-                    . '}'
-                    . 'var cell=document.createElement("td");'
-                    . 'var input;'
-                    . 'var allowed=Array.isArray(meta.allowed_values)?meta.allowed_values:[];'
-                    . 'var defaultValue=(typeof meta.default_value==="undefined")?"":String(meta.default_value);'
-                    . 'if(meta.input_type==="select"&&allowed.length){'
-                        . 'input=document.createElement("select");'
-                        . 'allowed.forEach(function(allowedValue){'
-                            . 'var allowedOption=document.createElement("option");'
-                            . 'allowedOption.value=allowedValue;'
-                            . 'allowedOption.textContent=allowedValue;'
-                            . 'input.appendChild(allowedOption);'
-                        . '});'
-                    . '}else{'
-                        . 'input=document.createElement("input");'
-                        . 'input.type=meta.input_type==="number"?"number":"text";'
-                    . '}'
-                    . 'input.id=inputId;'
-                    . 'input.dataset.attribute=attributeName;'
-                    . 'input.className="regular-text";'
-                    . 'input.value=defaultValue;'
-                    . 'activeAttributeState[attributeName]=defaultValue;'
-                    . 'var onFieldChange=function(){activeAttributeState[attributeName]=String(input.value||"");buildShortcode();};'
-                    . 'input.addEventListener("input",onFieldChange);'
-                    . 'input.addEventListener("change",onFieldChange);'
-                    . 'cell.appendChild(input);'
-                    . 'if(allowed.length&&meta.input_type!=="select"){'
-                        . 'var allowedHint=document.createElement("p");'
-                        . 'allowedHint.className="description";'
-                        . 'allowedHint.textContent=allowedValuesLabel+" "+allowed.join(", ");'
-                        . 'cell.appendChild(allowedHint);'
-                    . '}'
-                    . 'row.appendChild(header);'
-                    . 'row.appendChild(cell);'
-                    . 'tbody.appendChild(row);'
-                . '});'
-                . 'table.appendChild(tbody);'
-                . 'attributesRoot.appendChild(table);'
-                . 'buildShortcode();'
-            . '};'
-            . 'typeSelect.addEventListener("change",renderAttributes);'
-            . 'copyButton.addEventListener("click",handleCopyClick);'
-        . '})();';
-        wp_add_inline_script(
-            'jquery',
-            $shortcode_builder_script
-        );
+        echo '</div>';
         echo '</div>';
     }
 
