@@ -12,6 +12,10 @@ class LLLM_Admin {
      */
     private static function get_shortcode_definition_map() {
         return array(
+            // Dependency chain pattern for shortcode attributes:
+            // season -> division -> team_code. Child attributes declare
+            // `dependsOn` + `filterBy` so the JS form can refetch options when
+            // parent selections change and clear invalid downstream selections.
             'lllm_schedule' => array(
                 'display_label' => __('Schedule Table', 'lllm'),
                 'attributes' => array('season', 'division', 'team_code', 'show_past', 'show_future', 'limit'),
@@ -27,6 +31,8 @@ class LLLM_Admin {
                         'label' => __('Division', 'lllm'),
                         'control_type' => 'select',
                         'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
+                        'dependsOn' => array('season'),
+                        'filterBy' => array('season' => 'season_slug'),
                         'default_value' => '',
                         'optional' => true,
                     ),
@@ -34,6 +40,11 @@ class LLLM_Admin {
                         'label' => __('Team Code', 'lllm'),
                         'control_type' => 'select',
                         'value_source' => array('type' => 'dynamic', 'key' => 'team_codes'),
+                        'dependsOn' => array('season', 'division'),
+                        'filterBy' => array(
+                            'season' => 'season_slug',
+                            'division' => 'division_slug',
+                        ),
                         'default_value' => '',
                         'optional' => true,
                     ),
@@ -87,6 +98,8 @@ class LLLM_Admin {
                         'label' => __('Division', 'lllm'),
                         'control_type' => 'select',
                         'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
+                        'dependsOn' => array('season'),
+                        'filterBy' => array('season' => 'season_slug'),
                         'default_value' => '',
                         'optional' => true,
                     ),
@@ -107,6 +120,8 @@ class LLLM_Admin {
                         'label' => __('Division', 'lllm'),
                         'control_type' => 'select',
                         'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
+                        'dependsOn' => array('season'),
+                        'filterBy' => array('season' => 'season_slug'),
                         'default_value' => '',
                         'optional' => true,
                     ),
@@ -140,6 +155,8 @@ class LLLM_Admin {
                         'label' => __('Division', 'lllm'),
                         'control_type' => 'select',
                         'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
+                        'dependsOn' => array('season'),
+                        'filterBy' => array('season' => 'season_slug'),
                         'default_value' => '',
                         'optional' => true,
                     ),
@@ -167,14 +184,20 @@ class LLLM_Admin {
     /**
      * Returns options for a single dynamic value source.
      *
-     * @param string $source_key Dynamic source key.
+     * @param string               $source_key Dynamic source key.
+     * @param array<string,string> $filters    Optional value-source filters.
      * @global wpdb $wpdb WordPress database abstraction object.
      * @return array<int,array{label:string,value:string}>
      */
-    private static function get_shortcode_generator_value_source_options($source_key) {
+    private static function get_shortcode_generator_value_source_options($source_key, $filters = array()) {
         global $wpdb;
 
         $source_key = sanitize_key((string) $source_key);
+        $normalized_filters = array();
+        foreach ((array) $filters as $filter_key => $filter_value) {
+            $normalized_filters[sanitize_key((string) $filter_key)] = sanitize_text_field((string) $filter_value);
+        }
+
         $options = array();
 
         if ($source_key === 'season_slugs') {
@@ -190,11 +213,19 @@ class LLLM_Admin {
         }
 
         if ($source_key === 'division_slugs') {
-            $division_rows = $wpdb->get_results(
-                'SELECT d.slug, d.name, s.name AS season_name
+            $query = 'SELECT d.slug, d.name, s.name AS season_name
                  FROM ' . self::table('divisions') . ' d
-                 LEFT JOIN ' . self::table('seasons') . ' s ON s.id = d.season_id
-                 ORDER BY s.name ASC, d.name ASC'
+                 LEFT JOIN ' . self::table('seasons') . ' s ON s.id = d.season_id';
+            $params = array();
+
+            if (!empty($normalized_filters['season_slug'])) {
+                $query .= ' WHERE s.slug = %s';
+                $params[] = $normalized_filters['season_slug'];
+            }
+
+            $query .= ' ORDER BY s.name ASC, d.name ASC';
+            $division_rows = $wpdb->get_results(
+                empty($params) ? $query : $wpdb->prepare($query, $params)
             );
             foreach ($division_rows as $division_row) {
                 $season_name = isset($division_row->season_name) ? $division_row->season_name : '';
@@ -213,7 +244,31 @@ class LLLM_Admin {
         }
 
         if ($source_key === 'team_codes') {
-            $team_rows = $wpdb->get_results('SELECT team_code, name FROM ' . self::table('team_masters') . ' ORDER BY name ASC');
+            $query = 'SELECT DISTINCT tm.team_code, tm.name
+                FROM ' . self::table('team_masters') . ' tm
+                LEFT JOIN ' . self::table('team_instances') . ' ti ON ti.team_master_id = tm.id
+                LEFT JOIN ' . self::table('divisions') . ' d ON d.id = ti.division_id
+                LEFT JOIN ' . self::table('seasons') . ' s ON s.id = d.season_id';
+            $where = array();
+            $params = array();
+
+            if (!empty($normalized_filters['division_slug'])) {
+                $where[] = 'd.slug = %s';
+                $params[] = $normalized_filters['division_slug'];
+            }
+
+            if (!empty($normalized_filters['season_slug'])) {
+                $where[] = 's.slug = %s';
+                $params[] = $normalized_filters['season_slug'];
+            }
+
+            if (!empty($where)) {
+                $query .= ' WHERE ' . implode(' AND ', $where);
+            }
+
+            $query .= ' ORDER BY tm.name ASC';
+
+            $team_rows = $wpdb->get_results(empty($params) ? $query : $wpdb->prepare($query, $params));
             foreach ($team_rows as $team_row) {
                 $options[] = array(
                     'label' => $team_row->name,
@@ -444,10 +499,17 @@ class LLLM_Admin {
         check_ajax_referer('lllm_shortcode_generator_value_source', 'nonce');
 
         $source_key = isset($_POST['source_key']) ? sanitize_key(wp_unslash($_POST['source_key'])) : '';
-        $options = self::get_shortcode_generator_value_source_options($source_key);
+        $raw_filters = isset($_POST['filters']) ? (array) wp_unslash($_POST['filters']) : array();
+        $filters = array();
+        foreach ($raw_filters as $filter_key => $filter_value) {
+            $filters[sanitize_key((string) $filter_key)] = sanitize_text_field((string) $filter_value);
+        }
+
+        $options = self::get_shortcode_generator_value_source_options($source_key, $filters);
 
         wp_send_json_success(array(
             'sourceKey' => $source_key,
+            'filters' => $filters,
             'options' => $options,
         ));
     }

@@ -268,7 +268,9 @@ The plugin includes a dedicated **League Manager → Shortcode Generator** subme
 - Uses page-scoped admin assets only on this screen (`assets/shortcode-generator-admin.js` and `assets/shortcode-generator-admin.css`).
 - Uses shared shortcode definitions from `LLLM_Admin::get_shortcode_definition_map()` plus dynamic value sources from plugin data to keep labels, control types, defaults, and attribute order consistent.
 - Dynamic dropdown value sources are fetched via `wp_ajax_lllm_shortcode_generator_value_source` and returned as `{label, value}` option arrays.
-- Client-side option payloads are cached per source key for the admin page session to avoid repeat requests.
+- Shortcode schema supports dependency metadata (`dependsOn`, `filterBy`) so child attributes can be driven by parent selections (for example `season -> division -> team_code`).
+- When a parent field changes, child dynamic selects are refetched with mapped filters, stale child values are cleared if no longer valid, and preview shortcode output updates immediately.
+- Client-side option payloads are cached per source+filter key for the admin page session to avoid repeat requests.
 - Dynamic selects expose loading, empty, and retryable error states for better resilience.
 
 ---
@@ -539,7 +541,7 @@ Downloadable error report CSV should add an `error` column with the message.
 
   * display label
   * ordered attribute list
-  * per-attribute metadata: `label`, `control_type`, `value_source`, `default_value`, `optional`
+  * per-attribute metadata: `label`, `control_type`, `value_source`, `default_value`, `optional`, plus dependency metadata (`dependsOn`, `filterBy`) for parent/child attribute chains
 
 Builder requirements:
 
@@ -547,7 +549,8 @@ Builder requirements:
 * Listen for shortcode-type changes.
 * On type change, clear previous attribute UI and previous attribute state.
 * Render only attribute controls declared for the selected shortcode type by mapping `control_type` to UI component (`select`, `text`, `number`, `checkbox`).
-* Resolve select options from `value_source` (`static` options in schema or `dynamic` source keys from plugin data), then initialize each rendered field from `default_value`.
+* Resolve select options from `value_source` (`static` options in schema or `dynamic` source keys from plugin data), apply dependency filters from `filterBy`, then initialize each rendered field from `default_value`.
+* On parent field changes, recompute dependent child options in schema order, clear invalid child selections, and re-render shortcode preview immediately.
 * Treat every select option as `{ label, value }`: render menu text from `label` (optionally showing `value` for clarity), but store both in state.
 * Recompute shortcode preview output on every field change.
 * Render preview in a readonly field at the bottom of the builder.

@@ -28,6 +28,8 @@
 
     var activeAttributeState = {};
     var dynamicSourceOptionCache = {};
+    var activeFieldRegistry = {};
+    var dependencyChildrenMap = {};
 
     var normalizeOptionConfig = function (optionConfig) {
         if (optionConfig && typeof optionConfig === 'object') {
@@ -65,6 +67,8 @@
 
     var clearAttributeUiAndState = function () {
         activeAttributeState = {};
+        activeFieldRegistry = {};
+        dependencyChildrenMap = {};
         attributesRoot.innerHTML = '';
     };
 
@@ -124,14 +128,27 @@
         };
     };
 
-    var fetchDynamicOptions = function (sourceKey) {
+    var buildDynamicSourceCacheKey = function (sourceKey, filters) {
         var normalizedSourceKey = String(sourceKey || '');
+        var normalizedFilters = filters && typeof filters === 'object' ? filters : {};
+        var filterKeys = Object.keys(normalizedFilters).sort();
+        var filterPairs = filterKeys.map(function (key) {
+            return key + '=' + String(normalizedFilters[key] || '');
+        });
+
+        return normalizedSourceKey + '|' + filterPairs.join('&');
+    };
+
+    var fetchDynamicOptions = function (sourceKey, filters) {
+        var normalizedSourceKey = String(sourceKey || '');
+        var normalizedFilters = filters && typeof filters === 'object' ? filters : {};
         if (!normalizedSourceKey) {
             return Promise.resolve([]);
         }
 
-        if (Object.prototype.hasOwnProperty.call(dynamicSourceOptionCache, normalizedSourceKey)) {
-            return Promise.resolve(dynamicSourceOptionCache[normalizedSourceKey]);
+        var cacheKey = buildDynamicSourceCacheKey(normalizedSourceKey, normalizedFilters);
+        if (Object.prototype.hasOwnProperty.call(dynamicSourceOptionCache, cacheKey)) {
+            return Promise.resolve(dynamicSourceOptionCache[cacheKey]);
         }
 
         if (!ajaxUrl || !valueSourceNonce) {
@@ -142,6 +159,9 @@
         body.set('action', 'lllm_shortcode_generator_value_source');
         body.set('nonce', valueSourceNonce);
         body.set('source_key', normalizedSourceKey);
+        Object.keys(normalizedFilters).forEach(function (filterKey) {
+            body.set('filters[' + filterKey + ']', String(normalizedFilters[filterKey] || ''));
+        });
 
         return fetch(ajaxUrl, {
             method: 'POST',
@@ -162,9 +182,46 @@
             }
 
             var normalizedOptions = payload.data.options.map(normalizeOptionConfig);
-            dynamicSourceOptionCache[normalizedSourceKey] = normalizedOptions;
+            dynamicSourceOptionCache[cacheKey] = normalizedOptions;
             return normalizedOptions;
         });
+    };
+
+    var getDependencyFilters = function (meta) {
+        var filters = {};
+        var filterBy = meta && typeof meta.filterBy === 'object' ? meta.filterBy : {};
+
+        Object.keys(filterBy).forEach(function (attributeName) {
+            var filterKey = String(filterBy[attributeName] || '');
+            if (!filterKey) {
+                return;
+            }
+
+            filters[filterKey] = getAttributeValue(attributeName).trim();
+        });
+
+        return filters;
+    };
+
+    var getDescendantAttributes = function (attributeName) {
+        var descendants = [];
+        var queue = (dependencyChildrenMap[attributeName] || []).slice(0);
+        var visited = {};
+
+        while (queue.length) {
+            var childAttributeName = queue.shift();
+            if (visited[childAttributeName]) {
+                continue;
+            }
+
+            visited[childAttributeName] = true;
+            descendants.push(childAttributeName);
+            (dependencyChildrenMap[childAttributeName] || []).forEach(function (grandChildAttributeName) {
+                queue.push(grandChildAttributeName);
+            });
+        }
+
+        return descendants;
     };
 
     var buildShortcode = function () {
@@ -191,6 +248,81 @@
 
         parts.push(']');
         output.value = parts.join(' ');
+    };
+
+    var syncDependentAttributeState = function (attributeName) {
+        var field = activeFieldRegistry[attributeName];
+        if (!field) {
+            return Promise.resolve();
+        }
+
+        var meta = field.meta || {};
+        var input = field.input;
+        var includeBlankOption = field.includeBlankOption;
+        var source = field.source || {};
+        var defaultValue = field.defaultValue;
+        var statusMount = field.statusMount;
+
+        if (source.type !== 'dynamic') {
+            if (input && input.tagName === 'SELECT') {
+                var selectedValue = getAttributeValue(attributeName).trim();
+                input.value = selectedValue;
+                if (input.value !== selectedValue) {
+                    input.selectedIndex = 0;
+                }
+
+                activeAttributeState[attributeName] = getStateFromSelect(input);
+                buildShortcode();
+            }
+
+            return Promise.resolve();
+        }
+
+        var previousValue = getAttributeValue(attributeName).trim();
+
+        if (statusMount) {
+            statusMount.innerHTML = '';
+        }
+        setSelectLoadingState(input, includeBlankOption);
+        activeAttributeState[attributeName] = { label: '', value: '' };
+        buildShortcode();
+
+        return fetchDynamicOptions(source.key, getDependencyFilters(meta)).then(function (dynamicOptions) {
+            if (!dynamicOptions.length) {
+                setSelectEmptyState(input, includeBlankOption);
+                activeAttributeState[attributeName] = { label: '', value: '' };
+                buildShortcode();
+                return;
+            }
+
+            var nextValue = previousValue || defaultValue;
+            setSelectReadyState(input, dynamicOptions, includeBlankOption, nextValue);
+            activeAttributeState[attributeName] = getStateFromSelect(input);
+            buildShortcode();
+        }).catch(function () {
+            setSelectErrorState(input, optionsLoadErrorLabel, includeBlankOption);
+            activeAttributeState[attributeName] = { label: '', value: '' };
+            if (statusMount) {
+                statusMount.innerHTML = '';
+                statusMount.appendChild(buildFieldErrorMessage(optionsLoadErrorLabel, function () {
+                    syncDependentAttributeState(attributeName);
+                }));
+            }
+            buildShortcode();
+        });
+    };
+
+    var refreshDependentAttributes = function (attributeName) {
+        var descendants = getDescendantAttributes(attributeName);
+        var chain = Promise.resolve();
+
+        descendants.forEach(function (descendantAttributeName) {
+            chain = chain.then(function () {
+                return syncDependentAttributeState(descendantAttributeName);
+            });
+        });
+
+        return chain;
     };
 
     var selectOutputForManualCopy = function () {
@@ -260,6 +392,19 @@
 
         (definition.attributes || []).forEach(function (attributeName) {
             var meta = (definition.attribute_meta && definition.attribute_meta[attributeName]) ? definition.attribute_meta[attributeName] : {};
+            var dependsOn = Array.isArray(meta.dependsOn) ? meta.dependsOn : [];
+
+            dependsOn.forEach(function (parentAttributeName) {
+                if (!dependencyChildrenMap[parentAttributeName]) {
+                    dependencyChildrenMap[parentAttributeName] = [];
+                }
+
+                dependencyChildrenMap[parentAttributeName].push(attributeName);
+            });
+        });
+
+        (definition.attributes || []).forEach(function (attributeName) {
+            var meta = (definition.attribute_meta && definition.attribute_meta[attributeName]) ? definition.attribute_meta[attributeName] : {};
             var row = document.createElement('tr');
             var header = document.createElement('th');
             header.setAttribute('scope', 'row');
@@ -296,49 +441,30 @@
                 }
 
                 if (source.type === 'dynamic') {
-                    setSelectLoadingState(input, includeBlankOption);
-                    activeAttributeState[attributeName] = { label: '', value: '' };
-
                     var statusMount = document.createElement('div');
                     statusMount.className = 'lllm-shortcode-field-status';
                     cell.appendChild(input);
                     cell.appendChild(statusMount);
 
-                    var loadDynamicOptions = function () {
-                        statusMount.innerHTML = '';
-                        setSelectLoadingState(input, includeBlankOption);
-                        activeAttributeState[attributeName] = { label: '', value: '' };
-                        buildShortcode();
-
-                        fetchDynamicOptions(source.key).then(function (dynamicOptions) {
-                            if (!dynamicOptions.length) {
-                                setSelectEmptyState(input, includeBlankOption);
-                                activeAttributeState[attributeName] = { label: '', value: '' };
-                                buildShortcode();
-                                return;
-                            }
-
-                            setSelectReadyState(input, dynamicOptions, includeBlankOption, defaultValue);
-                            activeAttributeState[attributeName] = getStateFromSelect(input);
-                            buildShortcode();
-                        }).catch(function () {
-                            setSelectErrorState(input, optionsLoadErrorLabel, includeBlankOption);
-                            activeAttributeState[attributeName] = { label: '', value: '' };
-                            statusMount.innerHTML = '';
-                            statusMount.appendChild(buildFieldErrorMessage(optionsLoadErrorLabel, loadDynamicOptions));
-                            buildShortcode();
-                        });
+                    activeFieldRegistry[attributeName] = {
+                        input: input,
+                        meta: meta,
+                        source: source,
+                        defaultValue: defaultValue,
+                        includeBlankOption: includeBlankOption,
+                        statusMount: statusMount
                     };
 
                     var onDynamicFieldChange = function () {
                         activeAttributeState[attributeName] = getStateFromSelect(input);
                         buildShortcode();
+                        refreshDependentAttributes(attributeName);
                     };
 
                     input.addEventListener('input', onDynamicFieldChange);
                     input.addEventListener('change', onDynamicFieldChange);
 
-                    loadDynamicOptions();
+                    syncDependentAttributeState(attributeName);
                 } else {
                     renderOptionElements(input, initialOptions, includeBlankOption);
                     input.value = defaultValue;
@@ -347,9 +473,19 @@
                     }
                     activeAttributeState[attributeName] = getStateFromSelect(input);
 
+                    activeFieldRegistry[attributeName] = {
+                        input: input,
+                        meta: meta,
+                        source: source,
+                        defaultValue: defaultValue,
+                        includeBlankOption: includeBlankOption,
+                        statusMount: null
+                    };
+
                     var onSelectChange = function () {
                         activeAttributeState[attributeName] = getStateFromSelect(input);
                         buildShortcode();
+                        refreshDependentAttributes(attributeName);
                     };
 
                     input.addEventListener('input', onSelectChange);
@@ -364,11 +500,21 @@
                 input.dataset.attribute = attributeName;
                 activeAttributeState[attributeName] = { value: input.checked ? '1' : '0' };
 
+                activeFieldRegistry[attributeName] = {
+                    input: input,
+                    meta: meta,
+                    source: source,
+                    defaultValue: defaultValue,
+                    includeBlankOption: false,
+                    statusMount: null
+                };
+
                 var onCheckboxChange = function () {
                     activeAttributeState[attributeName] = {
                         value: input.checked ? '1' : '0'
                     };
                     buildShortcode();
+                    refreshDependentAttributes(attributeName);
                 };
 
                 input.addEventListener('input', onCheckboxChange);
@@ -383,11 +529,21 @@
                 input.value = defaultValue;
                 activeAttributeState[attributeName] = { value: defaultValue };
 
+                activeFieldRegistry[attributeName] = {
+                    input: input,
+                    meta: meta,
+                    source: source,
+                    defaultValue: defaultValue,
+                    includeBlankOption: false,
+                    statusMount: null
+                };
+
                 var onFieldChange = function () {
                     activeAttributeState[attributeName] = {
                         value: String(input.value || '')
                     };
                     buildShortcode();
+                    refreshDependentAttributes(attributeName);
                 };
 
                 input.addEventListener('input', onFieldChange);
