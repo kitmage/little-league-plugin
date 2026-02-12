@@ -23,13 +23,13 @@ If you prefer a guided workflow, go to **League Manager → Shortcode Generator*
 2. Fill any attributes you want.
 3. Use **Copy Shortcode** to copy the generated preview into your page/post.
 
-When you switch shortcode types, the builder clears prior attribute controls/state, renders only fields for the selected type, initializes each field from schema defaults, and refreshes preview output on every field change.
+When you switch shortcode types, the builder clears prior attribute controls/state, renders only fields for the selected type, maps schema control types to matching UI controls, initializes from schema defaults, and refreshes preview output on every field change.
 
 The copy button first tries your browser clipboard API. If that fails, the preview text is auto-selected and the UI tells you to press **Ctrl/Cmd+C**.
 
 Optional attributes that are left blank are omitted from the generated shortcode output.
 
-The builder uses the same shortcode schema for labels, attributes, defaults, and attribute order, so generated strings stay consistent.
+The builder uses the same shortcode schema for labels, attributes, control types, value sources, defaults, and attribute order, so generated strings stay consistent.
 
 ---
 
@@ -53,9 +53,9 @@ Filter to one team/franchise code:
 
 | Attribute | Type | Default | What it does |
 |---|---|---|---|
-| `season` | slug text | *(empty)* | Season slug (for example: `spring-2026`). |
-| `division` | slug text | *(empty)* | Division slug (for example: `8u`). |
-| `team_code` | text | *(empty)* | Filters to games where either team matches this franchise/team code. |
+| `season` | select (dynamic seasons) | *(empty)* | Season slug (for example: `spring-2026`). |
+| `division` | select (dynamic divisions) | *(empty)* | Division slug (for example: `8u`). |
+| `team_code` | select (dynamic team codes) | *(empty)* | Filters to games where either team matches this franchise/team code. |
 | `show_past` | `"1"` or `"0"` | `"1"` | Include past games (`1`) or hide them (`0`). |
 | `show_future` | `"1"` or `"0"` | `"1"` | Include future games (`1`) or hide them (`0`). |
 | `limit` | number as text | `"50"` | Max number of rows returned. |
@@ -81,8 +81,8 @@ Use this to show team standings for a division.
 
 | Attribute | Type | Default | What it does |
 |---|---|---|---|
-| `season` | slug text | *(empty)* | Season slug. |
-| `division` | slug text | *(empty)* | Division slug. |
+| `season` | select (dynamic seasons) | *(empty)* | Season slug. |
+| `division` | select (dynamic divisions) | *(empty)* | Division slug. |
 
 ### Good to know
 
@@ -105,8 +105,8 @@ Use this to show all teams in a division.
 
 | Attribute | Type | Default | What it does |
 |---|---|---|---|
-| `season` | slug text | *(empty)* | Season slug. |
-| `division` | slug text | *(empty)* | Division slug. |
+| `season` | select (dynamic seasons) | *(empty)* | Season slug. |
+| `division` | select (dynamic divisions) | *(empty)* | Division slug. |
 | `show_logos` | `"1"` or `"0"` | `"0"` | Shows team logos when set to `"1"` (if logos are available). |
 
 ---
@@ -125,8 +125,8 @@ Use this to display generated playoff games for a division.
 
 | Attribute | Type | Default | What it does |
 |---|---|---|---|
-| `season` | slug text | *(empty)* | Season slug. |
-| `division` | slug text | *(empty)* | Division slug. |
+| `season` | select (dynamic seasons) | *(empty)* | Season slug. |
+| `division` | select (dynamic divisions) | *(empty)* | Division slug. |
 
 ### Good to know
 
