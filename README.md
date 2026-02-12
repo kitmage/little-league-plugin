@@ -99,9 +99,19 @@ franchise_name,franchise_code
 
 ### Teams template
 
+The Teams screen now exports a season-specific matrix template with one division column per division in the selected season.
+
 ```
-franchise_code
+franchise_code,7U Minor,7U Major,8U Minor,8U Major
+hawks,,,,
+lions,,,,
+bears,,,,
 ```
+
+Import behavior:
+- Any non-empty value means the franchise is assigned to that division.
+- Empty cells and the literal value `FALSE` (case-insensitive) mean unassigned.
+- Import syncs the full season matrix (adds missing assignments and removes assignments that are unassigned in the file, unless blocked by existing games).
 
 ## Shortcodes
 

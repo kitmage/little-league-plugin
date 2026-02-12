@@ -299,6 +299,20 @@ Managers should never need WP’s standard editor screens.
   * “Assign Selected Franchises"
   * “Remove Selected Franchises” (disabled if teams have games; show warning)
 
+**CSV matrix import (season-wide sync)**
+
+* Download template exports:
+  * `franchise_code` column
+  * one additional column per division in the selected season
+  * one row per franchise code
+* Import semantics:
+  * any non-empty value = assigned to that season/division
+  * empty value OR literal `FALSE` (case-insensitive) = unassigned
+* Import applies a full-season sync:
+  * creates missing assignments from marked cells
+  * removes assignments that are unassigned in the CSV
+  * blocks removals when games already exist for that team instance
+
 **Integrity**
 
 * Removing a team instance is blocked if any games exist for it. (Dad-proof: prevent breaking standings.)
@@ -977,6 +991,23 @@ These are created once in Franchises screen:
 | A’s       | as        |
 
 > Managers should never type team names in CSV. Only use franchise codes in the **team_code** columns.
+
+---
+
+## 0) Teams Assignment Matrix — Template (season-wide)
+
+Example for season divisions `7U Minor`, `7U Major`, `8U Minor`, `8U Major`:
+
+```csv
+franchise_code,7U Minor,7U Major,8U Minor,8U Major
+hawks,,,,
+lions,,,,
+bears,,,,
+```
+
+Interpretation:
+- non-empty cell (e.g. `1`, `yes`, `active`) means assigned
+- empty cell and `FALSE` mean unassigned
 
 ---
 
