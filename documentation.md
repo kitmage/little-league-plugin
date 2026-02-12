@@ -616,6 +616,9 @@ Supported automatically (scores equal in a played game).
 * Versioned migrations:
 
   * if schema changes, run incremental SQL migrations
+* Runtime schema safety check:
+
+  * on `plugins_loaded`, if required `wp_lllm_games` columns are missing (for example `competition_type`), rerun migrations even when plugin version option appears current
 * Preserve data.
 
 ### Uninstall
