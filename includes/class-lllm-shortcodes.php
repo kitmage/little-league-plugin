@@ -289,7 +289,7 @@ class LLLM_Shortcodes {
                 $score = esc_html($game->home_score . ' - ' . $game->away_score);
             }
             $output .= '<tr>';
-            $output .= '<td>' . esc_html($dt->format('Y-m-d H:i')) . '</td>';
+            $output .= '<td>' . esc_html($dt->format('l n/j/y, g:i a')) . '</td>';
             $output .= '<td>' . esc_html($game->location) . '</td>';
             $output .= '<td>' . esc_html($game->home_name) . '</td>';
             $output .= '<td>' . esc_html($game->away_name) . '</td>';
