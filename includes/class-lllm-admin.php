@@ -2271,8 +2271,28 @@ class LLLM_Admin {
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
         $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
         $return_url = admin_url('admin.php?page=lllm-division-teams&season_id=' . $season_id . '&division_id=' . $division_id);
-        if (!$division_id) {
-            self::redirect_with_notice($return_url, 'error', __('Division is required.', 'lllm'));
+        if (!$season_id) {
+            self::redirect_with_notice($return_url, 'error', __('Season is required.', 'lllm'));
+        }
+
+        global $wpdb;
+        $divisions = $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT id, name FROM ' . self::table('divisions') . ' WHERE season_id = %d ORDER BY name ASC',
+                $season_id
+            )
+        );
+        if (!$divisions) {
+            self::redirect_with_notice($return_url, 'error', __('No divisions found for this season.', 'lllm'));
+        }
+
+        $division_map = array();
+        foreach ($divisions as $division) {
+            $key = self::normalize_csv_matrix_header($division->name);
+            if ($key === '' || isset($division_map[$key])) {
+                self::redirect_with_notice($return_url, 'error', __('Division names must be unique for CSV import.', 'lllm'));
+            }
+            $division_map[$key] = (int) $division->id;
         }
 
         $parsed = self::parse_uploaded_csv();
@@ -2285,35 +2305,57 @@ class LLLM_Admin {
             self::redirect_with_notice($return_url, 'error', $headers_check->get_error_message());
         }
 
-        global $wpdb;
+        $headers = array_map(array(__CLASS__, 'normalize_csv_matrix_header'), $parsed['headers']);
+        $csv_division_headers = array();
+        foreach ($headers as $header) {
+            if ($header === 'franchise_code') {
+                continue;
+            }
+            if (isset($csv_division_headers[$header])) {
+                self::redirect_with_notice($return_url, 'error', __('Duplicate division columns in CSV.', 'lllm'));
+            }
+            $csv_division_headers[$header] = true;
+        }
+
+        $expected_headers = array_keys($division_map);
+        $missing_headers = array_diff($expected_headers, array_keys($csv_division_headers));
+        if ($missing_headers) {
+            self::redirect_with_notice(
+                $return_url,
+                'error',
+                sprintf(__('Missing required division columns: %s', 'lllm'), implode(', ', $missing_headers))
+            );
+        }
+
+        $unknown_headers = array_diff(array_keys($csv_division_headers), $expected_headers);
+        if ($unknown_headers) {
+            self::redirect_with_notice(
+                $return_url,
+                'error',
+                sprintf(__('Unknown division columns in CSV: %s', 'lllm'), implode(', ', $unknown_headers))
+            );
+        }
+
+        $known_codes = $wpdb->get_col('SELECT team_code FROM ' . self::table('team_masters'));
+        $known_map = array_fill_keys(array_map('strval', $known_codes), true);
+
         $errors = array();
-        $team_codes = array();
+        $seen_codes = array();
         foreach ($parsed['rows'] as $index => $row) {
             $row_lower = array_change_key_case($row, CASE_LOWER);
             $code = isset($row_lower['franchise_code']) ? self::normalize_team_code(trim($row_lower['franchise_code'])) : '';
-            if ($code === '') {
+            if ($code === '' || isset($seen_codes[$code]) || !isset($known_map[$code])) {
                 $errors[] = $index + 2;
                 continue;
             }
-            $code_key = $code;
-            if (isset($team_codes[$code_key])) {
-                $errors[] = $index + 2;
-                continue;
-            }
-            $team_codes[$code_key] = true;
-            $exists = $wpdb->get_var(
-                $wpdb->prepare('SELECT id FROM ' . self::table('team_masters') . ' WHERE team_code = %s', $code)
-            );
-            if (!$exists) {
-                $errors[] = $index + 2;
-            }
+            $seen_codes[$code] = true;
         }
 
         if ($errors) {
             self::redirect_with_notice(
                 $return_url,
                 'error',
-                sprintf(__('CSV validation failed: %d rows have missing or unknown franchise codes.', 'lllm'), count($errors))
+                sprintf(__('CSV validation failed: %d rows have missing, duplicate, or unknown franchise codes.', 'lllm'), count($errors))
             );
         }
 
