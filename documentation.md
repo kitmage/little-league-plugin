@@ -461,7 +461,7 @@ Every validation + commit produces a log entry with:
 
 * Must only update existing games in this division.
 * If `status=played`, scores required.
-* If `status` is not played, scores must be blank (to prevent accidental “0-0 played”).
+* If either score is supplied, the row is treated as `played` and both scores must be present.
 
 ### 9.4 Export format
 
