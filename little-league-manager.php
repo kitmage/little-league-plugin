@@ -27,6 +27,7 @@ add_filter('login_redirect', 'lllm_manager_login_redirect', 10, 3);
 add_filter('ajax_query_attachments_args', 'lllm_manager_media_library_query');
 add_action('pre_get_posts', 'lllm_manager_media_library_list_query');
 add_action('init', array('LLLM_Shortcodes', 'register'));
+add_action('wp_enqueue_scripts', 'lllm_enqueue_public_assets');
 
 /**
  * Loads all plugin class files used during runtime.
@@ -162,4 +163,18 @@ function lllm_manager_media_library_list_query($query) {
     }
 
     $query->set('author', '');
+}
+
+/**
+ * Enqueues public-facing assets.
+ *
+ * @return void
+ */
+function lllm_enqueue_public_assets() {
+    wp_enqueue_style(
+        'lllm-shortcodes',
+        plugin_dir_url(__FILE__) . 'assets/lllm-shortcodes.css',
+        array(),
+        LLLM_VERSION
+    );
 }
