@@ -6,6 +6,131 @@ if (!defined('ABSPATH')) {
 
 class LLLM_Admin {
     /**
+     * Returns shortcode definitions used by the admin shortcode builder UI.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private static function get_shortcode_definition_map() {
+        return array(
+            'lllm_schedule' => array(
+                'display_label' => __('Schedule Table', 'lllm'),
+                'attributes' => array('season', 'division', 'team_code', 'show_past', 'show_future', 'limit'),
+                'attribute_meta' => array(
+                    'season' => array(
+                        'label' => __('Season Slug', 'lllm'),
+                        'input_type' => 'text',
+                        'allowed_values' => array(),
+                        'default_value' => '',
+                        'optional' => true,
+                    ),
+                    'division' => array(
+                        'label' => __('Division Slug', 'lllm'),
+                        'input_type' => 'text',
+                        'allowed_values' => array(),
+                        'default_value' => '',
+                        'optional' => true,
+                    ),
+                    'team_code' => array(
+                        'label' => __('Team Code', 'lllm'),
+                        'input_type' => 'text',
+                        'allowed_values' => array(),
+                        'default_value' => '',
+                        'optional' => true,
+                    ),
+                    'show_past' => array(
+                        'label' => __('Show Past Games', 'lllm'),
+                        'input_type' => 'select',
+                        'allowed_values' => array('1', '0'),
+                        'default_value' => '1',
+                        'optional' => true,
+                    ),
+                    'show_future' => array(
+                        'label' => __('Show Future Games', 'lllm'),
+                        'input_type' => 'select',
+                        'allowed_values' => array('1', '0'),
+                        'default_value' => '1',
+                        'optional' => true,
+                    ),
+                    'limit' => array(
+                        'label' => __('Row Limit', 'lllm'),
+                        'input_type' => 'number',
+                        'allowed_values' => array(),
+                        'default_value' => '50',
+                        'optional' => true,
+                    ),
+                ),
+            ),
+            'lllm_standings' => array(
+                'display_label' => __('Standings Table', 'lllm'),
+                'attributes' => array('season', 'division'),
+                'attribute_meta' => array(
+                    'season' => array(
+                        'label' => __('Season Slug', 'lllm'),
+                        'input_type' => 'text',
+                        'allowed_values' => array(),
+                        'default_value' => '',
+                        'optional' => true,
+                    ),
+                    'division' => array(
+                        'label' => __('Division Slug', 'lllm'),
+                        'input_type' => 'text',
+                        'allowed_values' => array(),
+                        'default_value' => '',
+                        'optional' => true,
+                    ),
+                ),
+            ),
+            'lllm_teams' => array(
+                'display_label' => __('Team List', 'lllm'),
+                'attributes' => array('season', 'division', 'show_logos'),
+                'attribute_meta' => array(
+                    'season' => array(
+                        'label' => __('Season Slug', 'lllm'),
+                        'input_type' => 'text',
+                        'allowed_values' => array(),
+                        'default_value' => '',
+                        'optional' => true,
+                    ),
+                    'division' => array(
+                        'label' => __('Division Slug', 'lllm'),
+                        'input_type' => 'text',
+                        'allowed_values' => array(),
+                        'default_value' => '',
+                        'optional' => true,
+                    ),
+                    'show_logos' => array(
+                        'label' => __('Show Team Logos', 'lllm'),
+                        'input_type' => 'select',
+                        'allowed_values' => array('1', '0'),
+                        'default_value' => '0',
+                        'optional' => true,
+                    ),
+                ),
+            ),
+            'lllm_playoff_bracket' => array(
+                'display_label' => __('Playoff Bracket', 'lllm'),
+                'attributes' => array('season', 'division'),
+                'attribute_meta' => array(
+                    'season' => array(
+                        'label' => __('Season Slug', 'lllm'),
+                        'input_type' => 'text',
+                        'allowed_values' => array(),
+                        'default_value' => '',
+                        'optional' => true,
+                    ),
+                    'division' => array(
+                        'label' => __('Division Slug', 'lllm'),
+                        'input_type' => 'text',
+                        'allowed_values' => array(),
+                        'default_value' => '',
+                        'optional' => true,
+                    ),
+                ),
+            ),
+        );
+    }
+
+    /**
      * Registers the League Manager admin menu and submenus.
      *
      * @return void
@@ -707,6 +832,23 @@ class LLLM_Admin {
         echo '<p>' . esc_html__('League Manager helps you run your Little League season with a simple workflow: set up seasons/divisions/franchises, assign teams, import schedules, and post weekly scores.', 'lllm') . '</p>';
         echo '<p>' . esc_html__('Managers can keep data consistent by using the CSV templates and import tools, while viewing game results and standings in one place for each division.', 'lllm') . '</p>';
         echo '<p>' . esc_html__('To get started, use the submenu on the left beginning with Seasons, then Divisions, Franchises, Teams, and Games.', 'lllm') . '</p>';
+
+        echo '<hr>';
+        echo '<h2>' . esc_html__('Shortcode Builder', 'lllm') . '</h2>';
+        echo '<p>' . esc_html__('Build a shortcode by selecting a type and filling in attributes. Leave optional fields blank to omit them.', 'lllm') . '</p>';
+        echo '<table class="form-table" role="presentation"><tbody>';
+        echo '<tr><th scope="row"><label for="lllm-shortcode-type">' . esc_html__('Shortcode Type', 'lllm') . '</label></th>';
+        echo '<td><select id="lllm-shortcode-type"><option value="">' . esc_html__('Select a shortcode', 'lllm') . '</option></select></td></tr>';
+        echo '</tbody></table>';
+        echo '<div id="lllm-shortcode-attributes"></div>';
+        echo '<p><label for="lllm-shortcode-output"><strong>' . esc_html__('Generated Shortcode', 'lllm') . '</strong></label></p>';
+        echo '<p><input type="text" id="lllm-shortcode-output" class="large-text code" readonly value=""></p>';
+
+        $shortcode_map = self::get_shortcode_definition_map();
+        wp_add_inline_script(
+            'jquery',
+            '(function(){var map=' . wp_json_encode($shortcode_map) . ';var typeSelect=document.getElementById("lllm-shortcode-type");var attributesRoot=document.getElementById("lllm-shortcode-attributes");var output=document.getElementById("lllm-shortcode-output");if(!typeSelect||!attributesRoot||!output){return;}Object.keys(map).forEach(function(shortcodeName){var definition=map[shortcodeName]||{};var option=document.createElement("option");option.value=shortcodeName;option.textContent=definition.display_label?definition.display_label+" ("+shortcodeName+")":shortcodeName;typeSelect.appendChild(option);});var esc=function(value){return String(value).replace(/["\\]/g,"\\$&");};var renderAttributes=function(){attributesRoot.innerHTML="";var selected=typeSelect.value;var definition=map[selected];if(!definition){output.value="";return;}var table=document.createElement("table");table.className="form-table";table.setAttribute("role","presentation");var tbody=document.createElement("tbody");(definition.attributes||[]).forEach(function(attributeName){var meta=(definition.attribute_meta&&definition.attribute_meta[attributeName])?definition.attribute_meta[attributeName]:{};var row=document.createElement("tr");var header=document.createElement("th");header.setAttribute("scope","row");var label=document.createElement("label");var inputId="lllm-shortcode-attr-"+attributeName;label.setAttribute("for",inputId);label.textContent=meta.label||attributeName;header.appendChild(label);if(meta.optional){var help=document.createElement("span");help.style.marginLeft="6px";help.style.fontWeight="normal";help.textContent="("+' . wp_json_encode(__('optional', 'lllm')) . '+")";header.appendChild(help);}var cell=document.createElement("td");var input;var allowed=Array.isArray(meta.allowed_values)?meta.allowed_values:[];if(meta.input_type==="select"&&allowed.length){input=document.createElement("select");allowed.forEach(function(allowedValue){var allowedOption=document.createElement("option");allowedOption.value=allowedValue;allowedOption.textContent=allowedValue;input.appendChild(allowedOption);});}else{input=document.createElement("input");input.type=meta.input_type==="number"?"number":"text";}input.id=inputId;input.dataset.attribute=attributeName;input.dataset.defaultValue=typeof meta.default_value==="undefined"?"":String(meta.default_value);input.dataset.optional=meta.optional?"1":"0";input.value=input.dataset.defaultValue;input.className="regular-text";input.addEventListener("input",buildShortcode);input.addEventListener("change",buildShortcode);cell.appendChild(input);if(allowed.length&&meta.input_type!=="select"){var allowedHint=document.createElement("p");allowedHint.className="description";allowedHint.textContent=' . wp_json_encode(__('Allowed values:', 'lllm')) . '+" "+allowed.join(", ");cell.appendChild(allowedHint);}row.appendChild(header);row.appendChild(cell);tbody.appendChild(row);});table.appendChild(tbody);attributesRoot.appendChild(table);buildShortcode();};var buildShortcode=function(){var selected=typeSelect.value;var definition=map[selected];if(!definition){output.value="";return;}var parts=["["+selected];(definition.attributes||[]).forEach(function(attributeName){var control=attributesRoot.querySelector("[data-attribute=\""+attributeName+"\"]");if(!control){return;}var value=String(control.value||"");var defaultValue=String(control.dataset.defaultValue||"");var optional=control.dataset.optional==="1";if(optional&&value===""){return;}if(optional&&value===defaultValue&&defaultValue!==""&&control.tagName==="SELECT"){return;}parts.push(attributeName+"=\""+esc(value)+"\"");});parts.push("]");output.value=parts.join(" ");};typeSelect.addEventListener("change",renderAttributes);})();'
+        );
         echo '</div>';
     }
 
