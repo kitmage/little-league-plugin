@@ -518,6 +518,22 @@ Downloadable error report CSV should add an `error` column with the message.
    * Renders generated playoff games for `r1`, `r2`, and `championship` rounds.
    * If feeder results are not final yet, shows winner placeholders until source games are `played`.
 
+### 12.1A Admin shortcode builder (schema source of truth)
+
+* Add a Shortcode Builder to **League Manager → Welcome**.
+* Maintain a single shortcode definition map keyed by shortcode name.
+* Each entry includes:
+
+  * display label
+  * ordered attribute list
+  * per-attribute metadata: `label`, `input_type`, `allowed_values`, `default_value`, `optional`
+
+Builder requirements:
+
+* Populate shortcode-type dropdown from this map.
+* Render attribute controls dynamically from this map after type selection.
+* Build final shortcode string from this map in the exact configured attribute order.
+
 ### 12.2 Display rules (dad-proof)
 
 * Scheduled games show: date/time + location (no scores)
