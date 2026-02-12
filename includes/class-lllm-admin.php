@@ -842,7 +842,9 @@ class LLLM_Admin {
         echo '</tbody></table>';
         echo '<div id="lllm-shortcode-attributes"></div>';
         echo '<p><label for="lllm-shortcode-output"><strong>' . esc_html__('Generated Shortcode', 'lllm') . '</strong></label></p>';
-        echo '<p><input type="text" id="lllm-shortcode-output" class="large-text code" readonly value=""></p>';
+        echo '<p><textarea id="lllm-shortcode-output" class="large-text code" readonly rows="3"></textarea></p>';
+        echo '<p><button type="button" id="lllm-shortcode-copy" class="button button-secondary">' . esc_html__('Copy Shortcode', 'lllm') . '</button></p>';
+        echo '<p id="lllm-shortcode-copy-notice" class="description" aria-live="polite"></p>';
 
         $shortcode_map = self::get_shortcode_definition_map();
         $shortcode_builder_script = '(function(){'
@@ -850,10 +852,15 @@ class LLLM_Admin {
             . 'var typeSelect=document.getElementById("lllm-shortcode-type");'
             . 'var attributesRoot=document.getElementById("lllm-shortcode-attributes");'
             . 'var output=document.getElementById("lllm-shortcode-output");'
+            . 'var copyButton=document.getElementById("lllm-shortcode-copy");'
+            . 'var copyNotice=document.getElementById("lllm-shortcode-copy-notice");'
             . 'var optionalLabel=' . wp_json_encode(__('optional', 'lllm')) . ';'
             . 'var allowedValuesLabel=' . wp_json_encode(__('Allowed values:', 'lllm')) . ';'
-            . 'if(!typeSelect||!attributesRoot||!output){return;}'
+            . 'var copiedLabel=' . wp_json_encode(__('Copied!', 'lllm')) . ';'
+            . 'var copyFallbackLabel=' . wp_json_encode(__('Press Ctrl/Cmd+C to copy.', 'lllm')) . ';'
+            . 'if(!typeSelect||!attributesRoot||!output||!copyButton||!copyNotice){return;}'
             . 'var activeAttributeState={};'
+            . 'var setCopyNotice=function(message){copyNotice.textContent=message||"";};'
             . 'Object.keys(map).forEach(function(shortcodeName){'
                 . 'var definition=map[shortcodeName]||{};'
                 . 'var option=document.createElement("option");'
@@ -866,7 +873,7 @@ class LLLM_Admin {
             . 'var buildShortcode=function(){'
                 . 'var selected=typeSelect.value;'
                 . 'var definition=map[selected];'
-                . 'if(!definition){output.value="";return;}'
+                . 'if(!definition){output.value="";setCopyNotice("");return;}'
                 . 'var parts=["["+selected];'
                 . '(definition.attributes||[]).forEach(function(attributeName){'
                     . 'var meta=(definition.attribute_meta&&definition.attribute_meta[attributeName])?definition.attribute_meta[attributeName]:{};'
@@ -878,8 +885,30 @@ class LLLM_Admin {
                 . 'parts.push("]");'
                 . 'output.value=parts.join(" ");'
             . '};'
+            . 'var selectOutputForManualCopy=function(){'
+                . 'output.focus();'
+                . 'output.select();'
+                . 'if(typeof output.setSelectionRange==="function"){output.setSelectionRange(0,output.value.length);}'
+            . '};'
+            . 'var handleCopyClick=function(event){'
+                . 'event.preventDefault();'
+                . 'var previewValue=String(output.value||"");'
+                . 'if(previewValue===""){setCopyNotice("");return;}'
+                . 'if(!navigator.clipboard||typeof navigator.clipboard.writeText!=="function"){' 
+                    . 'selectOutputForManualCopy();'
+                    . 'setCopyNotice(copyFallbackLabel);'
+                    . 'return;'
+                . '}'
+                . 'navigator.clipboard.writeText(previewValue).then(function(){'
+                    . 'setCopyNotice(copiedLabel);'
+                . '}).catch(function(){'
+                    . 'selectOutputForManualCopy();'
+                    . 'setCopyNotice(copyFallbackLabel);'
+                . '});'
+            . '};'
             . 'var renderAttributes=function(){'
                 . 'clearAttributeUiAndState();'
+                . 'setCopyNotice("");'
                 . 'var selected=typeSelect.value;'
                 . 'var definition=map[selected];'
                 . 'if(!definition){output.value="";return;}'
@@ -944,6 +973,7 @@ class LLLM_Admin {
                 . 'buildShortcode();'
             . '};'
             . 'typeSelect.addEventListener("change",renderAttributes);'
+            . 'copyButton.addEventListener("click",handleCopyClick);'
         . '})();';
         wp_add_inline_script(
             'jquery',
