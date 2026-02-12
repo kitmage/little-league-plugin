@@ -5,9 +5,9 @@
     }
 
     var map = lllmShortcodeGeneratorConfig.shortcodeMap || {};
+    var valueSources = lllmShortcodeGeneratorConfig.valueSources || {};
     var messages = lllmShortcodeGeneratorConfig.messages || {};
     var optionalLabel = String(messages.optional || 'optional');
-    var allowedValuesLabel = String(messages.allowedValues || 'Allowed values:');
     var copiedLabel = String(messages.copied || 'Copied!');
     var copyFallbackLabel = String(messages.copyFallback || 'Press Ctrl/Cmd+C to copy.');
 
@@ -34,6 +34,19 @@
     var clearAttributeUiAndState = function () {
         activeAttributeState = {};
         attributesRoot.innerHTML = '';
+    };
+
+    var resolveOptions = function (meta) {
+        var source = (meta && meta.value_source) ? meta.value_source : {};
+        if (source.type === 'static' && Array.isArray(source.options)) {
+            return source.options;
+        }
+
+        if (source.type === 'dynamic' && source.key && Array.isArray(valueSources[source.key])) {
+            return valueSources[source.key];
+        }
+
+        return [];
     };
 
     var buildShortcode = function () {
@@ -128,43 +141,57 @@
 
             var cell = document.createElement('td');
             var input;
-            var allowed = Array.isArray(meta.allowed_values) ? meta.allowed_values : [];
+            var controlType = meta.control_type || 'text';
+            var options = resolveOptions(meta);
             var defaultValue = (typeof meta.default_value === 'undefined') ? '' : String(meta.default_value);
 
-            if (meta.input_type === 'select' && allowed.length) {
+            if (controlType === 'select') {
                 input = document.createElement('select');
-                allowed.forEach(function (allowedValue) {
-                    var allowedOption = document.createElement('option');
-                    allowedOption.value = allowedValue;
-                    allowedOption.textContent = allowedValue;
-                    input.appendChild(allowedOption);
+
+                if (meta.optional) {
+                    var blankOption = document.createElement('option');
+                    blankOption.value = '';
+                    blankOption.textContent = '—';
+                    input.appendChild(blankOption);
+                }
+
+                options.forEach(function (optionConfig) {
+                    var option = document.createElement('option');
+                    option.value = String(typeof optionConfig.value === 'undefined' ? '' : optionConfig.value);
+                    option.textContent = String(typeof optionConfig.label === 'undefined' ? option.value : optionConfig.label);
+                    input.appendChild(option);
                 });
+            } else if (controlType === 'checkbox') {
+                input = document.createElement('input');
+                input.type = 'checkbox';
+                input.checked = defaultValue === '1';
+                input.className = '';
             } else {
                 input = document.createElement('input');
-                input.type = meta.input_type === 'number' ? 'number' : 'text';
+                input.type = controlType === 'number' ? 'number' : 'text';
+                input.value = defaultValue;
             }
 
             input.id = inputId;
             input.dataset.attribute = attributeName;
-            input.className = 'regular-text';
-            input.value = defaultValue;
-            activeAttributeState[attributeName] = defaultValue;
+            if (controlType !== 'checkbox') {
+                input.className = 'regular-text';
+                input.value = defaultValue;
+            }
+            activeAttributeState[attributeName] = controlType === 'checkbox'
+                ? (input.checked ? '1' : '0')
+                : defaultValue;
 
             var onFieldChange = function () {
-                activeAttributeState[attributeName] = String(input.value || '');
+                activeAttributeState[attributeName] = controlType === 'checkbox'
+                    ? (input.checked ? '1' : '0')
+                    : String(input.value || '');
                 buildShortcode();
             };
 
             input.addEventListener('input', onFieldChange);
             input.addEventListener('change', onFieldChange);
             cell.appendChild(input);
-
-            if (allowed.length && meta.input_type !== 'select') {
-                var allowedHint = document.createElement('p');
-                allowedHint.className = 'description';
-                allowedHint.textContent = allowedValuesLabel + ' ' + allowed.join(', ');
-                cell.appendChild(allowedHint);
-            }
 
             row.appendChild(header);
             row.appendChild(cell);
@@ -186,4 +213,5 @@
 
     typeSelect.addEventListener('change', renderAttributes);
     copyButton.addEventListener('click', handleCopyClick);
+    renderAttributes();
 })();

@@ -17,44 +17,56 @@ class LLLM_Admin {
                 'attributes' => array('season', 'division', 'team_code', 'show_past', 'show_future', 'limit'),
                 'attribute_meta' => array(
                     'season' => array(
-                        'label' => __('Season Slug', 'lllm'),
-                        'input_type' => 'text',
-                        'allowed_values' => array(),
+                        'label' => __('Season', 'lllm'),
+                        'control_type' => 'select',
+                        'value_source' => array('type' => 'dynamic', 'key' => 'season_slugs'),
                         'default_value' => '',
                         'optional' => true,
                     ),
                     'division' => array(
-                        'label' => __('Division Slug', 'lllm'),
-                        'input_type' => 'text',
-                        'allowed_values' => array(),
+                        'label' => __('Division', 'lllm'),
+                        'control_type' => 'select',
+                        'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
                         'default_value' => '',
                         'optional' => true,
                     ),
                     'team_code' => array(
                         'label' => __('Team Code', 'lllm'),
-                        'input_type' => 'text',
-                        'allowed_values' => array(),
+                        'control_type' => 'select',
+                        'value_source' => array('type' => 'dynamic', 'key' => 'team_codes'),
                         'default_value' => '',
                         'optional' => true,
                     ),
                     'show_past' => array(
                         'label' => __('Show Past Games', 'lllm'),
-                        'input_type' => 'select',
-                        'allowed_values' => array('1', '0'),
+                        'control_type' => 'checkbox',
+                        'value_source' => array(
+                            'type' => 'static',
+                            'options' => array(
+                                array('label' => __('Enabled', 'lllm'), 'value' => '1'),
+                                array('label' => __('Disabled', 'lllm'), 'value' => '0'),
+                            ),
+                        ),
                         'default_value' => '1',
                         'optional' => true,
                     ),
                     'show_future' => array(
                         'label' => __('Show Future Games', 'lllm'),
-                        'input_type' => 'select',
-                        'allowed_values' => array('1', '0'),
+                        'control_type' => 'checkbox',
+                        'value_source' => array(
+                            'type' => 'static',
+                            'options' => array(
+                                array('label' => __('Enabled', 'lllm'), 'value' => '1'),
+                                array('label' => __('Disabled', 'lllm'), 'value' => '0'),
+                            ),
+                        ),
                         'default_value' => '1',
                         'optional' => true,
                     ),
                     'limit' => array(
                         'label' => __('Row Limit', 'lllm'),
-                        'input_type' => 'number',
-                        'allowed_values' => array(),
+                        'control_type' => 'number',
+                        'value_source' => array('type' => 'manual'),
                         'default_value' => '50',
                         'optional' => true,
                     ),
@@ -65,16 +77,16 @@ class LLLM_Admin {
                 'attributes' => array('season', 'division'),
                 'attribute_meta' => array(
                     'season' => array(
-                        'label' => __('Season Slug', 'lllm'),
-                        'input_type' => 'text',
-                        'allowed_values' => array(),
+                        'label' => __('Season', 'lllm'),
+                        'control_type' => 'select',
+                        'value_source' => array('type' => 'dynamic', 'key' => 'season_slugs'),
                         'default_value' => '',
                         'optional' => true,
                     ),
                     'division' => array(
-                        'label' => __('Division Slug', 'lllm'),
-                        'input_type' => 'text',
-                        'allowed_values' => array(),
+                        'label' => __('Division', 'lllm'),
+                        'control_type' => 'select',
+                        'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
                         'default_value' => '',
                         'optional' => true,
                     ),
@@ -85,23 +97,29 @@ class LLLM_Admin {
                 'attributes' => array('season', 'division', 'show_logos'),
                 'attribute_meta' => array(
                     'season' => array(
-                        'label' => __('Season Slug', 'lllm'),
-                        'input_type' => 'text',
-                        'allowed_values' => array(),
+                        'label' => __('Season', 'lllm'),
+                        'control_type' => 'select',
+                        'value_source' => array('type' => 'dynamic', 'key' => 'season_slugs'),
                         'default_value' => '',
                         'optional' => true,
                     ),
                     'division' => array(
-                        'label' => __('Division Slug', 'lllm'),
-                        'input_type' => 'text',
-                        'allowed_values' => array(),
+                        'label' => __('Division', 'lllm'),
+                        'control_type' => 'select',
+                        'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
                         'default_value' => '',
                         'optional' => true,
                     ),
                     'show_logos' => array(
                         'label' => __('Show Team Logos', 'lllm'),
-                        'input_type' => 'select',
-                        'allowed_values' => array('1', '0'),
+                        'control_type' => 'checkbox',
+                        'value_source' => array(
+                            'type' => 'static',
+                            'options' => array(
+                                array('label' => __('Enabled', 'lllm'), 'value' => '1'),
+                                array('label' => __('Disabled', 'lllm'), 'value' => '0'),
+                            ),
+                        ),
                         'default_value' => '0',
                         'optional' => true,
                     ),
@@ -112,22 +130,75 @@ class LLLM_Admin {
                 'attributes' => array('season', 'division'),
                 'attribute_meta' => array(
                     'season' => array(
-                        'label' => __('Season Slug', 'lllm'),
-                        'input_type' => 'text',
-                        'allowed_values' => array(),
+                        'label' => __('Season', 'lllm'),
+                        'control_type' => 'select',
+                        'value_source' => array('type' => 'dynamic', 'key' => 'season_slugs'),
                         'default_value' => '',
                         'optional' => true,
                     ),
                     'division' => array(
-                        'label' => __('Division Slug', 'lllm'),
-                        'input_type' => 'text',
-                        'allowed_values' => array(),
+                        'label' => __('Division', 'lllm'),
+                        'control_type' => 'select',
+                        'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
                         'default_value' => '',
                         'optional' => true,
                     ),
                 ),
             ),
         );
+    }
+
+    /**
+     * Returns dynamic value-source options used by shortcode attribute schema.
+     *
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return array<string,array<int,array{label:string,value:string}>>
+     */
+    private static function get_shortcode_generator_value_sources() {
+        global $wpdb;
+
+        $sources = array(
+            'season_slugs' => array(),
+            'division_slugs' => array(),
+            'team_codes' => array(),
+        );
+
+        $season_rows = $wpdb->get_results('SELECT slug, name FROM ' . self::table('seasons') . ' ORDER BY name ASC');
+        foreach ($season_rows as $season_row) {
+            $sources['season_slugs'][] = array(
+                'label' => $season_row->name . ' (' . $season_row->slug . ')',
+                'value' => $season_row->slug,
+            );
+        }
+
+        $division_rows = $wpdb->get_results(
+            'SELECT d.slug, d.name, s.name AS season_name
+             FROM ' . self::table('divisions') . ' d
+             LEFT JOIN ' . self::table('seasons') . ' s ON s.id = d.season_id
+             ORDER BY s.name ASC, d.name ASC'
+        );
+        foreach ($division_rows as $division_row) {
+            $season_name = isset($division_row->season_name) ? $division_row->season_name : '';
+            $label = $division_row->name . ' (' . $division_row->slug . ')';
+            if ($season_name !== '') {
+                $label .= ' — ' . $season_name;
+            }
+
+            $sources['division_slugs'][] = array(
+                'label' => $label,
+                'value' => $division_row->slug,
+            );
+        }
+
+        $team_rows = $wpdb->get_results('SELECT team_code, name FROM ' . self::table('team_masters') . ' ORDER BY name ASC');
+        foreach ($team_rows as $team_row) {
+            $sources['team_codes'][] = array(
+                'label' => $team_row->name . ' (' . $team_row->team_code . ')',
+                'value' => $team_row->team_code,
+            );
+        }
+
+        return $sources;
     }
 
     /**
@@ -318,9 +389,9 @@ class LLLM_Admin {
             'lllmShortcodeGeneratorConfig',
             array(
                 'shortcodeMap' => self::get_shortcode_definition_map(),
+                'valueSources' => self::get_shortcode_generator_value_sources(),
                 'messages' => array(
                     'optional' => __('optional', 'lllm'),
-                    'allowedValues' => __('Allowed values:', 'lllm'),
                     'copied' => __('Copied!', 'lllm'),
                     'copyFallback' => __('Press Ctrl/Cmd+C to copy.', 'lllm'),
                 ),

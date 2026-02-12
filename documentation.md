@@ -266,7 +266,7 @@ The plugin includes a dedicated **League Manager → Shortcode Generator** subme
 - Page title/menu label: `Shortcode Generator`
 - Renders a shortcode-type dropdown, dynamic attribute controls, generated preview textarea, and copy button.
 - Uses page-scoped admin assets only on this screen (`assets/shortcode-generator-admin.js` and `assets/shortcode-generator-admin.css`).
-- Uses shared shortcode definitions from `LLLM_Admin::get_shortcode_definition_map()` to keep labels, defaults, and attribute order consistent.
+- Uses shared shortcode definitions from `LLLM_Admin::get_shortcode_definition_map()` plus dynamic value sources from plugin data to keep labels, control types, defaults, and attribute order consistent.
 
 ---
 
@@ -536,15 +536,15 @@ Downloadable error report CSV should add an `error` column with the message.
 
   * display label
   * ordered attribute list
-  * per-attribute metadata: `label`, `input_type`, `allowed_values`, `default_value`, `optional`
+  * per-attribute metadata: `label`, `control_type`, `value_source`, `default_value`, `optional`
 
 Builder requirements:
 
 * Populate shortcode-type dropdown from this map.
 * Listen for shortcode-type changes.
 * On type change, clear previous attribute UI and previous attribute state.
-* Render only attribute controls declared for the selected shortcode type.
-* Initialize each rendered field from `default_value` in schema metadata.
+* Render only attribute controls declared for the selected shortcode type by mapping `control_type` to UI component (`select`, `text`, `number`, `checkbox`).
+* Resolve select options from `value_source` (`static` options in schema or `dynamic` source keys from plugin data), then initialize each rendered field from `default_value`.
 * Recompute shortcode preview output on every field change.
 * Render preview in a readonly field at the bottom of the builder.
 * Add a **Copy Shortcode** action that is idempotent and does not reload the page.
