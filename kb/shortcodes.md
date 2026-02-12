@@ -27,6 +27,8 @@ When you switch shortcode types, the builder clears prior attribute controls/sta
 
 For dropdown attributes, each option stores both a display `label` and shortcode `value`. The menu shows both, while generated/copy-ready shortcode output always inserts the `value`.
 
+For selected dropdown attributes, there is also an **Advanced: custom value** toggle. Keep this OFF for normal use. When enabled, the field switches to text input, warns that curated options are bypassed, and sanitizes input to letters, numbers, dashes, and underscores before generating the shortcode.
+
 The copy button first tries your browser clipboard API. If that fails, the preview text is auto-selected and the UI tells you to press **Ctrl/Cmd+C**.
 
 Optional attributes that are left blank are omitted from the generated shortcode output.

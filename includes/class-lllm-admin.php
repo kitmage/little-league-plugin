@@ -23,6 +23,7 @@ class LLLM_Admin {
                     'season' => array(
                         'label' => __('Season', 'lllm'),
                         'control_type' => 'select',
+                        'allow_custom_value' => true,
                         'value_source' => array('type' => 'dynamic', 'key' => 'season_slugs'),
                         'default_value' => '',
                         'optional' => true,
@@ -30,6 +31,7 @@ class LLLM_Admin {
                     'division' => array(
                         'label' => __('Division', 'lllm'),
                         'control_type' => 'select',
+                        'allow_custom_value' => true,
                         'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
                         'dependsOn' => array('season'),
                         'filterBy' => array('season' => 'season_slug'),
@@ -39,6 +41,7 @@ class LLLM_Admin {
                     'team_code' => array(
                         'label' => __('Team Code', 'lllm'),
                         'control_type' => 'select',
+                        'allow_custom_value' => true,
                         'value_source' => array('type' => 'dynamic', 'key' => 'team_codes'),
                         'dependsOn' => array('season', 'division'),
                         'filterBy' => array(
@@ -90,6 +93,7 @@ class LLLM_Admin {
                     'season' => array(
                         'label' => __('Season', 'lllm'),
                         'control_type' => 'select',
+                        'allow_custom_value' => true,
                         'value_source' => array('type' => 'dynamic', 'key' => 'season_slugs'),
                         'default_value' => '',
                         'optional' => true,
@@ -97,6 +101,7 @@ class LLLM_Admin {
                     'division' => array(
                         'label' => __('Division', 'lllm'),
                         'control_type' => 'select',
+                        'allow_custom_value' => true,
                         'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
                         'dependsOn' => array('season'),
                         'filterBy' => array('season' => 'season_slug'),
@@ -112,6 +117,7 @@ class LLLM_Admin {
                     'season' => array(
                         'label' => __('Season', 'lllm'),
                         'control_type' => 'select',
+                        'allow_custom_value' => true,
                         'value_source' => array('type' => 'dynamic', 'key' => 'season_slugs'),
                         'default_value' => '',
                         'optional' => true,
@@ -119,6 +125,7 @@ class LLLM_Admin {
                     'division' => array(
                         'label' => __('Division', 'lllm'),
                         'control_type' => 'select',
+                        'allow_custom_value' => true,
                         'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
                         'dependsOn' => array('season'),
                         'filterBy' => array('season' => 'season_slug'),
@@ -147,6 +154,7 @@ class LLLM_Admin {
                     'season' => array(
                         'label' => __('Season', 'lllm'),
                         'control_type' => 'select',
+                        'allow_custom_value' => true,
                         'value_source' => array('type' => 'dynamic', 'key' => 'season_slugs'),
                         'default_value' => '',
                         'optional' => true,
@@ -154,6 +162,7 @@ class LLLM_Admin {
                     'division' => array(
                         'label' => __('Division', 'lllm'),
                         'control_type' => 'select',
+                        'allow_custom_value' => true,
                         'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
                         'dependsOn' => array('season'),
                         'filterBy' => array('season' => 'season_slug'),
@@ -481,6 +490,9 @@ class LLLM_Admin {
                     'noOptions' => __('No options available', 'lllm'),
                     'optionsLoadError' => __('Could not load options.', 'lllm'),
                     'retry' => __('Retry', 'lllm'),
+                    'advancedCustomToggle' => __('Advanced: custom value', 'lllm'),
+                    'advancedCustomHelp' => __('Bypasses curated options. Use only when you need a manual slug/code.', 'lllm'),
+                    'customValueSanitized' => __('Custom value sanitized to letters, numbers, dashes, and underscores.', 'lllm'),
                 ),
             )
         );

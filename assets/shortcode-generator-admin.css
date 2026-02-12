@@ -23,3 +23,23 @@
 #lllm-shortcode-output {
     min-height: 80px;
 }
+
+.lllm-shortcode-custom-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.lllm-shortcode-custom-toggle-label {
+    font-weight: 600;
+}
+
+.lllm-shortcode-custom-help {
+    margin: 0 0 6px;
+    color: #8a6d3b;
+}
+
+.lllm-shortcode-field-status-warning {
+    color: #8a6d3b;
+}
