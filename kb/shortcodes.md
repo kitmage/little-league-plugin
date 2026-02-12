@@ -23,6 +23,10 @@ If you prefer a guided workflow, go to **League Manager → Welcome** and use **
 2. Fill any attributes you want.
 3. Copy the generated shortcode string into your page/post.
 
+When you switch shortcode types, the builder clears prior attribute controls/state, renders only fields for the selected type, initializes each field from schema defaults, and refreshes preview output on every field change.
+
+Optional attributes that are left blank are omitted from the generated shortcode output.
+
 The builder uses the same shortcode schema for labels, attributes, defaults, and attribute order, so generated strings stay consistent.
 
 ---
