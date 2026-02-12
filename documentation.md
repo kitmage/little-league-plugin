@@ -267,6 +267,9 @@ The plugin includes a dedicated **League Manager → Shortcode Generator** subme
 - Renders a shortcode-type dropdown, dynamic attribute controls, generated preview textarea, and copy button.
 - Uses page-scoped admin assets only on this screen (`assets/shortcode-generator-admin.js` and `assets/shortcode-generator-admin.css`).
 - Uses shared shortcode definitions from `LLLM_Admin::get_shortcode_definition_map()` plus dynamic value sources from plugin data to keep labels, control types, defaults, and attribute order consistent.
+- Dynamic dropdown value sources are fetched via `wp_ajax_lllm_shortcode_generator_value_source` and returned as `{label, value}` option arrays.
+- Client-side option payloads are cached per source key for the admin page session to avoid repeat requests.
+- Dynamic selects expose loading, empty, and retryable error states for better resilience.
 
 ---
 

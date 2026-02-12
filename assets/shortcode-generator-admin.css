@@ -11,6 +11,15 @@
     font-weight: 400;
 }
 
+.lllm-shortcode-field-status {
+    margin-top: 6px;
+    color: #50575e;
+}
+
+.lllm-shortcode-field-status-error {
+    color: #b32d2e;
+}
+
 #lllm-shortcode-output {
     min-height: 80px;
 }

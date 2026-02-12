@@ -155,50 +155,76 @@ class LLLM_Admin {
      * @return array<string,array<int,array{label:string,value:string}>>
      */
     private static function get_shortcode_generator_value_sources() {
-        global $wpdb;
-
         $sources = array(
-            'season_slugs' => array(),
-            'division_slugs' => array(),
-            'team_codes' => array(),
+            'season_slugs' => self::get_shortcode_generator_value_source_options('season_slugs'),
+            'division_slugs' => self::get_shortcode_generator_value_source_options('division_slugs'),
+            'team_codes' => self::get_shortcode_generator_value_source_options('team_codes'),
         );
-
-        $season_rows = $wpdb->get_results('SELECT slug, name FROM ' . self::table('seasons') . ' ORDER BY name ASC');
-        foreach ($season_rows as $season_row) {
-            $sources['season_slugs'][] = array(
-                'label' => $season_row->name,
-                'value' => $season_row->slug,
-            );
-        }
-
-        $division_rows = $wpdb->get_results(
-            'SELECT d.slug, d.name, s.name AS season_name
-             FROM ' . self::table('divisions') . ' d
-             LEFT JOIN ' . self::table('seasons') . ' s ON s.id = d.season_id
-             ORDER BY s.name ASC, d.name ASC'
-        );
-        foreach ($division_rows as $division_row) {
-            $season_name = isset($division_row->season_name) ? $division_row->season_name : '';
-            $label = $division_row->name;
-            if ($season_name !== '') {
-                $label .= ' — ' . $season_name;
-            }
-
-            $sources['division_slugs'][] = array(
-                'label' => $label,
-                'value' => $division_row->slug,
-            );
-        }
-
-        $team_rows = $wpdb->get_results('SELECT team_code, name FROM ' . self::table('team_masters') . ' ORDER BY name ASC');
-        foreach ($team_rows as $team_row) {
-            $sources['team_codes'][] = array(
-                'label' => $team_row->name,
-                'value' => $team_row->team_code,
-            );
-        }
 
         return $sources;
+    }
+
+    /**
+     * Returns options for a single dynamic value source.
+     *
+     * @param string $source_key Dynamic source key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return array<int,array{label:string,value:string}>
+     */
+    private static function get_shortcode_generator_value_source_options($source_key) {
+        global $wpdb;
+
+        $source_key = sanitize_key((string) $source_key);
+        $options = array();
+
+        if ($source_key === 'season_slugs') {
+            $season_rows = $wpdb->get_results('SELECT slug, name FROM ' . self::table('seasons') . ' ORDER BY name ASC');
+            foreach ($season_rows as $season_row) {
+                $options[] = array(
+                    'label' => $season_row->name,
+                    'value' => $season_row->slug,
+                );
+            }
+
+            return $options;
+        }
+
+        if ($source_key === 'division_slugs') {
+            $division_rows = $wpdb->get_results(
+                'SELECT d.slug, d.name, s.name AS season_name
+                 FROM ' . self::table('divisions') . ' d
+                 LEFT JOIN ' . self::table('seasons') . ' s ON s.id = d.season_id
+                 ORDER BY s.name ASC, d.name ASC'
+            );
+            foreach ($division_rows as $division_row) {
+                $season_name = isset($division_row->season_name) ? $division_row->season_name : '';
+                $label = $division_row->name;
+                if ($season_name !== '') {
+                    $label .= ' — ' . $season_name;
+                }
+
+                $options[] = array(
+                    'label' => $label,
+                    'value' => $division_row->slug,
+                );
+            }
+
+            return $options;
+        }
+
+        if ($source_key === 'team_codes') {
+            $team_rows = $wpdb->get_results('SELECT team_code, name FROM ' . self::table('team_masters') . ' ORDER BY name ASC');
+            foreach ($team_rows as $team_row) {
+                $options[] = array(
+                    'label' => $team_row->name,
+                    'value' => $team_row->team_code,
+                );
+            }
+
+            return $options;
+        }
+
+        return array();
     }
 
     /**
@@ -328,6 +354,7 @@ class LLLM_Admin {
         add_action('admin_post_lllm_download_division_teams_template', array(__CLASS__, 'handle_download_division_teams_template'));
         add_action('admin_post_lllm_validate_division_teams_csv', array(__CLASS__, 'handle_validate_division_teams_csv'));
         add_action('admin_post_lllm_import_division_teams_csv', array(__CLASS__, 'handle_import_division_teams_csv'));
+        add_action('wp_ajax_lllm_shortcode_generator_value_source', array(__CLASS__, 'handle_shortcode_generator_value_source'));
     }
 
     /**
@@ -389,14 +416,40 @@ class LLLM_Admin {
             'lllmShortcodeGeneratorConfig',
             array(
                 'shortcodeMap' => self::get_shortcode_definition_map(),
-                'valueSources' => self::get_shortcode_generator_value_sources(),
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'valueSourceNonce' => wp_create_nonce('lllm_shortcode_generator_value_source'),
                 'messages' => array(
                     'optional' => __('optional', 'lllm'),
                     'copied' => __('Copied!', 'lllm'),
                     'copyFallback' => __('Press Ctrl/Cmd+C to copy.', 'lllm'),
+                    'loadingOptions' => __('Loading options…', 'lllm'),
+                    'noOptions' => __('No options available', 'lllm'),
+                    'optionsLoadError' => __('Could not load options.', 'lllm'),
+                    'retry' => __('Retry', 'lllm'),
                 ),
             )
         );
+    }
+
+    /**
+     * AJAX handler for dynamic shortcode generator value-source options.
+     *
+     * @return void
+     */
+    public static function handle_shortcode_generator_value_source() {
+        if (!current_user_can('lllm_manage_seasons')) {
+            wp_send_json_error(array('message' => __('You do not have permission to access this resource.', 'lllm')), 403);
+        }
+
+        check_ajax_referer('lllm_shortcode_generator_value_source', 'nonce');
+
+        $source_key = isset($_POST['source_key']) ? sanitize_key(wp_unslash($_POST['source_key'])) : '';
+        $options = self::get_shortcode_generator_value_source_options($source_key);
+
+        wp_send_json_success(array(
+            'sourceKey' => $source_key,
+            'options' => $options,
+        ));
     }
 
     /**
