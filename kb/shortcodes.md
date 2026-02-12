@@ -15,6 +15,18 @@ If you leave out season/division attributes, the plugin defaults to the **active
 
 ---
 
+## Optional: use the admin Shortcode Builder
+
+If you prefer a guided workflow, go to **League Manager → Welcome** and use **Shortcode Builder**:
+
+1. Select the shortcode type.
+2. Fill any attributes you want.
+3. Copy the generated shortcode string into your page/post.
+
+The builder uses the same shortcode schema for labels, attributes, defaults, and attribute order, so generated strings stay consistent.
+
+---
+
 ## 1) `[lllm_schedule]` — game schedule table
 
 Use this to show upcoming/past games with date/time, location, teams, status, and score (for played games).
