@@ -15,6 +15,9 @@
     var noOptionsLabel = String(messages.noOptions || 'No options available');
     var optionsLoadErrorLabel = String(messages.optionsLoadError || 'Could not load options.');
     var retryLabel = String(messages.retry || 'Retry');
+    var advancedCustomToggleLabel = String(messages.advancedCustomToggle || 'Advanced: custom value');
+    var advancedCustomHelpLabel = String(messages.advancedCustomHelp || 'Bypasses curated options. Use only when you need a manual slug/code.');
+    var customValueSanitizedLabel = String(messages.customValueSanitized || 'Custom value sanitized to letters, numbers, dashes, and underscores.');
 
     var typeSelect = document.getElementById('lllm-shortcode-type');
     var attributesRoot = document.getElementById('lllm-shortcode-attributes');
@@ -70,6 +73,10 @@
         activeFieldRegistry = {};
         dependencyChildrenMap = {};
         attributesRoot.innerHTML = '';
+    };
+
+    var sanitizeCustomAttributeValue = function (value) {
+        return String(value || '').trim().replace(/[^A-Za-z0-9_-]/g, '');
     };
 
     var renderOptionElements = function (select, options, includeBlankOption) {
@@ -256,6 +263,19 @@
             return Promise.resolve();
         }
 
+        if (field.customModeToggle && field.customInput && field.customModeToggle.checked) {
+            var customValue = sanitizeCustomAttributeValue(field.customInput.value);
+            if (field.customInput.value !== customValue) {
+                field.customInput.value = customValue;
+            }
+
+            activeAttributeState[attributeName] = {
+                value: customValue
+            };
+            buildShortcode();
+            return Promise.resolve();
+        }
+
         var meta = field.meta || {};
         var input = field.input;
         var includeBlankOption = field.includeBlankOption;
@@ -435,7 +455,98 @@
                 input.className = 'regular-text';
 
                 var includeBlankOption = !!meta.optional;
+                var allowCustomValue = !!meta.allow_custom_value;
                 var initialOptions = [];
+                var customModeToggle = null;
+                var customHelp = null;
+                var customInput = null;
+                var customStatus = null;
+
+                var updateCustomStatus = function (value) {
+                    if (!customStatus) {
+                        return;
+                    }
+
+                    if (String(value || '') === sanitizeCustomAttributeValue(value)) {
+                        customStatus.textContent = '';
+                        return;
+                    }
+
+                    customStatus.textContent = customValueSanitizedLabel;
+                };
+
+                var onFieldValueChange = function () {
+                    if (customModeToggle && customInput && customModeToggle.checked) {
+                        var sanitizedCustomValue = sanitizeCustomAttributeValue(customInput.value);
+                        updateCustomStatus(customInput.value);
+                        if (customInput.value !== sanitizedCustomValue) {
+                            customInput.value = sanitizedCustomValue;
+                        }
+
+                        activeAttributeState[attributeName] = {
+                            value: sanitizedCustomValue
+                        };
+                    } else {
+                        activeAttributeState[attributeName] = getStateFromSelect(input);
+                    }
+
+                    buildShortcode();
+                    refreshDependentAttributes(attributeName);
+                };
+
+                if (allowCustomValue) {
+                    customModeToggle = document.createElement('input');
+                    customModeToggle.type = 'checkbox';
+                    customModeToggle.id = inputId + '-custom-mode';
+                    customModeToggle.className = 'lllm-shortcode-custom-toggle';
+
+                    var customModeLabel = document.createElement('label');
+                    customModeLabel.className = 'lllm-shortcode-custom-toggle-label';
+                    customModeLabel.setAttribute('for', customModeToggle.id);
+                    customModeLabel.textContent = advancedCustomToggleLabel;
+
+                    var customToggleWrap = document.createElement('div');
+                    customToggleWrap.className = 'lllm-shortcode-custom-toggle-wrap';
+                    customToggleWrap.appendChild(customModeToggle);
+                    customToggleWrap.appendChild(customModeLabel);
+
+                    customHelp = document.createElement('p');
+                    customHelp.className = 'description lllm-shortcode-custom-help';
+                    customHelp.textContent = advancedCustomHelpLabel;
+
+                    customInput = document.createElement('input');
+                    customInput.type = 'text';
+                    customInput.id = inputId + '-custom-input';
+                    customInput.dataset.attribute = attributeName;
+                    customInput.className = 'regular-text';
+                    customInput.style.display = 'none';
+
+                    customStatus = document.createElement('div');
+                    customStatus.className = 'lllm-shortcode-field-status lllm-shortcode-field-status-warning';
+
+                    customModeToggle.addEventListener('change', function () {
+                        var customEnabled = customModeToggle.checked;
+                        input.style.display = customEnabled ? 'none' : '';
+                        customInput.style.display = customEnabled ? '' : 'none';
+                        customHelp.style.display = customEnabled ? '' : 'none';
+
+                        if (customEnabled) {
+                            customInput.value = sanitizeCustomAttributeValue(getAttributeValue(attributeName));
+                        }
+
+                        onFieldValueChange();
+                    });
+
+                    customInput.addEventListener('input', onFieldValueChange);
+                    customInput.addEventListener('change', onFieldValueChange);
+
+                    cell.appendChild(customToggleWrap);
+                    cell.appendChild(customHelp);
+                    cell.appendChild(customInput);
+                    cell.appendChild(customStatus);
+                    customHelp.style.display = 'none';
+                }
+
                 if (source.type === 'static' && Array.isArray(source.options)) {
                     initialOptions = source.options;
                 }
@@ -448,6 +559,8 @@
 
                     activeFieldRegistry[attributeName] = {
                         input: input,
+                        customInput: customInput,
+                        customModeToggle: customModeToggle,
                         meta: meta,
                         source: source,
                         defaultValue: defaultValue,
@@ -455,14 +568,8 @@
                         statusMount: statusMount
                     };
 
-                    var onDynamicFieldChange = function () {
-                        activeAttributeState[attributeName] = getStateFromSelect(input);
-                        buildShortcode();
-                        refreshDependentAttributes(attributeName);
-                    };
-
-                    input.addEventListener('input', onDynamicFieldChange);
-                    input.addEventListener('change', onDynamicFieldChange);
+                    input.addEventListener('input', onFieldValueChange);
+                    input.addEventListener('change', onFieldValueChange);
 
                     syncDependentAttributeState(attributeName);
                 } else {
@@ -475,6 +582,8 @@
 
                     activeFieldRegistry[attributeName] = {
                         input: input,
+                        customInput: customInput,
+                        customModeToggle: customModeToggle,
                         meta: meta,
                         source: source,
                         defaultValue: defaultValue,
@@ -482,14 +591,8 @@
                         statusMount: null
                     };
 
-                    var onSelectChange = function () {
-                        activeAttributeState[attributeName] = getStateFromSelect(input);
-                        buildShortcode();
-                        refreshDependentAttributes(attributeName);
-                    };
-
-                    input.addEventListener('input', onSelectChange);
-                    input.addEventListener('change', onSelectChange);
+                    input.addEventListener('input', onFieldValueChange);
+                    input.addEventListener('change', onFieldValueChange);
                     cell.appendChild(input);
                 }
             } else if (controlType === 'checkbox') {

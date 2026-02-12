@@ -127,6 +127,9 @@ On **League Manager → Shortcode Generator**, use the built-in generator to cre
 - Attribute fields render dynamically for only the selected shortcode type, map schema `control_type` to UI controls (`select`, `text`, `number`, `checkbox`), and initialize from schema defaults.
 - Select options persist both a user-facing `label` and shortcode-safe `value`; dropdown UI renders both so admins can confirm the exact slug/code being inserted.
 - Dynamic selects include field-level states: a loading placeholder while fetching, a disabled **No options available** state when empty, and a retry-friendly inline error message when loading fails.
+- Select attributes can optionally enable an **Advanced: custom value** toggle (default OFF) that switches from curated dropdown to manual text entry for one-off slug/code use cases.
+- Advanced custom values are sanitized client/server-side to letters, numbers, dashes, and underscores so shortcode output keeps the same safe `attribute="value"` format.
+- When custom mode is enabled, helper text clearly warns that curated options are being bypassed.
 - Preview output recomputes on every attribute field change in a readonly preview area.
 - Use **Copy Shortcode** to copy the generated preview without reloading the page.
 - If clipboard copy is blocked, the preview text is selected and a keyboard fallback prompt is shown (Ctrl/Cmd+C).

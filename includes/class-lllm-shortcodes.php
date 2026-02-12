@@ -151,6 +151,16 @@ class LLLM_Shortcodes {
     }
 
     /**
+     * Sanitizes shortcode slug/code style inputs.
+     *
+     * @param string $value Raw shortcode attribute value.
+     * @return string Sanitized value limited to letters, numbers, dashes, and underscores.
+     */
+    private static function sanitize_shortcode_token($value) {
+        return preg_replace('/[^A-Za-z0-9_-]/', '', trim((string) $value));
+    }
+
+    /**
      * Resolves season/division context for shortcode rendering.
      *
      * Resolution order:
@@ -165,15 +175,17 @@ class LLLM_Shortcodes {
         $season = null;
         $division = null;
 
-        if (!empty($atts['season'])) {
-            $season = self::get_season_by_slug($atts['season']);
+        $season_slug = self::sanitize_shortcode_token(isset($atts['season']) ? $atts['season'] : '');
+        if ($season_slug !== '') {
+            $season = self::get_season_by_slug($season_slug);
         }
         if (!$season) {
             $season = self::get_active_season();
         }
 
-        if (!empty($atts['division'])) {
-            $division = self::get_division_by_slug($atts['division']);
+        $division_slug = self::sanitize_shortcode_token(isset($atts['division']) ? $atts['division'] : '');
+        if ($division_slug !== '') {
+            $division = self::get_division_by_slug($division_slug);
         }
 
         if (!$division && $season) {
@@ -216,6 +228,7 @@ class LLLM_Shortcodes {
         }
 
         $timezone = $season->timezone ? $season->timezone : wp_timezone_string();
+        $atts['team_code'] = self::sanitize_shortcode_token($atts['team_code']);
         $show_past = $atts['show_past'] === '1';
         $show_future = $atts['show_future'] === '1';
         $limit = max(1, intval($atts['limit']));

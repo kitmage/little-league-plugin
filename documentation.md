@@ -258,6 +258,12 @@ Subpages:
 
 Managers should never need WP’s standard editor screens.
 
+Shortcode Generator safety defaults:
+- Dropdown fields remain the default path for slug/code attributes.
+- Some dropdowns expose an explicit **Advanced: custom value** toggle for manual overrides.
+- The toggle is OFF by default and visually warns that curated options are bypassed.
+- Manual values are sanitized to `[A-Za-z0-9_-]` before shortcode preview/copy output.
+
 ### 6.2 Shortcode Generator screen
 
 The plugin includes a dedicated **League Manager → Shortcode Generator** submenu page for building shortcodes.
