@@ -531,8 +531,13 @@ Downloadable error report CSV should add an `error` column with the message.
 Builder requirements:
 
 * Populate shortcode-type dropdown from this map.
-* Render attribute controls dynamically from this map after type selection.
+* Listen for shortcode-type changes.
+* On type change, clear previous attribute UI and previous attribute state.
+* Render only attribute controls declared for the selected shortcode type.
+* Initialize each rendered field from `default_value` in schema metadata.
+* Recompute shortcode preview output on every field change.
 * Build final shortcode string from this map in the exact configured attribute order.
+* Omit optional attributes when their values are empty.
 
 ### 12.2 Display rules (dad-proof)
 

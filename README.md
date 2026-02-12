@@ -119,8 +119,10 @@ Import behavior:
 On **League Manager → Welcome**, use the built-in **Shortcode Builder** to generate valid shortcode strings.
 
 - Choose a shortcode type from a dropdown populated from a shortcode definition map.
-- Attribute fields render dynamically for the selected shortcode type.
-- Generated shortcode output follows a consistent attribute order based on the shared schema.
+- Switching shortcode types clears previously rendered attribute controls and prior attribute state.
+- Attribute fields render dynamically for only the selected shortcode type and initialize from schema default values.
+- Preview output recomputes on every attribute field change.
+- Generated shortcode output follows a consistent attribute order based on the shared schema and omits empty optional attributes.
 
 This keeps shortcode labels, supported attributes, defaults, and output formatting aligned in one place.
 
