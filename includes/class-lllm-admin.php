@@ -3262,7 +3262,7 @@ class LLLM_Admin {
                 $has_home_score = $row['home_score'] !== '';
                 $has_away_score = $row['away_score'] !== '';
 
-                if ($status === '' && ($has_home_score || $has_away_score)) {
+                if ($has_home_score || $has_away_score) {
                     $status = 'played';
                 }
 
