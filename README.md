@@ -118,6 +118,7 @@ Import behavior:
 
 On **League Manager → Shortcode Generator**, use the built-in generator to create valid shortcode strings.
 
+- Follow the generator flow: **choose shortcode type → select attributes from dropdowns → copy shortcode**.
 - Choose a shortcode type from a dropdown populated from a shortcode definition map.
 - Dynamic dropdowns (season/division/team) now load options from a secured admin AJAX endpoint and normalize records into `{label, value}` option objects.
 - Dynamic option responses are cached in browser memory per source+filter combination (for example, divisions filtered by selected season) to avoid repeated requests.
@@ -134,6 +135,17 @@ On **League Manager → Shortcode Generator**, use the built-in generator to cre
 - Use **Copy Shortcode** to copy the generated preview without reloading the page.
 - If clipboard copy is blocked, the preview text is selected and a keyboard fallback prompt is shown (Ctrl/Cmd+C).
 - Generated shortcode preview/copy always use attribute `value` (never `label`) in a consistent schema order and omit empty optional attributes.
+
+### Shortcode generator troubleshooting
+
+- **Dropdown shows “No options available”**:
+  - Verify Seasons/Divisions/Teams data exists for your expected filters.
+  - Confirm parent dropdown selections (for example season before division, season+division before team code).
+  - Click **Retry** on any field showing a load error.
+- **Need a value not shown in the dropdown**:
+  - Use **Advanced: custom value** to override curated options for one-off slug/code use cases.
+  - Custom mode always takes precedence over the selected dropdown value for that attribute.
+  - Custom entries are sanitized to letters, numbers, dashes, and underscores before preview/copy output.
 
 This keeps shortcode labels, control mapping, value sources (static options or dynamic plugin data), defaults, and output formatting aligned in one place.
 
