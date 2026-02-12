@@ -164,3 +164,13 @@ When a downstream playoff game references a feeder game that has not been played
 ## Documentation
 
 Full product and technical specs live in `documentation.md`.
+
+## Troubleshooting
+
+### Import fails with: `Unknown column 'competition_type' in 'INSERT INTO'`
+
+This usually means plugin code was updated but the database schema migration has not run yet.
+
+- Visit any wp-admin page while the plugin is active; LLLM now performs a runtime schema check and triggers migrations when required game columns are missing.
+- If needed, deactivate and reactivate the plugin once to force activation migrations.
+- Retry the import after the migration completes.
