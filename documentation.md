@@ -754,7 +754,7 @@ Supported automatically (scores equal in a played game).
 ## 17) Suggested implementation notes (for the developer)
 
 * Generate `game_uid` as short stable code (e.g., Crockford Base32) at create time.
-* Store datetimes in UTC; convert from season timezone on import and convert back for display.
+* Store datetimes in UTC; convert from season timezone on import and convert back to season timezone for display and current-games CSV export.
 * Keep import parsers strict and predictable; no “best guess” parsing.
 * Keep all Manager screens custom (no WP post editor confusion).
 * Provide “Download Template” and “Download Current CSV” everywhere importing happens.
