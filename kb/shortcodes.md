@@ -33,6 +33,13 @@ Optional attributes that are left blank are omitted from the generated shortcode
 
 The builder uses the same shortcode schema for labels, attributes, control types, value sources, defaults, and attribute order, so generated strings stay consistent.
 
+Dynamic dropdown attributes (for example season/division/team code) are loaded from plugin admin AJAX data and normalized as `{label, value}` options. The page caches each dynamic option source for the current admin session to reduce repeat network requests while you switch shortcode types.
+
+Each dynamic field includes explicit states:
+- **Loading**: disabled select with a loading placeholder.
+- **Empty**: disabled select with **No options available**.
+- **Error**: inline message plus a **Retry** action that attempts the request again.
+
 ---
 
 ## 1) `[lllm_schedule]` — game schedule table
