@@ -161,6 +161,7 @@ Use this to display generated playoff games for a division.
 
 - Renders rounds: **Round 1**, **Round 2**, and **Championship**.
 - If feeder games are not final yet, bracket slots can show placeholders like **Winner of Game R1-2** until source games are marked played.
+- Playoff bracket team cells use logo-only rendering (`render_team_logo`).
 
 ---
 
