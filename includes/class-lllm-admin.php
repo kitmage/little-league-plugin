@@ -3790,9 +3790,11 @@ class LLLM_Admin {
         ));
 
         delete_transient('lllm_import_' . $token);
+
+        $notice = $created > 0 ? 'game_saved' : 'import_complete';
         self::redirect_with_notice(
             admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id),
-            'import_complete'
+            $notice
         );
     }
 

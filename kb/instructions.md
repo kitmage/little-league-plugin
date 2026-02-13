@@ -288,6 +288,8 @@ Use this after games are played.
 
 **Behavior note:** if scores are provided, the game is treated as played during validation/import.
 
+**Import commit note:** after a successful import, the plugin redirects back to the same Games season/division filter. If the commit inserted any new games, the existing **Game updated** (`game_saved`) success banner is shown; otherwise it shows the standard import-complete notice.
+
 ---
 
 ## Step 7: Quick edits and maintenance

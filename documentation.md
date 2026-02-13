@@ -454,6 +454,15 @@ Every validation + commit produces a log entry with:
   * If found: update
   * If not found: create
 
+**Create payload requirements (render_games compatibility)**
+
+* Inserts must write `start_datetime_utc` in UTC.
+* Inserts must persist resolved `home_team_instance_id` and `away_team_instance_id`.
+* Inserts must persist `status`, `away_score`, `home_score`, `notes`, and `location`.
+* Full-schedule creates default `competition_type` to `regular` unless playoff metadata is present and valid.
+* On natural-key duplicates (`game_unique`), `create_game_record` treats the create as an update of the existing row rather than a hard failure.
+* After commit, redirect to the same `Games` screen season/division filter and show a success notice (`game_saved` when new rows were inserted).
+
 ### 9.3 Score Update CSV columns (required)
 
 1. `game_uid` (required)
