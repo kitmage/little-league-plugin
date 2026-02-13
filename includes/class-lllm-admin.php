@@ -2479,6 +2479,25 @@ class LLLM_Admin {
     }
 
     /**
+     * Handles Add New Game button submit by redirecting back to the Games screen.
+     *
+     * @return void
+     */
+    public static function handle_add_new_game() {
+        if (!current_user_can('lllm_manage_games')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_add_new_game');
+
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
+
+        wp_safe_redirect(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '#lllm-add-game'));
+        exit;
+    }
+
+    /**
      * Creates a single game from the manual-create Games form.
      *
      * @return void
