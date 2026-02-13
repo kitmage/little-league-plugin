@@ -232,7 +232,8 @@ Generated playoff dates are anchored to the current regular schedule: Round 1 Ga
 
 When a downstream playoff game references a feeder game that has not been played yet, bracket display shows a placeholder in the form `Winner of Game <round>-<slot>` until that feeder game status is `played`.
 
-On the **Games** admin screen, playoff controls now appear below the schedule table and include an **Assigned Bracket Preview** table that shows seeded matchups with **Away** listed before **Home**.
+On the **Games** admin screen, playoff controls now appear below the schedule table with editable **Playoff Schedule Slots** cards for: Round 1 (slots 1-2), Round 2 (slots 1-2), and Championship (slot 1). Each slot matches the Add Game Manually field style (date, time, location, away/home team pickers, status, notes) and pre-fills existing playoff games by round+slot when present.
+Generate/reset buttons remain available beneath the slot cards, followed by the **Assigned Bracket Preview** table that shows seeded matchups with **Away** listed before **Home**.
 If Round 1 slots 1-4 are not fully seeded, the preview shows **Playoff Schedule Incomplete** and hides the preview table.
 
 For `[lllm_playoff_bracket]`, team columns now render logos using the logo-only renderer (`render_team_logo`) instead of the name+logo renderer.

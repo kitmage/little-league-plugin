@@ -694,7 +694,7 @@ Supported automatically (scores equal in a played game).
 1. Go to **Games**, pick Season + Division, and verify standings are final.
 2. Click **Generate Playoff Bracket** (requires at least 6 teams in standings).
 3. Generated dates are anchored to the regular schedule: `r1_g1` starts the day after the latest regular-season game date in that division (at `17:00:00` UTC), then later rounds keep the built-in offsets (+1, +3, +4, +6 days from base).
-4. Review generated games (`r1`, `r2`, `championship`) and optionally adjust date/time/location. The **Generate Playoff Bracket** and **Reset Playoff Games** controls are shown below the games schedule table, followed by an HTML **Assigned Bracket Preview** table.
+4. Use the **Playoff Schedule Slots** cards below the games schedule table to create or edit Round 1 slots 1-2, Round 2 slots 1-2, and Championship slot 1. Slot forms mirror Add Game Manually fields (date/time/location/team pickers/status/notes) and pre-fill existing playoff rows by (`competition_type=playoff`, `playoff_round`, `playoff_slot`).
 5. Use the Assigned Bracket Preview table to verify seed-to-slot assignments before generating or regenerating (Away appears before Home). If Round 1 slots 1-4 are not fully seeded, the preview displays **Playoff Schedule Incomplete** and hides the preview table.
 6. Enter results in Quick Edit as games complete.
 7. As feeder games are marked `played`, downstream bracket placeholders resolve automatically to winners.
