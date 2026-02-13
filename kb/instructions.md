@@ -76,6 +76,8 @@ Your schedule + results workspace.
 - Use **Quick Edit** for one-off corrections.
 - Use **Add Game Manually** for single game entry without CSV.
 - Optional playoff tools (shown below the schedule table):
+  - Playoff Schedule Slots cards for Round 1 slots 1-2, Round 2 slots 1-2, and Championship slot 1
+  - Each slot card supports create/edit with Date, Time, Location, Away Team, Home Team, Status, and Notes (pre-filled from existing playoff game by round+slot)
   - Generate Playoff Bracket (starts from the day after the latest regular-season game date in the selected division)
   - Reset Playoff Games
   - Assigned Bracket Preview table (HTML preview of seed assignments, Away before Home; hidden with a "Playoff Schedule Incomplete" message when Round 1 slots 1-4 are not fully assigned)
