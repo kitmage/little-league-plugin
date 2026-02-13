@@ -31,6 +31,17 @@ LLLM is a WordPress plugin that helps Little League volunteers manage seasons, d
 4. **Teams** → Assign franchises to a division.
 5. **Import Wizard** → Upload the schedule CSV.
 
+## Manual game entry
+
+On the **Games** screen, admins can now add a single game directly (without CSV) using the **Add Game** form.
+
+- Required fields: `start_date`, `start_time`, `location`, `away_team_code`, `home_team_code`.
+- `status` must be one of: `scheduled`, `played`, `canceled`, `postponed`.
+- Team codes must already be assigned to the selected division, and away/home cannot match.
+- Date/time is parsed in the selected season timezone, then stored in UTC using the same import parser used by CSV imports.
+- Scores are required only when `status=played`; otherwise score fields must be blank.
+- Manual adds are written through the shared create path, so duplicate natural keys update existing rows consistently with import behavior.
+
 ## Games quick edit options
 
 On the **Games** screen, each row includes Quick Edit controls for game metadata and result entry.

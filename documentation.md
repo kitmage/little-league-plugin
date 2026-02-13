@@ -9,6 +9,8 @@ Here’s how it works:
 * When a franchise participates in a specific division and season, the system creates a **Team** behind the scenes. This is important because it guarantees that the 8U Dirtbags’ stats never mix with the 9U Dirtbags’ stats, and nothing carries over between seasons unless we intentionally reuse franchise identities.
 * Managers upload games by CSV using a guided wizard. The wizard always follows the same safe flow: **Upload → Validate → Preview → Import**.
 
+* Managers can also add one-off games directly from the Games admin page using an Add Game form that validates the same core constraints (season/division context, team assignment, status/score rules, timezone-safe datetime parsing) and writes via the shared game creation path.
+
   * If anything is inconsistent (like a wrong team code or a bad date format), the import is rejected and the Manager gets a clear error report.
 * After the initial schedule import, Managers do weekly updates using an even simpler “Score Update” CSV. This file uses a system-generated **Game ID** (like `G8K4Q2M9T1A3`) so nobody is typing team names and accidentally creating mismatches.
 * The website then displays:

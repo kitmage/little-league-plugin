@@ -402,6 +402,7 @@ class LLLM_Admin {
         add_action('admin_post_lllm_delete_game', array(__CLASS__, 'handle_delete_game'));
         add_action('admin_post_lllm_bulk_delete_games', array(__CLASS__, 'handle_bulk_delete_games'));
         add_action('admin_post_lllm_quick_edit_game', array(__CLASS__, 'handle_quick_edit_game'));
+        add_action('admin_post_lllm_add_game', array(__CLASS__, 'handle_add_game'));
         add_action('admin_post_lllm_import_validate', array(__CLASS__, 'handle_import_validate'));
         add_action('admin_post_lllm_import_commit', array(__CLASS__, 'handle_import_commit'));
         add_action('admin_post_lllm_download_template', array(__CLASS__, 'handle_download_template'));
@@ -1700,6 +1701,28 @@ class LLLM_Admin {
         echo '<a class="button button-primary" href="' . esc_url($import_url) . '">' . esc_html__('Import Games', 'lllm') . '</a>';
         echo '</p>';
 
+        echo '<h2>' . esc_html__('Add Game', 'lllm') . '</h2>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:8px;align-items:end;">';
+        wp_nonce_field('lllm_add_game');
+        echo '<input type="hidden" name="action" value="lllm_add_game">';
+        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
+        echo '<label>' . esc_html__('Start Date', 'lllm') . '<br><input type="text" name="start_date" placeholder="MM/DD/YYYY" required></label>';
+        echo '<label>' . esc_html__('Start Time', 'lllm') . '<br><input type="text" name="start_time" placeholder="HH:MM" required></label>';
+        echo '<label>' . esc_html__('Location', 'lllm') . '<br><input type="text" name="location" required></label>';
+        echo '<label>' . esc_html__('Status', 'lllm') . '<br><select name="status">';
+        foreach (array('scheduled', 'played', 'canceled', 'postponed') as $status) {
+            echo '<option value="' . esc_attr($status) . '">' . esc_html($status) . '</option>';
+        }
+        echo '</select></label>';
+        echo '<label>' . esc_html__('Away Team Code', 'lllm') . '<br><input type="text" name="away_team_code" required></label>';
+        echo '<label>' . esc_html__('Home Team Code', 'lllm') . '<br><input type="text" name="home_team_code" required></label>';
+        echo '<label>' . esc_html__('Away Score', 'lllm') . '<br><input type="number" name="away_score" min="0"></label>';
+        echo '<label>' . esc_html__('Home Score', 'lllm') . '<br><input type="number" name="home_score" min="0"></label>';
+        echo '<label style="grid-column:1 / span 3;">' . esc_html__('Notes', 'lllm') . '<br><input type="text" name="notes" style="width:100%;"></label>';
+        echo '<button class="button button-primary" type="submit">' . esc_html__('Add Game', 'lllm') . '</button>';
+        echo '</form>';
+
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:10px 0;display:flex;gap:8px;align-items:center;">';
         wp_nonce_field('lllm_generate_playoff_bracket');
         echo '<input type="hidden" name="action" value="lllm_generate_playoff_bracket">';
@@ -2412,6 +2435,104 @@ class LLLM_Admin {
             admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id),
             'game_saved'
         );
+    }
+
+    /**
+     * Handles manual add-game submissions from the Games admin screen.
+     *
+     * @return void
+     */
+    public static function handle_add_game() {
+        if (!current_user_can('lllm_manage_games')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_add_game');
+        global $wpdb;
+
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
+        $redirect_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id);
+
+        if (!$season_id || !$division_id) {
+            self::redirect_with_notice($redirect_url, 'error', __('Season and division are required.', 'lllm'));
+        }
+
+        $division_exists = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT COUNT(*) FROM ' . self::table('divisions') . ' WHERE id = %d AND season_id = %d',
+                $division_id,
+                $season_id
+            )
+        );
+        if ($division_exists < 1) {
+            self::redirect_with_notice($redirect_url, 'error', __('Invalid season/division context.', 'lllm'));
+        }
+
+        $start_date = isset($_POST['start_date']) ? trim((string) wp_unslash($_POST['start_date'])) : '';
+        $start_time = isset($_POST['start_time']) ? trim((string) wp_unslash($_POST['start_time'])) : '';
+        $location = isset($_POST['location']) ? sanitize_text_field(wp_unslash($_POST['location'])) : '';
+        $away_team_code = isset($_POST['away_team_code']) ? self::normalize_team_code(trim((string) wp_unslash($_POST['away_team_code']))) : '';
+        $home_team_code = isset($_POST['home_team_code']) ? self::normalize_team_code(trim((string) wp_unslash($_POST['home_team_code']))) : '';
+        $status = isset($_POST['status']) ? strtolower(sanitize_text_field(wp_unslash($_POST['status']))) : 'scheduled';
+        $away_score_raw = isset($_POST['away_score']) ? trim((string) wp_unslash($_POST['away_score'])) : '';
+        $home_score_raw = isset($_POST['home_score']) ? trim((string) wp_unslash($_POST['home_score'])) : '';
+        $away_score = $away_score_raw === '' ? null : intval($away_score_raw);
+        $home_score = $home_score_raw === '' ? null : intval($home_score_raw);
+        $notes = isset($_POST['notes']) ? sanitize_text_field(wp_unslash($_POST['notes'])) : '';
+
+        if ($start_date === '' || $start_time === '' || $location === '' || $away_team_code === '' || $home_team_code === '') {
+            self::redirect_with_notice($redirect_url, 'error', __('Date, time, location, and team codes are required.', 'lllm'));
+        }
+
+        $allowed_status = array('scheduled', 'played', 'canceled', 'postponed');
+        if (!in_array($status, $allowed_status, true)) {
+            self::redirect_with_notice($redirect_url, 'error', __('Invalid status.', 'lllm'));
+        }
+
+        if ($away_team_code === $home_team_code) {
+            self::redirect_with_notice($redirect_url, 'error', __('Home and away teams must differ.', 'lllm'));
+        }
+
+        if ($status === 'played' && ($away_score === null || $home_score === null)) {
+            self::redirect_with_notice($redirect_url, 'error', __('Scores are required for played games.', 'lllm'));
+        }
+        if ($status !== 'played' && ($away_score_raw !== '' || $home_score_raw !== '')) {
+            self::redirect_with_notice($redirect_url, 'error', __('Scores must be blank unless status is played.', 'lllm'));
+        }
+
+        $timezone = LLLM_Import::get_season_timezone($season_id);
+        $datetime_utc = LLLM_Import::parse_datetime_to_utc($start_date . ' ' . $start_time, $timezone);
+        if (!$datetime_utc) {
+            self::redirect_with_notice($redirect_url, 'error', __('Invalid datetime format.', 'lllm'));
+        }
+
+        $team_map = self::build_team_map($division_id);
+        if (!isset($team_map[$away_team_code]) || !isset($team_map[$home_team_code])) {
+            self::redirect_with_notice($redirect_url, 'error', __('Team codes must be assigned to this division.', 'lllm'));
+        }
+
+        $create_result = self::create_game_record(
+            array(
+                'division_id' => $division_id,
+                'home_team_instance_id' => $team_map[$home_team_code],
+                'away_team_instance_id' => $team_map[$away_team_code],
+                'location' => $location,
+                'start_datetime_utc' => $datetime_utc,
+                'status' => $status,
+                'home_score' => $home_score,
+                'away_score' => $away_score,
+                'notes' => $notes,
+                'competition_type' => 'regular',
+            )
+        );
+
+        if (!$create_result['ok']) {
+            self::redirect_with_notice($redirect_url, 'error', $create_result['error']);
+        }
+
+        LLLM_Standings::bust_cache($division_id);
+        self::redirect_with_notice($redirect_url, 'game_saved');
     }
 
     /**

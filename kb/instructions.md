@@ -73,6 +73,7 @@ Your schedule + results workspace.
 - Run the **Import Wizard** for full schedules and score updates.
 - Use **Export Current Games CSV** to pull current data.
 - Use **Quick Edit** for one-off corrections.
+- Use **Add Game** for one-off manual game creation (no CSV), with the same validation rules as imports.
 - Optional playoff tools:
   - Generate Playoff Bracket
   - Reset Playoff Games
@@ -194,6 +195,20 @@ This step connects franchises to divisions for a season.
 **Important:** This import is a season-wide assignment sync. Review carefully before importing.
 
 ---
+
+## Step 4.5: Add one game manually
+
+Use this when you only need to add a single game and do not want to run a CSV import.
+
+1. Go to **League Manager → Games** and select season + division.
+2. In **Add Game**, enter date, time, location, away/home franchise codes, and status.
+3. Optional: add scores and notes.
+4. Click **Add Game**.
+
+Validation rules:
+- Away and home codes must be different and assigned to that division.
+- Date/time uses the season timezone and is stored in UTC.
+- Scores are required for `played`, and must be blank for non-`played` statuses.
 
 ## Step 5: Games import wizard (full schedule)
 
