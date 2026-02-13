@@ -73,6 +73,7 @@ Your schedule + results workspace.
 - Run the **Import Wizard** for full schedules and score updates.
 - Use **Export Current Games CSV** to pull current data.
 - Use **Quick Edit** for one-off corrections.
+- Use **Add Game Manually** for single game entry without CSV.
 - Optional playoff tools:
   - Generate Playoff Bracket
   - Reset Playoff Games
@@ -227,6 +228,20 @@ Use this at the start of season or when the schedule is rebuilt.
 - Date/time format is correct.
 - Status values are valid (`scheduled`, `played`, `canceled`, `postponed`).
 - If a game is `played`, both scores should be present.
+
+### Manual game entry (no CSV)
+
+1. In **League Manager → Games**, expand **Add Game Manually**.
+2. Enter Date + Start Time (5-minute step) using the displayed site timezone hint.
+3. Enter location.
+4. Select away/home teams (labels include franchise name + code).
+5. Select status (`scheduled`, `played`, `canceled`, `postponed`).
+6. Enter scores only when status is `played` (score fields stay hidden/disabled otherwise).
+7. Optional: add notes, then click **Create Game**.
+
+Guardrails:
+- Create button is disabled when away and home are the same team.
+- Server-side validation still enforces team/status/score rules.
 
 ---
 

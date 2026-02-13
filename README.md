@@ -8,7 +8,7 @@ LLLM is a WordPress plugin that helps Little League volunteers manage seasons, d
 - Maintain franchises with stable franchise codes
 - Assign franchises to divisions (Teams)
 - Import schedules and weekly score updates via CSV
-- View games in the admin with quick edit
+- View games in the admin with quick edit and manual game creation
 - Render schedules and standings via shortcodes
 - Build shortcodes in wp-admin via a schema-driven Shortcode Generator
 
@@ -43,6 +43,16 @@ On the **Games** screen, each row includes Quick Edit controls for game metadata
 - `Championship` → final game (`competition_type=playoff`, `playoff_round=championship`)
 
 For playoff types, Quick Edit also exposes the round slot (`playoff_slot`) used for bracket ordering.
+
+## Games manual-create form
+
+On the **Games** screen, use **Add Game Manually** to create one game without CSV.
+
+- Date (`input type="date"`) and Start Time (`input type="time" step="300"`) are entered in the site timezone shown beside the Date/Time label.
+- Away/Home team dropdowns are sourced from teams assigned to the selected division and display readable franchise names with codes.
+- Status supports `scheduled`, `played`, `canceled`, and `postponed`.
+- Score fields are only enabled when status is `played`.
+- Submit is disabled when away and home teams are the same.
 
 ## CSV imports
 
