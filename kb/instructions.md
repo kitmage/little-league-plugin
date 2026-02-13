@@ -70,6 +70,7 @@ Assign franchises to divisions for a selected season.
 Your schedule + results workspace.
 
 - Filter by season/division.
+- Use **Add New Game** for one-off manual game creation in the current season/division context.
 - Run the **Import Wizard** for full schedules and score updates.
 - Use **Export Current Games CSV** to pull current data.
 - Use **Quick Edit** for one-off corrections.
@@ -196,16 +197,31 @@ This step connects franchises to divisions for a season.
 
 ---
 
+## Step 4.5: Add one game manually
+
+Use this when you only need to add a single game and do not want to run a CSV import.
+
+1. Go to **League Manager → Games** and select season + division.
+2. In **Add Game**, enter date, time, location, away/home franchise codes, and status.
+3. Optional: add scores and notes.
+4. Click **Add Game**.
+
+Validation rules:
+- Away and home codes must be different and assigned to that division.
+- Date/time uses the season timezone and is stored in UTC.
+- Scores are required for `played`, and must be blank for non-`played` statuses.
+
 ## Step 5: Games import wizard (full schedule)
 
 Use this at the start of season or when the schedule is rebuilt.
 
 1. Go to **League Manager → Games**.
 2. Select season + division.
-3. Click **Import Games**.
-4. Choose **Full Schedule Import**.
-5. Download template.
-6. Fill in Google Sheets with required headers:
+3. Optional: click **Add New Game** to create a starter game manually.
+4. Click **Import Games**.
+5. Choose **Full Schedule Import**.
+6. Download template.
+7. Fill in Google Sheets with required headers:
    - `game_uid`
    - `start_date(mm/dd/yyyy)`
    - `start_time(24HR)`
@@ -216,11 +232,11 @@ Use this at the start of season or when the schedule is rebuilt.
    - `away_score`
    - `home_score`
    - `notes`
-7. Leave `game_uid` blank for new games (system can generate IDs).
-8. Download as CSV and upload.
-9. Click **Validate CSV**.
-10. Review preview/errors.
-11. Click **Import Now** when clean.
+8. Leave `game_uid` blank for new games (system can generate IDs).
+9. Download as CSV and upload.
+10. Click **Validate CSV**.
+11. Review preview/errors.
+12. Click **Import Now** when clean.
 
 ### Google Sheets checks before upload
 

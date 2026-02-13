@@ -9,6 +9,8 @@ Here’s how it works:
 * When a franchise participates in a specific division and season, the system creates a **Team** behind the scenes. This is important because it guarantees that the 8U Dirtbags’ stats never mix with the 9U Dirtbags’ stats, and nothing carries over between seasons unless we intentionally reuse franchise identities.
 * Managers upload games by CSV using a guided wizard. The wizard always follows the same safe flow: **Upload → Validate → Preview → Import**.
 
+* Managers can also add one-off games directly from the Games admin page using an Add Game form that validates the same core constraints (season/division context, team assignment, status/score rules, timezone-safe datetime parsing) and writes via the shared game creation path.
+
   * If anything is inconsistent (like a wrong team code or a bad date format), the import is rejected and the Manager gets a clear error report.
 * After the initial schedule import, Managers do weekly updates using an even simpler “Score Update” CSV. This file uses a system-generated **Game ID** (like `G8K4Q2M9T1A3`) so nobody is typing team names and accidentally creating mismatches.
 * The website then displays:
@@ -506,6 +508,7 @@ Downloadable error report CSV should add an `error` column with the message.
 * Inline quick edit (per row): Status + game type + playoff slot (when playoff) + scores + notes
 * “Export CSV” button
 * “Go to Import Wizard” button
+* “Add New Game” button (POST to `admin-post.php` with nonce + selected `season_id` and `division_id`)
 
 ### Important behaviors
 
@@ -967,7 +970,7 @@ Subpages (left nav):
 
 * Export Current Games CSV (secondary)
 * Import Games (primary) → goes to Import Wizard
-* Quick Add Game (optional v1; recommended OFF for simplicity)
+* Add New Game (creates a scheduled placeholder game and keeps current season/division filters)
 
 **Table columns**
 
