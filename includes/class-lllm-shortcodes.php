@@ -596,14 +596,14 @@ class LLLM_Shortcodes {
                 /* translators: %s: playoff game slot number. */
                 $game_label = sprintf(__('Game %s', 'lllm'), (string) $game->playoff_slot);
 
-                $first_col = self::render_team_with_logo($home_label, (int) $game->home_logo_attachment_id);
-                $first_col .= self::render_team_with_logo($away_label, (int) $game->away_logo_attachment_id);
+                $first_col = self::render_team_logo($home_label, (int) $game->home_logo_attachment_id);
+                $first_col .= self::render_team_logo($away_label, (int) $game->away_logo_attachment_id);
                 $first_col .= '<span class="lllm-game-label">' . esc_html($game_label) . '</span>';
 
                 $output .= '<tr>';
                 $output .= '<td class="game">' . $first_col . '</td>';
-                $output .= '<td class="home">' . self::render_team_with_logo($home_label, (int) $game->home_logo_attachment_id) . '</td>';
-                $output .= '<td class="away">' . self::render_team_with_logo($away_label, (int) $game->away_logo_attachment_id) . '</td>';
+                $output .= '<td class="home">' . self::render_team_logo($home_label, (int) $game->home_logo_attachment_id) . '</td>';
+                $output .= '<td class="away">' . self::render_team_logo($away_label, (int) $game->away_logo_attachment_id) . '</td>';
                 $output .= '<td class="status">' . esc_html((string) $game->status) . '</td>';
                 $output .= '<td class="score">' . esc_html($score) . '</td>';
                 $output .= '</tr>';
