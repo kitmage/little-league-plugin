@@ -1761,6 +1761,7 @@ class LLLM_Admin {
             }
             $team_options[$team_code] = (string) $team_row->franchise_name;
         }
+        $team_instance_to_code = array_flip($team_map);
 
         echo '<form id="lllm-bulk-games" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('lllm_bulk_delete_games');
@@ -1840,12 +1841,17 @@ class LLLM_Admin {
             $slot_readonly_attr = $is_generated_playoff ? 'readonly aria-readonly="true"' : '';
             $slot_hint = $is_generated_playoff ? __('Slot is locked for generated playoff games.', 'lllm') : '';
             $score = $game->status === 'played' ? sprintf('%d - %d', $game->away_score, $game->home_score) : '—';
+            $start_datetime = null;
             $start_datetime_display = $game->start_datetime_utc;
             if (!empty($game->start_datetime_utc)) {
                 $start_datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
                 $start_datetime->setTimezone($site_timezone);
                 $start_datetime_display = $start_datetime->format('m/d/Y H:i');
             }
+            $start_date_value = $start_datetime ? $start_datetime->format('Y-m-d') : '';
+            $start_time_value = $start_datetime ? $start_datetime->format('H:i') : '';
+            $away_team_code_value = isset($team_instance_to_code[(int) $game->away_team_instance_id]) ? $team_instance_to_code[(int) $game->away_team_instance_id] : '';
+            $home_team_code_value = isset($team_instance_to_code[(int) $game->home_team_instance_id]) ? $team_instance_to_code[(int) $game->home_team_instance_id] : '';
             echo '<tr>';
             echo '<td><input class="lllm-game-select" type="checkbox" name="game_ids[]" value="' . esc_attr($game->id) . '" form="lllm-bulk-games"></td>';
             echo '<td>' . esc_html($start_datetime_display) . '</td>';
@@ -1863,6 +1869,21 @@ class LLLM_Admin {
             echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
             echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
             echo '<input type="hidden" name="generated_playoff" value="' . esc_attr($is_generated_playoff ? '1' : '0') . '">';
+            echo '<input type="date" name="start_date" value="' . esc_attr($start_date_value) . '" required> ';
+            echo '<input type="time" name="start_time" value="' . esc_attr($start_time_value) . '" step="300" required> ';
+            echo '<input type="text" class="regular-text" name="location" value="' . esc_attr($game->location) . '" placeholder="' . esc_attr__('Location', 'lllm') . '" required> ';
+            echo '<select name="away_team_code" class="lllm-team-select" required>';
+            echo '<option value="">' . esc_html__('Away Team', 'lllm') . '</option>';
+            foreach ($team_options as $team_code => $franchise_name) {
+                echo '<option value="' . esc_attr($team_code) . '" ' . selected($away_team_code_value, $team_code, false) . '>' . esc_html($franchise_name . ' (' . $team_code . ')') . '</option>';
+            }
+            echo '</select> ';
+            echo '<select name="home_team_code" class="lllm-team-select" required>';
+            echo '<option value="">' . esc_html__('Home Team', 'lllm') . '</option>';
+            foreach ($team_options as $team_code => $franchise_name) {
+                echo '<option value="' . esc_attr($team_code) . '" ' . selected($home_team_code_value, $team_code, false) . '>' . esc_html($franchise_name . ' (' . $team_code . ')') . '</option>';
+            }
+            echo '</select> ';
             echo '<select name="status">';
             foreach (array('scheduled', 'played', 'canceled', 'postponed') as $status) {
                 echo '<option value="' . esc_attr($status) . '" ' . selected($game->status, $status, false) . '>' . esc_html($status) . '</option>';
@@ -1885,6 +1906,7 @@ class LLLM_Admin {
             echo '<input type="number" class="small-text" name="home_score" value="' . esc_attr($game->home_score) . '" placeholder="Home"> ';
             echo '<input type="text" class="regular-text" name="notes" value="' . esc_attr($game->notes) . '" placeholder="' . esc_attr__('Notes', 'lllm') . '"> ';
             echo '<button class="button" type="submit">' . esc_html__('Save', 'lllm') . '</button>';
+            echo '<p class="lllm-quick-edit-team-error" style="display:none;color:#b32d2e;margin:8px 0 0;">' . esc_html__('Home and away teams must be different.', 'lllm') . '</p>';
             echo '<p class="lllm-quick-edit-unsaved" style="display:none;color:#b32d2e;margin:8px 0 0;">' . esc_html__('You have unsaved changes.', 'lllm') . '</p>';
             echo '</form>';
             echo '</td>';
@@ -1903,7 +1925,7 @@ class LLLM_Admin {
         echo 'toggles.forEach(function(btn){btn.addEventListener("click",function(){var form=btn.parentElement.querySelector(".lllm-quick-edit-form");if(!form){return;}var open=form.style.display!=="none";form.style.display=open?"none":"block";});});';
         echo 'var manualForm=document.querySelector(".lllm-manual-game-form");if(manualForm){var awaySelect=manualForm.querySelector("select[name=\"away_team_code\"]");var homeSelect=manualForm.querySelector("select[name=\"home_team_code\"]");var statusSelect=manualForm.querySelector("select[name=\"status\"]");var scoreWraps=manualForm.querySelectorAll(".lllm-manual-score-wrap");var scoreInputs=manualForm.querySelectorAll("input[name=\"away_score\"],input[name=\"home_score\"]");var submitBtn=manualForm.querySelector(".lllm-manual-submit");var errorText=manualForm.querySelector(".lllm-manual-form-error");var syncTeams=function(){var same=awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value;if(submitBtn){submitBtn.disabled=!!same;}if(errorText){errorText.style.display=same?"inline":"none";}};var syncScores=function(){var played=statusSelect&&statusSelect.value==="played";scoreWraps.forEach(function(wrap){wrap.style.display=played?"block":"none";});scoreInputs.forEach(function(input){input.disabled=!played;if(!played){input.value="";}});};if(awaySelect){awaySelect.addEventListener("change",syncTeams);}if(homeSelect){homeSelect.addEventListener("change",syncTeams);}if(statusSelect){statusSelect.addEventListener("change",syncScores);}syncTeams();syncScores();}';
         echo 'var forms=document.querySelectorAll(".lllm-quick-edit-form");';
-        echo 'forms.forEach(function(form){var warning=form.querySelector(".lllm-quick-edit-unsaved");var gameType=form.querySelector("select[name=\"game_type\"]");var slotWrap=form.querySelector(".lllm-playoff-slot-wrap");var slotField=form.querySelector("input[name=\"playoff_slot\"]");var generatedFlag=form.querySelector("input[name=\"generated_playoff\"]");var generatedLocked=generatedFlag&&generatedFlag.value==="1";var syncPlayoffFields=function(){if(!gameType||!slotWrap){return;}var isPlayoff=gameType.value!=="regular";slotWrap.style.display=isPlayoff?"inline-flex":"none";if(slotField&&!isPlayoff){slotField.value="";}};syncPlayoffFields();if(gameType){gameType.addEventListener("change",syncPlayoffFields);}var fields=form.querySelectorAll("select[name=\"status\"], select[name=\"game_type\"], input[name=\"playoff_slot\"], input[name=\"away_score\"], input[name=\"home_score\"], input[name=\"notes\"]");var initial={};fields.forEach(function(field){initial[field.name]=field.value;});var focusedCount=0;var update=function(){if(!warning){return;}var changed=false;fields.forEach(function(field){if(field.value!==initial[field.name]){changed=true;}});warning.style.display=(changed && focusedCount===0)?"block":"none";};fields.forEach(function(field){field.addEventListener("focus",function(){focusedCount++;update();});field.addEventListener("blur",function(){focusedCount=Math.max(0,focusedCount-1);setTimeout(update,0);});field.addEventListener("input",update);field.addEventListener("change",update);});form.addEventListener("submit",function(){if(generatedLocked&&slotField){slotField.value=initial.playoff_slot||slotField.value;}if(warning){warning.style.display="none";}});});';
+        echo 'forms.forEach(function(form){var warning=form.querySelector(".lllm-quick-edit-unsaved");var gameType=form.querySelector("select[name=\"game_type\"]");var slotWrap=form.querySelector(".lllm-playoff-slot-wrap");var slotField=form.querySelector("input[name=\"playoff_slot\"]");var generatedFlag=form.querySelector("input[name=\"generated_playoff\"]");var generatedLocked=generatedFlag&&generatedFlag.value==="1";var awaySelect=form.querySelector("select[name=\"away_team_code\"]");var homeSelect=form.querySelector("select[name=\"home_team_code\"]");var saveBtn=form.querySelector("button[type=\"submit\"]");var teamError=form.querySelector(".lllm-quick-edit-team-error");var syncPlayoffFields=function(){if(!gameType||!slotWrap){return;}var isPlayoff=gameType.value!=="regular";slotWrap.style.display=isPlayoff?"inline-flex":"none";if(slotField&&!isPlayoff){slotField.value="";}};var syncTeams=function(){var same=awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value;if(saveBtn){saveBtn.disabled=!!same;}if(teamError){teamError.style.display=same?"block":"none";}};syncPlayoffFields();syncTeams();if(gameType){gameType.addEventListener("change",syncPlayoffFields);}if(awaySelect){awaySelect.addEventListener("change",syncTeams);}if(homeSelect){homeSelect.addEventListener("change",syncTeams);}var fields=form.querySelectorAll("input[name=\"start_date\"], input[name=\"start_time\"], input[name=\"location\"], select[name=\"away_team_code\"], select[name=\"home_team_code\"], select[name=\"status\"], select[name=\"game_type\"], input[name=\"playoff_slot\"], input[name=\"away_score\"], input[name=\"home_score\"], input[name=\"notes\"]");var initial={};fields.forEach(function(field){initial[field.name]=field.value;});var focusedCount=0;var update=function(){if(!warning){return;}var changed=false;fields.forEach(function(field){if(field.value!==initial[field.name]){changed=true;}});warning.style.display=(changed && focusedCount===0)?"block":"none";};fields.forEach(function(field){field.addEventListener("focus",function(){focusedCount++;update();});field.addEventListener("blur",function(){focusedCount=Math.max(0,focusedCount-1);setTimeout(update,0);});field.addEventListener("input",update);field.addEventListener("change",update);});form.addEventListener("submit",function(event){if(generatedLocked&&slotField){slotField.value=initial.playoff_slot||slotField.value;}if(awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value){event.preventDefault();syncTeams();return;}if(warning){warning.style.display="none";}});});';
         echo '})();';
         echo '</script>';
 
@@ -2394,6 +2416,11 @@ class LLLM_Admin {
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
         $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
         $status = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : 'scheduled';
+        $start_date = isset($_POST['start_date']) ? sanitize_text_field(wp_unslash($_POST['start_date'])) : '';
+        $start_time = isset($_POST['start_time']) ? sanitize_text_field(wp_unslash($_POST['start_time'])) : '';
+        $location = isset($_POST['location']) ? sanitize_text_field(wp_unslash($_POST['location'])) : '';
+        $away_team_code = isset($_POST['away_team_code']) ? sanitize_text_field(wp_unslash($_POST['away_team_code'])) : '';
+        $home_team_code = isset($_POST['home_team_code']) ? sanitize_text_field(wp_unslash($_POST['home_team_code'])) : '';
         $home_score_raw = isset($_POST['home_score']) ? trim((string) wp_unslash($_POST['home_score'])) : '';
         $away_score_raw = isset($_POST['away_score']) ? trim((string) wp_unslash($_POST['away_score'])) : '';
         $home_score = $home_score_raw === '' ? null : intval($home_score_raw);
@@ -2419,6 +2446,29 @@ class LLLM_Admin {
 
         if ($division_id && (int) $game_row->division_id !== $division_id) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'error', __('Invalid game context.', 'lllm'));
+        }
+
+        if ($start_date === '' || $start_time === '' || $location === '' || $away_team_code === '' || $home_team_code === '') {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'error', __('All required fields must be provided.', 'lllm'));
+        }
+
+        if ($away_team_code === $home_team_code) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'error', __('Away and home teams must be different.', 'lllm'));
+        }
+
+        $timezone = wp_timezone_string();
+        if ($timezone === '') {
+            $timezone = 'UTC';
+        }
+
+        $datetime_utc = LLLM_Import::parse_datetime_to_utc($start_date . ' ' . $start_time, $timezone);
+        if (!$datetime_utc) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'error', __('Invalid date/time.', 'lllm'));
+        }
+
+        $team_map = self::build_team_map($division_id ? $division_id : (int) $game_row->division_id);
+        if (!isset($team_map[$away_team_code]) || !isset($team_map[$home_team_code])) {
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'error', __('Selected teams are not assigned to this division.', 'lllm'));
         }
 
         $allowed = array('scheduled', 'played', 'canceled', 'postponed');
@@ -2482,6 +2532,10 @@ class LLLM_Admin {
         $wpdb->update(
             $games_table,
             array(
+                'start_datetime_utc' => $datetime_utc,
+                'location' => $location,
+                'away_team_instance_id' => $team_map[$away_team_code],
+                'home_team_instance_id' => $team_map[$home_team_code],
                 'status' => $status,
                 'home_score' => $home_score,
                 'away_score' => $away_score,
