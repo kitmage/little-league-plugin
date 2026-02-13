@@ -693,10 +693,11 @@ Supported automatically (scores equal in a played game).
 
 1. Go to **Games**, pick Season + Division, and verify standings are final.
 2. Click **Generate Playoff Bracket** (requires at least 6 teams in standings).
-3. Review generated games (`r1`, `r2`, `championship`) and optionally adjust date/time/location.
-4. Enter results in Quick Edit as games complete.
-5. As feeder games are marked `played`, downstream bracket placeholders resolve automatically to winners.
-6. If setup needs to be restarted, use **Reset Playoff Games** and generate again.
+3. Generated dates are anchored to the regular schedule: `r1_g1` starts the day after the latest regular-season game date in that division (at `17:00:00` UTC), then later rounds keep the built-in offsets (+1, +3, +4, +6 days from base).
+4. Review generated games (`r1`, `r2`, `championship`) and optionally adjust date/time/location.
+5. Enter results in Quick Edit as games complete.
+6. As feeder games are marked `played`, downstream bracket placeholders resolve automatically to winners.
+7. If setup needs to be restarted, use **Reset Playoff Games** and generate again.
 
 ---
 

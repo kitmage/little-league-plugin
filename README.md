@@ -220,6 +220,8 @@ This shortcode renders the generated 6-team playoff bracket for the selected sea
 
 The built-in bracket generator uses a fixed, single-elimination 6-team format based on standings order (seeds 1–6):
 
+Generated playoff dates are anchored to the current regular schedule: Round 1 Game 1 is set to the day after the latest regular-season game date in the selected division (at `17:00:00` UTC), and remaining rounds keep the existing day offsets.
+
 - **R1 Game 1:** Seed 3 vs Seed 6
 - **R1 Game 2:** Seed 4 vs Seed 5
 - **R2 Game 1:** Seed 1 vs winner of R1 Game 2

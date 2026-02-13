@@ -1053,6 +1053,34 @@ class LLLM_Admin {
     }
 
     /**
+     * Returns the UTC base datetime used to schedule generated playoff games.
+     *
+     * Uses one day after the latest regular-season game date in the division.
+     * Falls back to one day from now when no regular-season game rows exist.
+     *
+     * @param int $division_id Division primary key.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return string UTC datetime in `Y-m-d H:i:s` format.
+     */
+    private static function get_playoff_base_datetime($division_id) {
+        global $wpdb;
+
+        $last_regular_date = $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT MAX(DATE(start_datetime_utc)) FROM ' . self::table('games') . ' WHERE division_id = %d AND competition_type = %s',
+                $division_id,
+                'regular'
+            )
+        );
+
+        if (is_string($last_regular_date) && $last_regular_date !== '') {
+            return gmdate('Y-m-d 17:00:00', strtotime($last_regular_date . ' +1 day'));
+        }
+
+        return gmdate('Y-m-d 17:00:00', strtotime('+1 day'));
+    }
+
+    /**
      * Validates that a parsed CSV includes all required headers.
      *
      * @param array<string,mixed>|WP_Error $parsed           Parsed CSV payload.
@@ -3810,7 +3838,7 @@ class LLLM_Admin {
             array_column(array_slice($standings, 0, 6), 'team_instance_id')
         );
 
-        $base_datetime = gmdate('Y-m-d 17:00:00', strtotime('+1 day'));
+        $base_datetime = self::get_playoff_base_datetime($division_id);
         // Slot map defines the generated bracket skeleton and feeder linkage targets.
         $slot_payloads = array(
             'r1_g1' => array(

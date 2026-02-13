@@ -76,7 +76,7 @@ Your schedule + results workspace.
 - Use **Quick Edit** for one-off corrections.
 - Use **Add Game Manually** for single game entry without CSV.
 - Optional playoff tools:
-  - Generate Playoff Bracket
+  - Generate Playoff Bracket (starts from the day after the latest regular-season game date in the selected division)
   - Reset Playoff Games
 
 ### Import Logs
