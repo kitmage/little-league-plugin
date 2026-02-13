@@ -409,6 +409,7 @@ class LLLM_Admin {
         add_action('admin_post_lllm_download_current_games', array(__CLASS__, 'handle_download_current_games'));
         add_action('admin_post_lllm_generate_playoff_bracket', array(__CLASS__, 'handle_generate_playoff_bracket'));
         add_action('admin_post_lllm_reset_playoff_bracket', array(__CLASS__, 'handle_reset_playoff_bracket'));
+        add_action('admin_post_lllm_save_playoff_slots', array(__CLASS__, 'handle_save_playoff_slots'));
         add_action('admin_post_lllm_download_divisions_template', array(__CLASS__, 'handle_download_divisions_template'));
         add_action('admin_post_lllm_validate_divisions_csv', array(__CLASS__, 'handle_validate_divisions_csv'));
         add_action('admin_post_lllm_import_divisions_csv', array(__CLASS__, 'handle_import_divisions_csv'));
@@ -918,6 +919,9 @@ class LLLM_Admin {
                 break;
             case 'playoff_reset':
                 $text = __('Playoff games reset.', 'lllm');
+                break;
+            case 'playoff_slots_saved':
+                $text = __('Playoff slots saved.', 'lllm');
                 break;
             case 'csv_validated':
                 $text = $message ? $message : __('CSV validated successfully.', 'lllm');
@@ -2761,6 +2765,171 @@ class LLLM_Admin {
 
         LLLM_Standings::bust_cache($division_id);
         self::redirect_with_notice($return_url, 'game_created');
+    }
+
+    /**
+     * Saves game assignments for core playoff bracket slots.
+     *
+     * Accepts `playoff_slots` post payload keyed by slot (`r1/1`, `r1/2`,
+     * `r2/1`, `r2/2`, `championship/1`) and updates existing records or
+     * creates missing records in one transaction.
+     *
+     * @return void
+     */
+    public static function handle_save_playoff_slots() {
+        if (!current_user_can('lllm_manage_games')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_save_playoff_slots');
+        global $wpdb;
+
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
+        $return_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id);
+
+        if ($division_id <= 0) {
+            self::redirect_with_notice($return_url, 'error', __('Division is required.', 'lllm'));
+        }
+
+        $raw_slots = isset($_POST['playoff_slots']) && is_array($_POST['playoff_slots'])
+            ? wp_unslash($_POST['playoff_slots'])
+            : array();
+
+        $target_slots = array(
+            'r1/1' => array('round' => 'r1', 'slot' => '1'),
+            'r1/2' => array('round' => 'r1', 'slot' => '2'),
+            'r2/1' => array('round' => 'r2', 'slot' => '1'),
+            'r2/2' => array('round' => 'r2', 'slot' => '2'),
+            'championship/1' => array('round' => 'championship', 'slot' => '1'),
+        );
+
+        $timezone = wp_timezone_string();
+        if ($timezone === '') {
+            $timezone = 'UTC';
+        }
+
+        $team_map = self::build_team_map($division_id);
+        $allowed_statuses = array('scheduled', 'played', 'canceled', 'postponed');
+        $normalized_rows = array();
+
+        foreach ($target_slots as $slot_key => $slot_meta) {
+            $slot_payload = array();
+
+            if (isset($raw_slots[$slot_key]) && is_array($raw_slots[$slot_key])) {
+                $slot_payload = $raw_slots[$slot_key];
+            } else {
+                $fallback_key = str_replace('/', '_', $slot_key);
+                if (isset($raw_slots[$fallback_key]) && is_array($raw_slots[$fallback_key])) {
+                    $slot_payload = $raw_slots[$fallback_key];
+                }
+            }
+
+            $start_date = isset($slot_payload['start_date']) ? sanitize_text_field((string) $slot_payload['start_date']) : '';
+            $start_time = isset($slot_payload['start_time']) ? sanitize_text_field((string) $slot_payload['start_time']) : '';
+            $location = isset($slot_payload['location']) ? sanitize_text_field((string) $slot_payload['location']) : '';
+            $away_team_code = isset($slot_payload['away_team_code']) ? sanitize_text_field((string) $slot_payload['away_team_code']) : '';
+            $home_team_code = isset($slot_payload['home_team_code']) ? sanitize_text_field((string) $slot_payload['home_team_code']) : '';
+            $status = isset($slot_payload['status']) ? sanitize_text_field((string) $slot_payload['status']) : 'scheduled';
+            $notes = isset($slot_payload['notes']) ? sanitize_text_field((string) $slot_payload['notes']) : '';
+            $away_score_raw = isset($slot_payload['away_score']) ? trim((string) $slot_payload['away_score']) : '';
+            $home_score_raw = isset($slot_payload['home_score']) ? trim((string) $slot_payload['home_score']) : '';
+            $away_score = $away_score_raw === '' ? null : intval($away_score_raw);
+            $home_score = $home_score_raw === '' ? null : intval($home_score_raw);
+
+            if ($start_date === '' || $start_time === '' || $location === '' || $away_team_code === '' || $home_team_code === '') {
+                self::redirect_with_notice($return_url, 'error', sprintf(__('All required fields must be provided for slot %s.', 'lllm'), strtoupper($slot_key)));
+            }
+
+            if ($away_team_code === $home_team_code) {
+                self::redirect_with_notice($return_url, 'error', sprintf(__('Away and home teams must be different for slot %s.', 'lllm'), strtoupper($slot_key)));
+            }
+
+            if (!isset($team_map[$away_team_code]) || !isset($team_map[$home_team_code])) {
+                self::redirect_with_notice($return_url, 'error', sprintf(__('Selected teams are not assigned to this division for slot %s.', 'lllm'), strtoupper($slot_key)));
+            }
+
+            if (!in_array($status, $allowed_statuses, true)) {
+                self::redirect_with_notice($return_url, 'error', sprintf(__('Invalid status for slot %s.', 'lllm'), strtoupper($slot_key)));
+            }
+
+            if ($status === 'played') {
+                if ($home_score === null || $away_score === null) {
+                    self::redirect_with_notice($return_url, 'error', sprintf(__('Scores are required for played slot %s.', 'lllm'), strtoupper($slot_key)));
+                }
+            } else {
+                if ($home_score !== null || $away_score !== null) {
+                    $status = 'played';
+                    if ($home_score === null || $away_score === null) {
+                        self::redirect_with_notice($return_url, 'error', sprintf(__('Both away and home scores are required when entering scores for slot %s.', 'lllm'), strtoupper($slot_key)));
+                    }
+                } else {
+                    $away_score = null;
+                    $home_score = null;
+                }
+            }
+
+            $datetime_utc = LLLM_Import::parse_datetime_to_utc($start_date . ' ' . $start_time, $timezone);
+            if (!$datetime_utc) {
+                self::redirect_with_notice($return_url, 'error', sprintf(__('Invalid date/time for slot %s.', 'lllm'), strtoupper($slot_key)));
+            }
+
+            $normalized_rows[$slot_key] = array(
+                'division_id' => $division_id,
+                'start_datetime_utc' => $datetime_utc,
+                'location' => $location,
+                'away_team_instance_id' => $team_map[$away_team_code],
+                'home_team_instance_id' => $team_map[$home_team_code],
+                'status' => $status,
+                'away_score' => $away_score,
+                'home_score' => $home_score,
+                'notes' => $notes,
+                'competition_type' => 'playoff',
+                'playoff_round' => $slot_meta['round'],
+                'playoff_slot' => $slot_meta['slot'],
+                'source_game_uid_1' => null,
+                'source_game_uid_2' => null,
+            );
+        }
+
+        $games_table = self::table('games');
+        $wpdb->query('START TRANSACTION');
+
+        foreach ($normalized_rows as $slot_key => $row_payload) {
+            $existing_game = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT id, source_game_uid_1, source_game_uid_2 FROM {$games_table} WHERE division_id = %d AND competition_type = %s AND playoff_round = %s AND playoff_slot = %s LIMIT 1",
+                    $division_id,
+                    'playoff',
+                    $row_payload['playoff_round'],
+                    $row_payload['playoff_slot']
+                )
+            );
+
+            if ($existing_game) {
+                $update_payload = $row_payload;
+                $update_payload['source_game_uid_1'] = $existing_game->source_game_uid_1;
+                $update_payload['source_game_uid_2'] = $existing_game->source_game_uid_2;
+                $update_payload['updated_at'] = current_time('mysql', true);
+                $updated = $wpdb->update($games_table, $update_payload, array('id' => (int) $existing_game->id));
+                if ($updated === false) {
+                    $wpdb->query('ROLLBACK');
+                    self::redirect_with_notice($return_url, 'error', sprintf(__('Unable to update playoff slot %s.', 'lllm'), strtoupper($slot_key)));
+                }
+
+                continue;
+            }
+
+            $create_result = self::create_game_record($row_payload);
+            if (!$create_result['ok']) {
+                $wpdb->query('ROLLBACK');
+                self::redirect_with_notice($return_url, 'error', $create_result['error']);
+            }
+        }
+
+        $wpdb->query('COMMIT');
+        LLLM_Standings::bust_cache($division_id);
+        self::redirect_with_notice($return_url, 'playoff_slots_saved');
     }
 
     /**

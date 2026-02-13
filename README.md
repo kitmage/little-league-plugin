@@ -235,6 +235,17 @@ When a downstream playoff game references a feeder game that has not been played
 On the **Games** admin screen, playoff controls now appear below the schedule table and include an **Assigned Bracket Preview** table that shows seeded matchups with **Away** listed before **Home**.
 If Round 1 slots 1-4 are not fully seeded, the preview shows **Playoff Schedule Incomplete** and hides the preview table.
 
+### Playoff slot save handler
+
+A dedicated admin-post action (`action=lllm_save_playoff_slots`) is available for saving the 5 core bracket slots (`r1/1`, `r1/2`, `r2/1`, `r2/2`, `championship/1`) in one request. The handler:
+
+- requires `lllm_manage_games` capability and a valid `lllm_save_playoff_slots` nonce,
+- converts submitted local `start_date` + `start_time` to UTC using the same parser as manual game creation,
+- enforces away/home team difference and division team assignment per slot,
+- updates existing playoff rows by `(division_id, competition_type, playoff_round, playoff_slot)` or creates missing rows via the shared `create_game_record` path,
+- writes `competition_type=playoff` plus round/slot metadata, and
+- wraps the full save in a DB transaction (`START TRANSACTION` / `COMMIT` / `ROLLBACK`).
+
 For `[lllm_playoff_bracket]`, team columns now render logos using the logo-only renderer (`render_team_logo`) instead of the name+logo renderer.
 
 ## Documentation
