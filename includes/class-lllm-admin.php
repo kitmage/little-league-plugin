@@ -706,29 +706,6 @@ class LLLM_Admin {
     }
 
     /**
-     * Returns quick-edit game type options keyed by form value.
-     *
-     * @return array<string,string> Game type options.
-     */
-    private static function get_quick_edit_game_types() {
-        return array(
-            'regular' => __('Regular Game', 'lllm'),
-            'playoff' => __('Playoff Game', 'lllm'),
-        );
-    }
-
-    /**
-     * Determines quick-edit type key from a game row.
-     *
-     * @param object $game Game row object.
-     * @return string Quick-edit game type key.
-     */
-    private static function get_quick_edit_game_type_value($game) {
-        return $game->competition_type === 'playoff' ? 'playoff' : 'regular';
-    }
-
-
-    /**
      * Redirects to an admin URL with standard League Manager notice args.
      *
      * @param string $url     Destination URL.
@@ -1714,7 +1691,7 @@ class LLLM_Admin {
         echo '</tr></thead><tbody>';
 
         foreach ($games as $game) {
-            $game_type_value = self::get_quick_edit_game_type_value($game);
+            $competition_type_value = $game->competition_type === 'playoff' ? 'playoff' : 'regular';
             $score = $game->status === 'played' ? sprintf('%d - %d', $game->away_score, $game->home_score) : '—';
             $start_datetime = null;
             $start_datetime_display = $game->start_datetime_utc;
@@ -1764,9 +1741,9 @@ class LLLM_Admin {
             }
             echo '</select> ';
             echo '<label style="display:inline-flex;align-items:center;gap:4px;">' . esc_html__('Type', 'lllm') . ' ';
-            echo '<select name="game_type" class="lllm-game-type">';
-            foreach (self::get_quick_edit_game_types() as $type_value => $type_label) {
-                echo '<option value="' . esc_attr($type_value) . '" ' . selected($game_type_value, $type_value, false) . '>' . esc_html($type_label) . '</option>';
+            echo '<select name="competition_type" class="lllm-game-type">';
+            foreach (array('regular' => __('Regular Game', 'lllm'), 'playoff' => __('Playoff Game', 'lllm')) as $type_value => $type_label) {
+                echo '<option value="' . esc_attr($type_value) . '" ' . selected($competition_type_value, $type_value, false) . '>' . esc_html($type_label) . '</option>';
             }
             echo '</select>';
             echo '</label> ';
@@ -1793,7 +1770,7 @@ class LLLM_Admin {
         echo 'toggles.forEach(function(btn){btn.addEventListener("click",function(){var form=btn.parentElement.querySelector(".lllm-quick-edit-form");if(!form){return;}var open=form.style.display!=="none";form.style.display=open?"none":"block";});});';
         echo 'var manualForm=document.querySelector(".lllm-manual-game-form");if(manualForm){var awaySelect=manualForm.querySelector("select[name=\"away_team_code\"]");var homeSelect=manualForm.querySelector("select[name=\"home_team_code\"]");var statusSelect=manualForm.querySelector("select[name=\"status\"]");var scoreWraps=manualForm.querySelectorAll(".lllm-manual-score-wrap");var scoreInputs=manualForm.querySelectorAll("input[name=\"away_score\"],input[name=\"home_score\"]");var submitBtn=manualForm.querySelector(".lllm-manual-submit");var errorText=manualForm.querySelector(".lllm-manual-form-error");var syncTeams=function(){var same=awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value;if(submitBtn){submitBtn.disabled=!!same;}if(errorText){errorText.style.display=same?"inline":"none";}};var syncScores=function(){var played=statusSelect&&statusSelect.value==="played";scoreWraps.forEach(function(wrap){wrap.style.display=played?"block":"none";});scoreInputs.forEach(function(input){input.disabled=!played;if(!played){input.value="";}});};if(awaySelect){awaySelect.addEventListener("change",syncTeams);}if(homeSelect){homeSelect.addEventListener("change",syncTeams);}if(statusSelect){statusSelect.addEventListener("change",syncScores);}syncTeams();syncScores();}';
         echo 'var forms=document.querySelectorAll(".lllm-quick-edit-form");';
-        echo 'forms.forEach(function(form){var warning=form.querySelector(".lllm-quick-edit-unsaved");var awaySelect=form.querySelector("select[name=\"away_team_code\"]");var homeSelect=form.querySelector("select[name=\"home_team_code\"]");var saveBtn=form.querySelector("button[type=\"submit\"]");var teamError=form.querySelector(".lllm-quick-edit-team-error");var syncTeams=function(){var same=awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value;if(saveBtn){saveBtn.disabled=!!same;}if(teamError){teamError.style.display=same?"block":"none";}};syncTeams();if(awaySelect){awaySelect.addEventListener("change",syncTeams);}if(homeSelect){homeSelect.addEventListener("change",syncTeams);}var fields=form.querySelectorAll("input[name=\"start_date\"], input[name=\"start_time\"], input[name=\"location\"], select[name=\"away_team_code\"], select[name=\"home_team_code\"], select[name=\"status\"], select[name=\"game_type\"], input[name=\"away_score\"], input[name=\"home_score\"], input[name=\"notes\"]");var initial={};fields.forEach(function(field){initial[field.name]=field.value;});var focusedCount=0;var update=function(){if(!warning){return;}var changed=false;fields.forEach(function(field){if(field.value!==initial[field.name]){changed=true;}});warning.style.display=(changed && focusedCount===0)?"block":"none";};fields.forEach(function(field){field.addEventListener("focus",function(){focusedCount++;update();});field.addEventListener("blur",function(){focusedCount=Math.max(0,focusedCount-1);setTimeout(update,0);});field.addEventListener("input",update);field.addEventListener("change",update);});form.addEventListener("submit",function(event){if(awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value){event.preventDefault();syncTeams();return;}if(warning){warning.style.display="none";}});});';
+        echo 'forms.forEach(function(form){var warning=form.querySelector(".lllm-quick-edit-unsaved");var awaySelect=form.querySelector("select[name=\"away_team_code\"]");var homeSelect=form.querySelector("select[name=\"home_team_code\"]");var saveBtn=form.querySelector("button[type=\"submit\"]");var teamError=form.querySelector(".lllm-quick-edit-team-error");var syncTeams=function(){var same=awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value;if(saveBtn){saveBtn.disabled=!!same;}if(teamError){teamError.style.display=same?"block":"none";}};syncTeams();if(awaySelect){awaySelect.addEventListener("change",syncTeams);}if(homeSelect){homeSelect.addEventListener("change",syncTeams);}var fields=form.querySelectorAll("input[name=\"start_date\"], input[name=\"start_time\"], input[name=\"location\"], select[name=\"away_team_code\"], select[name=\"home_team_code\"], select[name=\"status\"], select[name=\"competition_type\"], input[name=\"away_score\"], input[name=\"home_score\"], input[name=\"notes\"]");var initial={};fields.forEach(function(field){initial[field.name]=field.value;});var focusedCount=0;var update=function(){if(!warning){return;}var changed=false;fields.forEach(function(field){if(field.value!==initial[field.name]){changed=true;}});warning.style.display=(changed && focusedCount===0)?"block":"none";};fields.forEach(function(field){field.addEventListener("focus",function(){focusedCount++;update();});field.addEventListener("blur",function(){focusedCount=Math.max(0,focusedCount-1);setTimeout(update,0);});field.addEventListener("input",update);field.addEventListener("change",update);});form.addEventListener("submit",function(event){if(awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value){event.preventDefault();syncTeams();return;}if(warning){warning.style.display="none";}});});';
         echo '})();';
         echo '</script>';
 
@@ -2426,7 +2403,7 @@ class LLLM_Admin {
         $home_score = $home_score_raw === '' ? null : intval($home_score_raw);
         $away_score = $away_score_raw === '' ? null : intval($away_score_raw);
         $notes = isset($_POST['notes']) ? sanitize_text_field(wp_unslash($_POST['notes'])) : '';
-        $game_type = isset($_POST['game_type']) ? sanitize_text_field(wp_unslash($_POST['game_type'])) : 'regular';
+        $competition_type = isset($_POST['competition_type']) ? self::normalize_playoff_meta_value(wp_unslash($_POST['competition_type'])) : 'regular';
 
         $games_table = self::table('games');
         $game_row = null;
@@ -2491,19 +2468,11 @@ class LLLM_Admin {
             }
         }
 
-        $competition_payload = array(
-            'competition_type' => 'regular',
+        $competition_validation = self::validate_game_competition_data(
+            array(
+                'competition_type' => $competition_type,
+            )
         );
-
-        if ($game_type === 'playoff') {
-            $competition_payload['competition_type'] = 'playoff';
-            $competition_payload['playoff_round'] = $game_row->playoff_round;
-            $competition_payload['playoff_slot'] = $game_row->playoff_slot;
-        } elseif ($game_type !== 'regular') {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'error', __('Invalid game type.', 'lllm'));
-        }
-
-        $competition_validation = self::validate_game_competition_data($competition_payload);
         if (!$competition_validation['valid']) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'error', $competition_validation['error']);
         }
@@ -2522,10 +2491,6 @@ class LLLM_Admin {
                 'away_score' => $away_score,
                 'notes' => $notes,
                 'competition_type' => $competition_data['competition_type'],
-                'playoff_round' => $competition_data['playoff_round'],
-                'playoff_slot' => $competition_data['playoff_slot'],
-                'source_game_uid_1' => $competition_data['source_game_uid_1'],
-                'source_game_uid_2' => $competition_data['source_game_uid_2'],
                 'updated_at' => current_time('mysql', true),
             ),
             array('id' => $game_id)
