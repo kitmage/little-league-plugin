@@ -408,8 +408,6 @@ class LLLM_Admin {
         add_action('admin_post_lllm_import_commit', array(__CLASS__, 'handle_import_commit'));
         add_action('admin_post_lllm_download_template', array(__CLASS__, 'handle_download_template'));
         add_action('admin_post_lllm_download_current_games', array(__CLASS__, 'handle_download_current_games'));
-        add_action('admin_post_lllm_generate_playoff_bracket', array(__CLASS__, 'handle_generate_playoff_bracket'));
-        add_action('admin_post_lllm_reset_playoff_bracket', array(__CLASS__, 'handle_reset_playoff_bracket'));
         add_action('admin_post_lllm_save_playoff_slots', array(__CLASS__, 'handle_save_playoff_slots'));
         add_action('admin_post_lllm_download_divisions_template', array(__CLASS__, 'handle_download_divisions_template'));
         add_action('admin_post_lllm_validate_divisions_csv', array(__CLASS__, 'handle_validate_divisions_csv'));
@@ -914,12 +912,6 @@ class LLLM_Admin {
                 break;
             case 'import_complete':
                 $text = __('Import complete.', 'lllm');
-                break;
-            case 'playoff_generated':
-                $text = __('Playoff bracket generated.', 'lllm');
-                break;
-            case 'playoff_reset':
-                $text = __('Playoff games reset.', 'lllm');
                 break;
             case 'playoff_slots_saved':
                 $text = __('Playoff slots saved.', 'lllm');
@@ -1807,7 +1799,6 @@ class LLLM_Admin {
         if (!$games) {
             echo '<p>' . esc_html__('No games yet for this division.', 'lllm') . '</p>';
             echo '<p>' . esc_html__('Use the manual form above or import games from CSV.', 'lllm') . '</p>';
-            self::render_games_playoff_tools($season_id, $division_id);
             echo '</div>';
             return;
         }
@@ -1923,152 +1914,9 @@ class LLLM_Admin {
         echo '<input type="text" name="confirm_text_bulk" class="regular-text" form="lllm-bulk-games"> ';
         echo '<button class="button delete" form="lllm-bulk-games" type="submit">' . esc_html__('Bulk Delete Selected', 'lllm') . '</button>';
 
-        self::render_games_playoff_tools($season_id, $division_id);
         echo '</div>';
     }
 
-    /**
-     * Renders the playoff action controls and assigned bracket preview table.
-     *
-     * @param int $season_id   Selected season id.
-     * @param int $division_id Selected division id.
-     * @return void
-     */
-    private static function render_games_playoff_tools($season_id, $division_id) {
-        echo '<h2 style="margin-top:24px;">' . esc_html__('Playoff Tools', 'lllm') . '</h2>';
-
-        global $wpdb;
-
-        $team_rows = $wpdb->get_results(
-            $wpdb->prepare(
-                'SELECT tm.team_code, tm.name AS franchise_name
-                 FROM ' . self::table('team_instances') . ' ti
-                 JOIN ' . self::table('team_masters') . ' tm ON ti.team_master_id = tm.id
-                 WHERE ti.division_id = %d
-                 ORDER BY tm.name ASC',
-                $division_id
-            )
-        );
-        $team_options = array();
-        foreach ($team_rows as $team_row) {
-            $team_options[(string) $team_row->team_code] = (string) $team_row->franchise_name;
-        }
-
-        $playoff_games = $wpdb->get_results(
-            $wpdb->prepare(
-                'SELECT g.*, away.team_code AS away_team_code, home.team_code AS home_team_code
-                 FROM ' . self::table('games') . ' g
-                 LEFT JOIN ' . self::table('team_instances') . ' ai ON g.away_team_instance_id = ai.id
-                 LEFT JOIN ' . self::table('team_instances') . ' hi ON g.home_team_instance_id = hi.id
-                 LEFT JOIN ' . self::table('team_masters') . ' away ON ai.team_master_id = away.id
-                 LEFT JOIN ' . self::table('team_masters') . ' home ON hi.team_master_id = home.id
-                 WHERE g.division_id = %d
-                   AND g.competition_type = %s
-                   AND g.playoff_round IN (%s,%s,%s)
-                 ORDER BY g.updated_at DESC, g.id DESC',
-                $division_id,
-                'playoff',
-                'r1',
-                'r2',
-                'championship'
-            )
-        );
-
-        $playoff_games_by_slot = array();
-        foreach ($playoff_games as $playoff_game) {
-            $slot_key = (string) $playoff_game->playoff_round . ':' . (string) $playoff_game->playoff_slot;
-            if (!isset($playoff_games_by_slot[$slot_key])) {
-                $playoff_games_by_slot[$slot_key] = $playoff_game;
-            }
-        }
-
-        $rounds = array(
-            'r1' => array('label' => __('Round 1', 'lllm'), 'slots' => array('1', '2')),
-            'r2' => array('label' => __('Round 2', 'lllm'), 'slots' => array('1', '2')),
-            'championship' => array('label' => __('Championship', 'lllm'), 'slots' => array('1')),
-        );
-
-        echo '<h3 style="margin:12px 0 8px;">' . esc_html__('Playoff Schedule Slots', 'lllm') . '</h3>';
-        echo '<p style="margin-top:0;color:#50575e;">' . esc_html__('Create or edit each playoff game slot directly. Existing playoff games are pre-filled.', 'lllm') . '</p>';
-
-        if (!$team_options) {
-            echo '<p>' . esc_html__('Assign teams to this division before creating playoff slot games.', 'lllm') . '</p>';
-        } else {
-            $site_timezone = wp_timezone();
-            $site_timezone_label = wp_timezone_string();
-            if (!$site_timezone_label) {
-                $site_timezone_label = 'UTC';
-            }
-
-            foreach ($rounds as $round_key => $round_data) {
-                echo '<h4 style="margin:16px 0 8px;">' . esc_html($round_data['label']) . '</h4>';
-                foreach ($round_data['slots'] as $slot) {
-                    $slot_key = $round_key . ':' . $slot;
-                    $existing_game = isset($playoff_games_by_slot[$slot_key]) ? $playoff_games_by_slot[$slot_key] : null;
-                    $start_date = '';
-                    $start_time = '';
-                    if ($existing_game && !empty($existing_game->start_datetime_utc)) {
-                        $dt = new DateTime((string) $existing_game->start_datetime_utc, new DateTimeZone('UTC'));
-                        $dt->setTimezone($site_timezone);
-                        $start_date = $dt->format('Y-m-d');
-                        $start_time = $dt->format('H:i');
-                    }
-
-                    echo '<div style="border:1px solid #ccd0d4;border-radius:6px;padding:12px;margin:0 0 12px;max-width:1100px;">';
-                    echo '<h5 style="margin:0 0 10px;">' . esc_html(sprintf(__('Slot %s', 'lllm'), $slot)) . '</h5>';
-                    echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:10px;align-items:end;">';
-                    wp_nonce_field('lllm_save_playoff_slot');
-                    echo '<input type="hidden" name="action" value="lllm_save_playoff_slot">';
-                    echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
-                    echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
-                    echo '<input type="hidden" name="playoff_round" value="' . esc_attr($round_key) . '">';
-                    echo '<input type="hidden" name="playoff_slot" value="' . esc_attr($slot) . '">';
-                    echo '<input type="hidden" name="game_id" value="' . esc_attr($existing_game ? (int) $existing_game->id : 0) . '">';
-                    echo '<label>' . esc_html(sprintf(__('Date (%s)', 'lllm'), $site_timezone_label)) . '<br><input type="date" name="start_date" value="' . esc_attr($start_date) . '" required></label>';
-                    echo '<label>' . esc_html__('Time', 'lllm') . '<br><input type="time" name="start_time" step="300" value="' . esc_attr($start_time) . '" required></label>';
-                    echo '<label>' . esc_html__('Location', 'lllm') . '<br><input type="text" name="location" class="regular-text" value="' . esc_attr($existing_game ? (string) $existing_game->location : '') . '" required></label>';
-                    echo '<label>' . esc_html__('Away Team', 'lllm') . '<br><select name="away_team_code" required><option value="">' . esc_html__('Select team', 'lllm') . '</option>';
-                    foreach ($team_options as $team_code => $team_name) {
-                        echo '<option value="' . esc_attr($team_code) . '" ' . selected($existing_game ? (string) $existing_game->away_team_code : '', $team_code, false) . '>' . esc_html($team_name . ' (' . $team_code . ')') . '</option>';
-                    }
-                    echo '</select></label>';
-                    echo '<label>' . esc_html__('Home Team', 'lllm') . '<br><select name="home_team_code" required><option value="">' . esc_html__('Select team', 'lllm') . '</option>';
-                    foreach ($team_options as $team_code => $team_name) {
-                        echo '<option value="' . esc_attr($team_code) . '" ' . selected($existing_game ? (string) $existing_game->home_team_code : '', $team_code, false) . '>' . esc_html($team_name . ' (' . $team_code . ')') . '</option>';
-                    }
-                    echo '</select></label>';
-                    echo '<label>' . esc_html__('Status', 'lllm') . '<br><select name="status">';
-                    foreach (array('scheduled', 'played', 'canceled', 'postponed') as $status_value) {
-                        echo '<option value="' . esc_attr($status_value) . '" ' . selected($existing_game ? (string) $existing_game->status : 'scheduled', $status_value, false) . '>' . esc_html(ucfirst($status_value)) . '</option>';
-                    }
-                    echo '</select></label>';
-                    echo '<label style="grid-column:1/-1;">' . esc_html__('Notes', 'lllm') . '<br><input type="text" name="notes" class="regular-text" value="' . esc_attr($existing_game ? (string) $existing_game->notes : '') . '"></label>';
-                    echo '<p style="grid-column:1/-1;margin:0;"><button class="button button-primary" type="submit">' . esc_html($existing_game ? __('Update Slot', 'lllm') : __('Save Slot', 'lllm')) . '</button></p>';
-                    echo '</form>';
-                    echo '</div>';
-                }
-            }
-        }
-
-        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:18px 0 10px;display:flex;gap:8px;align-items:center;">';
-        wp_nonce_field('lllm_generate_playoff_bracket');
-        echo '<input type="hidden" name="action" value="lllm_generate_playoff_bracket">';
-        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
-        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
-        echo '<button class="button button-secondary" type="submit">' . esc_html__('Generate Playoff Bracket', 'lllm') . '</button>';
-        echo '</form>';
-
-        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:0 0 16px;display:flex;gap:8px;align-items:center;">';
-        wp_nonce_field('lllm_reset_playoff_bracket');
-        echo '<input type="hidden" name="action" value="lllm_reset_playoff_bracket">';
-        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
-        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
-        echo '<button class="button" type="submit">' . esc_html__('Reset Playoff Games', 'lllm') . '</button>';
-        echo '<span style="color:#646970;">' . esc_html__('Use reset before regenerating playoff games.', 'lllm') . '</span>';
-        echo '</form>';
-
-        self::render_playoff_assignment_preview_table($division_id);
-    }
 
     /**
      * Creates or updates a single playoff slot game from the Playoff Tools section.
@@ -2198,82 +2046,6 @@ class LLLM_Admin {
 
         LLLM_Standings::bust_cache($division_id);
         self::redirect_with_notice($return_url, 'game_created');
-    }
-
-    /**
-     * Renders an HTML preview table of the seeded playoff bracket assignments.
-     *
-     * @param int $division_id Selected division id.
-     * @return void
-     */
-    private static function render_playoff_assignment_preview_table($division_id) {
-        $standings = LLLM_Standings::get_standings($division_id);
-
-        echo '<h3 style="margin:12px 0 8px;">' . esc_html__('Assigned Bracket Preview', 'lllm') . '</h3>';
-
-        if (count($standings) < 6) {
-            echo '<p>' . esc_html__('At least 6 teams in standings are required to preview bracket assignments.', 'lllm') . '</p>';
-            return;
-        }
-
-        $seeds = array();
-        foreach (array_slice($standings, 0, 6) as $index => $row) {
-            $seed_key = '#' . (string) ($index + 1);
-            $team_name = isset($row['team_name']) ? (string) $row['team_name'] : '';
-            $seeds[$seed_key] = $team_name;
-        }
-
-        $rows = array(
-            array('round' => 'R1', 'slot' => '1', 'away_seed' => '#6', 'home_seed' => '#3'),
-            array('round' => 'R1', 'slot' => '2', 'away_seed' => '#5', 'home_seed' => '#4'),
-            array('round' => 'R1', 'slot' => '3', 'away_seed' => '', 'home_seed' => ''),
-            array('round' => 'R1', 'slot' => '4', 'away_seed' => '', 'home_seed' => ''),
-            array('round' => 'R2', 'slot' => '1', 'away_seed' => 'Winner R1-2', 'home_seed' => '#1'),
-            array('round' => 'R2', 'slot' => '2', 'away_seed' => 'Winner R1-1', 'home_seed' => '#2'),
-            array('round' => 'Championship', 'slot' => '1', 'away_seed' => 'Winner R2-2', 'home_seed' => 'Winner R2-1'),
-        );
-
-        $is_r1_complete = true;
-        foreach ($rows as $row) {
-            if ($row['round'] !== 'R1') {
-                continue;
-            }
-
-            $away_assigned = isset($seeds[$row['away_seed']]);
-            $home_assigned = isset($seeds[$row['home_seed']]);
-            if (!$away_assigned || !$home_assigned) {
-                $is_r1_complete = false;
-                break;
-            }
-        }
-
-        if (!$is_r1_complete) {
-            echo '<p><strong>' . esc_html__('Playoff Schedule Incomplete', 'lllm') . '</strong></p>';
-            return;
-        }
-
-        echo '<table class="widefat striped" style="max-width:900px;">';
-        echo '<thead><tr>';
-        echo '<th>' . esc_html__('Round', 'lllm') . '</th>';
-        echo '<th>' . esc_html__('Game', 'lllm') . '</th>';
-        echo '<th>' . esc_html__('Away Assignment', 'lllm') . '</th>';
-        echo '<th>' . esc_html__('Home Assignment', 'lllm') . '</th>';
-        echo '</tr></thead><tbody>';
-
-        foreach ($rows as $row) {
-            $away_seed = $row['away_seed'] === '' ? __('Unassigned', 'lllm') : $row['away_seed'];
-            $home_seed = $row['home_seed'] === '' ? __('Unassigned', 'lllm') : $row['home_seed'];
-            $away_label = isset($seeds[$row['away_seed']]) ? $row['away_seed'] . ' - ' . $seeds[$row['away_seed']] : $away_seed;
-            $home_label = isset($seeds[$row['home_seed']]) ? $row['home_seed'] . ' - ' . $seeds[$row['home_seed']] : $home_seed;
-            echo '<tr>';
-            echo '<td>' . esc_html($row['round']) . '</td>';
-            echo '<td>' . esc_html($row['slot']) . '</td>';
-            echo '<td>' . esc_html($away_label) . '</td>';
-            echo '<td>' . esc_html($home_label) . '</td>';
-            echo '</tr>';
-        }
-
-        echo '</tbody></table>';
     }
 
     /**
@@ -4361,171 +4133,6 @@ class LLLM_Admin {
             admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id),
             $notice
         );
-    }
-
-    /**
-     * Generates a seeded playoff bracket for the selected division.
-     *
-     * @return void
-     */
-    public static function handle_generate_playoff_bracket() {
-        if (!current_user_can('lllm_manage_games')) {
-            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
-        }
-
-        check_admin_referer('lllm_generate_playoff_bracket');
-        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
-        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
-        $redirect_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id);
-
-        if (!$division_id) {
-            self::redirect_with_notice($redirect_url, 'error', __('Division is required for playoff generation.', 'lllm'));
-        }
-
-        if (self::division_has_playoff_games($division_id)) {
-            self::redirect_with_notice($redirect_url, 'error', __('Playoff games already exist. Use Reset Playoff Games before generating again.', 'lllm'));
-        }
-
-        $standings = LLLM_Standings::get_standings($division_id);
-        if (count($standings) < 6) {
-            self::redirect_with_notice($redirect_url, 'error', __('Playoff bracket generation requires at least 6 teams in official standings order.', 'lllm'));
-        }
-
-        // Seed map is fixed for a 6-team bracket and follows standings rank 1..6.
-        $seed_ids = array_map(
-            'intval',
-            array_column(array_slice($standings, 0, 6), 'team_instance_id')
-        );
-
-        $base_datetime = self::get_playoff_base_datetime($division_id);
-        // Slot map defines the generated bracket skeleton and feeder linkage targets.
-        $slot_payloads = array(
-            'r1_g1' => array(
-                'competition_type' => 'playoff',
-                'playoff_round' => 'r1',
-                'playoff_slot' => '1',
-                'home_team_instance_id' => $seed_ids[2],
-                'away_team_instance_id' => $seed_ids[5],
-                'location' => __('TBD', 'lllm'),
-                'start_datetime_utc' => $base_datetime,
-                'status' => 'scheduled',
-            ),
-            'r1_g2' => array(
-                'competition_type' => 'playoff',
-                'playoff_round' => 'r1',
-                'playoff_slot' => '2',
-                'home_team_instance_id' => $seed_ids[3],
-                'away_team_instance_id' => $seed_ids[4],
-                'location' => __('TBD', 'lllm'),
-                'start_datetime_utc' => gmdate('Y-m-d 17:00:00', strtotime($base_datetime . ' +1 day')),
-                'status' => 'scheduled',
-            ),
-            'r2_g1' => array(
-                'competition_type' => 'playoff',
-                'playoff_round' => 'r2',
-                'playoff_slot' => '1',
-                'home_team_instance_id' => $seed_ids[0],
-                'away_team_instance_id' => $seed_ids[3],
-                'location' => __('TBD', 'lllm'),
-                'start_datetime_utc' => gmdate('Y-m-d 17:00:00', strtotime($base_datetime . ' +3 day')),
-                'status' => 'scheduled',
-            ),
-            'r2_g2' => array(
-                'competition_type' => 'playoff',
-                'playoff_round' => 'r2',
-                'playoff_slot' => '2',
-                'home_team_instance_id' => $seed_ids[1],
-                'away_team_instance_id' => $seed_ids[2],
-                'location' => __('TBD', 'lllm'),
-                'start_datetime_utc' => gmdate('Y-m-d 17:00:00', strtotime($base_datetime . ' +4 day')),
-                'status' => 'scheduled',
-            ),
-            'ch_g1' => array(
-                'competition_type' => 'playoff',
-                'playoff_round' => 'championship',
-                'playoff_slot' => '1',
-                'home_team_instance_id' => $seed_ids[0],
-                'away_team_instance_id' => $seed_ids[1],
-                'location' => __('TBD', 'lllm'),
-                'start_datetime_utc' => gmdate('Y-m-d 17:00:00', strtotime($base_datetime . ' +6 day')),
-                'status' => 'scheduled',
-            ),
-        );
-
-        global $wpdb;
-        $wpdb->query('START TRANSACTION');
-
-        foreach ($slot_payloads as $slot => &$payload) {
-            $payload['division_id'] = $division_id;
-            $payload['home_score'] = null;
-            $payload['away_score'] = null;
-            $payload['notes'] = $slot;
-        }
-        unset($payload);
-
-        $r1_g1 = self::create_game_record($slot_payloads['r1_g1']);
-        $r1_g2 = self::create_game_record($slot_payloads['r1_g2']);
-        if (!$r1_g1['ok'] || !$r1_g2['ok']) {
-            $wpdb->query('ROLLBACK');
-            self::redirect_with_notice($redirect_url, 'error', $r1_g1['error'] ? $r1_g1['error'] : $r1_g2['error']);
-        }
-
-        $slot_payloads['r2_g1']['source_game_uid_1'] = $r1_g2['uid'];
-        $slot_payloads['r2_g1']['source_game_uid_2'] = null;
-        $slot_payloads['r2_g2']['source_game_uid_1'] = $r1_g1['uid'];
-        $slot_payloads['r2_g2']['source_game_uid_2'] = null;
-
-        $r2_g1 = self::create_game_record($slot_payloads['r2_g1']);
-        $r2_g2 = self::create_game_record($slot_payloads['r2_g2']);
-        if (!$r2_g1['ok'] || !$r2_g2['ok']) {
-            $wpdb->query('ROLLBACK');
-            self::redirect_with_notice($redirect_url, 'error', $r2_g1['error'] ? $r2_g1['error'] : $r2_g2['error']);
-        }
-
-        $slot_payloads['ch_g1']['source_game_uid_1'] = $r2_g1['uid'];
-        $slot_payloads['ch_g1']['source_game_uid_2'] = $r2_g2['uid'];
-        $ch_g1 = self::create_game_record($slot_payloads['ch_g1']);
-        if (!$ch_g1['ok']) {
-            $wpdb->query('ROLLBACK');
-            self::redirect_with_notice($redirect_url, 'error', $ch_g1['error']);
-        }
-
-        $wpdb->query('COMMIT');
-        LLLM_Standings::bust_cache($division_id);
-        self::redirect_with_notice($redirect_url, 'playoff_generated');
-    }
-
-    /**
-     * Deletes generated playoff games for a selected division.
-     *
-     * @return void
-     */
-    public static function handle_reset_playoff_bracket() {
-        if (!current_user_can('lllm_manage_games')) {
-            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
-        }
-
-        check_admin_referer('lllm_reset_playoff_bracket');
-        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
-        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
-        $redirect_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id);
-
-        if (!$division_id) {
-            self::redirect_with_notice($redirect_url, 'error', __('Division is required for playoff reset.', 'lllm'));
-        }
-
-        global $wpdb;
-        $wpdb->delete(
-            self::table('games'),
-            array(
-                'division_id' => $division_id,
-                'competition_type' => 'playoff',
-            ),
-            array('%d', '%s')
-        );
-
-        LLLM_Standings::bust_cache($division_id);
-        self::redirect_with_notice($redirect_url, 'playoff_reset');
     }
 
     /**
