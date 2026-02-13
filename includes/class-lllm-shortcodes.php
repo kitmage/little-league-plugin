@@ -170,10 +170,10 @@ class LLLM_Shortcodes {
      */
     private static function render_context_heading($season, $division, $suffix) {
         $parts = array();
-        $parts[] = sprintf(__('Season: %s', 'lllm'), (string) $season->name);
-        $parts[] = sprintf(__('Division: %s', 'lllm'), (string) $division->name);
+        $parts[] = sprintf(__('%s', 'lllm'), (string) $season->name);
+        $parts[] = sprintf(__('%s', 'lllm'), (string) $division->name);
         $parts[] = $suffix;
-        return '<h2 class="lllm-shortcode-heading">' . esc_html(implode(' | ', $parts)) . '</h2>';
+        return '<h2 class="lllm-shortcode-heading">' . esc_html(implode(' ', $parts)) . '</h2>';
     }
 
     /**
