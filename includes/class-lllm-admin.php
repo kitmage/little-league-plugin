@@ -400,6 +400,7 @@ class LLLM_Admin {
         add_action('admin_post_lllm_delete_team', array(__CLASS__, 'handle_delete_team'));
         add_action('admin_post_lllm_bulk_delete_teams', array(__CLASS__, 'handle_bulk_delete_teams'));
         add_action('admin_post_lllm_delete_game', array(__CLASS__, 'handle_delete_game'));
+        add_action('admin_post_lllm_add_new_game', array(__CLASS__, 'handle_add_new_game'));
         add_action('admin_post_lllm_bulk_delete_games', array(__CLASS__, 'handle_bulk_delete_games'));
         add_action('admin_post_lllm_quick_edit_game', array(__CLASS__, 'handle_quick_edit_game'));
         add_action('admin_post_lllm_add_game', array(__CLASS__, 'handle_add_game'));
@@ -906,6 +907,9 @@ class LLLM_Admin {
                 break;
             case 'game_saved':
                 $text = __('Game updated.', 'lllm');
+                break;
+            case 'game_created':
+                $text = __('Game created.', 'lllm');
                 break;
             case 'import_complete':
                 $text = __('Import complete.', 'lllm');
@@ -1685,6 +1689,7 @@ class LLLM_Admin {
 
         if (!$games) {
             echo '<p>' . esc_html__('No games yet for this division.', 'lllm') . '</p>';
+            self::render_add_new_game_button($season_id, $division_id);
             echo '<p>' . esc_html__('To add Games, please go to the Import Wizard.', 'lllm') . '</p>';
             echo '</div>';
             return;
@@ -1700,6 +1705,7 @@ class LLLM_Admin {
         echo '<a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Export Current Games CSV', 'lllm') . '</a> ';
         echo '<a class="button button-primary" href="' . esc_url($import_url) . '">' . esc_html__('Import Games', 'lllm') . '</a>';
         echo '</p>';
+        self::render_add_new_game_button($season_id, $division_id);
 
         echo '<h2>' . esc_html__('Add Game', 'lllm') . '</h2>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:8px;align-items:end;">';
@@ -1843,6 +1849,23 @@ class LLLM_Admin {
         echo '<input type="text" name="confirm_text_bulk" class="regular-text" form="lllm-bulk-games"> ';
         echo '<button class="button delete" form="lllm-bulk-games" type="submit">' . esc_html__('Bulk Delete Selected', 'lllm') . '</button>';
         echo '</div>';
+    }
+
+    /**
+     * Renders a POST-backed "Add New Game" button preserving current filters.
+     *
+     * @param int $season_id Current season context.
+     * @param int $division_id Current division context.
+     * @return void
+     */
+    private static function render_add_new_game_button($season_id, $division_id) {
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:inline-block;margin:0 0 12px;">';
+        wp_nonce_field('lllm_add_new_game');
+        echo '<input type="hidden" name="action" value="lllm_add_new_game">';
+        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
+        echo '<button type="submit" class="button">' . esc_html__('Add New Game', 'lllm') . '</button>';
+        echo '</form>';
     }
 
     /**
