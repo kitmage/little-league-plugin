@@ -674,7 +674,7 @@ class LLLM_Admin {
     }
 
     /**
-     * Validates and sanitizes game competition/playoff metadata.
+     * Validates and sanitizes game competition metadata.
      *
      * @param array<string,mixed> $data Candidate game payload.
      * @return array{valid:bool,error:string,data:array<string,mixed>} Validation result.
@@ -685,12 +685,6 @@ class LLLM_Admin {
             $competition_type = 'regular';
         }
 
-        $playoff_round = isset($data['playoff_round']) ? self::normalize_playoff_meta_value($data['playoff_round']) : '';
-        $playoff_slot = isset($data['playoff_slot']) ? self::normalize_playoff_meta_value($data['playoff_slot']) : '';
-
-        $source_game_uid_1 = isset($data['source_game_uid_1']) ? self::normalize_game_uid($data['source_game_uid_1']) : '';
-        $source_game_uid_2 = isset($data['source_game_uid_2']) ? self::normalize_game_uid($data['source_game_uid_2']) : '';
-
         if (!in_array($competition_type, array('regular', 'playoff'), true)) {
             return array(
                 'valid' => false,
@@ -699,81 +693,12 @@ class LLLM_Admin {
             );
         }
 
-        if ($competition_type === 'regular') {
-            if ($playoff_round !== '' || $playoff_slot !== '' || $source_game_uid_1 !== '' || $source_game_uid_2 !== '') {
-                return array(
-                    'valid' => false,
-                    'error' => __('Regular games cannot include playoff metadata.', 'lllm'),
-                    'data' => $data,
-                );
-            }
-
-            $data['competition_type'] = 'regular';
-            $data['playoff_round'] = null;
-            $data['playoff_slot'] = null;
-            $data['source_game_uid_1'] = null;
-            $data['source_game_uid_2'] = null;
-
-            return array(
-                'valid' => true,
-                'error' => '',
-                'data' => $data,
-            );
-        }
-
-        // Central playoff round/slot allowlist shared by imports and quick edit writes.
-        $round_slots = array(
-            'r1' => array('1', '2', '3', '4'),
-            'r2' => array('1', '2'),
-            'championship' => array('1'),
-        );
-
-        if ($playoff_round === '' || !isset($round_slots[$playoff_round])) {
-            return array(
-                'valid' => false,
-                'error' => __('Playoff games require a valid playoff round.', 'lllm'),
-                'data' => $data,
-            );
-        }
-
-        if ($playoff_slot === '' || !in_array($playoff_slot, $round_slots[$playoff_round], true)) {
-            return array(
-                'valid' => false,
-                'error' => __('Playoff games require a valid playoff slot for the selected round.', 'lllm'),
-                'data' => $data,
-            );
-        }
-
-        $allow_source_uids = in_array($playoff_round, array('r2', 'championship'), true);
-        if (!$allow_source_uids && ($source_game_uid_1 !== '' || $source_game_uid_2 !== '')) {
-            return array(
-                'valid' => false,
-                'error' => __('Feeder source game UIDs are only allowed for R2 or Championship playoff games.', 'lllm'),
-                'data' => $data,
-            );
-        }
-
-        if ($source_game_uid_1 !== '' && strlen($source_game_uid_1) !== 12) {
-            return array(
-                'valid' => false,
-                'error' => __('source_game_uid_1 must be exactly 12 characters when provided.', 'lllm'),
-                'data' => $data,
-            );
-        }
-
-        if ($source_game_uid_2 !== '' && strlen($source_game_uid_2) !== 12) {
-            return array(
-                'valid' => false,
-                'error' => __('source_game_uid_2 must be exactly 12 characters when provided.', 'lllm'),
-                'data' => $data,
-            );
-        }
-
-        $data['competition_type'] = 'playoff';
-        $data['playoff_round'] = $playoff_round;
-        $data['playoff_slot'] = $playoff_slot;
-        $data['source_game_uid_1'] = $source_game_uid_1 !== '' ? $source_game_uid_1 : null;
-        $data['source_game_uid_2'] = $source_game_uid_2 !== '' ? $source_game_uid_2 : null;
+        $data['competition_type'] = $competition_type;
+        // Legacy bracket metadata is no longer part of read/write behavior.
+        $data['playoff_round'] = null;
+        $data['playoff_slot'] = null;
+        $data['source_game_uid_1'] = null;
+        $data['source_game_uid_2'] = null;
 
         return array(
             'valid' => true,
@@ -791,9 +716,7 @@ class LLLM_Admin {
         // Keep values stable; form posts persist these keys directly.
         return array(
             'regular' => __('Regular Game', 'lllm'),
-            'playoff_r1' => __('Playoff R1', 'lllm'),
-            'playoff_r2' => __('Playoff R2', 'lllm'),
-            'playoff_championship' => __('Championship', 'lllm'),
+            'playoff' => __('Playoff Game', 'lllm'),
         );
     }
 
@@ -804,23 +727,7 @@ class LLLM_Admin {
      * @return string Quick-edit game type key.
      */
     private static function get_quick_edit_game_type_value($game) {
-        if ($game->competition_type !== 'playoff') {
-            return 'regular';
-        }
-
-        if ($game->playoff_round === 'r1') {
-            return 'playoff_r1';
-        }
-
-        if ($game->playoff_round === 'r2') {
-            return 'playoff_r2';
-        }
-
-        if ($game->playoff_round === 'championship') {
-            return 'playoff_championship';
-        }
-
-        return 'regular';
+        return $game->competition_type === 'playoff' ? 'playoff' : 'regular';
     }
 
     /**
@@ -1826,9 +1733,6 @@ class LLLM_Admin {
 
         foreach ($games as $game) {
             $game_type_value = self::get_quick_edit_game_type_value($game);
-            $is_generated_playoff = self::is_generated_playoff_game($game);
-            $slot_readonly_attr = $is_generated_playoff ? 'readonly aria-readonly="true"' : '';
-            $slot_hint = $is_generated_playoff ? __('Slot is locked for generated playoff games.', 'lllm') : '';
             $score = $game->status === 'played' ? sprintf('%d - %d', $game->away_score, $game->home_score) : '—';
             $start_datetime = null;
             $start_datetime_display = $game->start_datetime_utc;
@@ -1857,7 +1761,6 @@ class LLLM_Admin {
             echo '<input type="hidden" name="game_id" value="' . esc_attr($game->id) . '">';
             echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
             echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
-            echo '<input type="hidden" name="generated_playoff" value="' . esc_attr($is_generated_playoff ? '1' : '0') . '">';
             echo '<input type="date" name="start_date" value="' . esc_attr($start_date_value) . '" required> ';
             echo '<input type="time" name="start_time" value="' . esc_attr($start_time_value) . '" step="300" required> ';
             echo '<input type="text" class="regular-text" name="location" value="' . esc_attr($game->location) . '" placeholder="' . esc_attr__('Location', 'lllm') . '" required> ';
@@ -1885,12 +1788,6 @@ class LLLM_Admin {
             }
             echo '</select>';
             echo '</label> ';
-            echo '<span class="lllm-playoff-slot-wrap" style="display:' . esc_attr($game_type_value === 'regular' ? 'none' : 'inline-flex') . ';align-items:center;gap:4px;">';
-            echo '<label>' . esc_html__('Slot', 'lllm') . ' <input type="number" class="small-text lllm-playoff-slot" name="playoff_slot" min="1" max="4" value="' . esc_attr($game->playoff_slot) . '" ' . $slot_readonly_attr . '></label>';
-            if ($slot_hint !== '') {
-                echo '<small style="color:#646970;">' . esc_html($slot_hint) . '</small>';
-            }
-            echo '</span> ';
             echo '<input type="number" class="small-text" name="away_score" value="' . esc_attr($game->away_score) . '" placeholder="Away"> ';
             echo '<input type="number" class="small-text" name="home_score" value="' . esc_attr($game->home_score) . '" placeholder="Home"> ';
             echo '<input type="text" class="regular-text" name="notes" value="' . esc_attr($game->notes) . '" placeholder="' . esc_attr__('Notes', 'lllm') . '"> ';
@@ -1914,7 +1811,7 @@ class LLLM_Admin {
         echo 'toggles.forEach(function(btn){btn.addEventListener("click",function(){var form=btn.parentElement.querySelector(".lllm-quick-edit-form");if(!form){return;}var open=form.style.display!=="none";form.style.display=open?"none":"block";});});';
         echo 'var manualForm=document.querySelector(".lllm-manual-game-form");if(manualForm){var awaySelect=manualForm.querySelector("select[name=\"away_team_code\"]");var homeSelect=manualForm.querySelector("select[name=\"home_team_code\"]");var statusSelect=manualForm.querySelector("select[name=\"status\"]");var scoreWraps=manualForm.querySelectorAll(".lllm-manual-score-wrap");var scoreInputs=manualForm.querySelectorAll("input[name=\"away_score\"],input[name=\"home_score\"]");var submitBtn=manualForm.querySelector(".lllm-manual-submit");var errorText=manualForm.querySelector(".lllm-manual-form-error");var syncTeams=function(){var same=awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value;if(submitBtn){submitBtn.disabled=!!same;}if(errorText){errorText.style.display=same?"inline":"none";}};var syncScores=function(){var played=statusSelect&&statusSelect.value==="played";scoreWraps.forEach(function(wrap){wrap.style.display=played?"block":"none";});scoreInputs.forEach(function(input){input.disabled=!played;if(!played){input.value="";}});};if(awaySelect){awaySelect.addEventListener("change",syncTeams);}if(homeSelect){homeSelect.addEventListener("change",syncTeams);}if(statusSelect){statusSelect.addEventListener("change",syncScores);}syncTeams();syncScores();}';
         echo 'var forms=document.querySelectorAll(".lllm-quick-edit-form");';
-        echo 'forms.forEach(function(form){var warning=form.querySelector(".lllm-quick-edit-unsaved");var gameType=form.querySelector("select[name=\"game_type\"]");var slotWrap=form.querySelector(".lllm-playoff-slot-wrap");var slotField=form.querySelector("input[name=\"playoff_slot\"]");var generatedFlag=form.querySelector("input[name=\"generated_playoff\"]");var generatedLocked=generatedFlag&&generatedFlag.value==="1";var awaySelect=form.querySelector("select[name=\"away_team_code\"]");var homeSelect=form.querySelector("select[name=\"home_team_code\"]");var saveBtn=form.querySelector("button[type=\"submit\"]");var teamError=form.querySelector(".lllm-quick-edit-team-error");var syncPlayoffFields=function(){if(!gameType||!slotWrap){return;}var isPlayoff=gameType.value!=="regular";slotWrap.style.display=isPlayoff?"inline-flex":"none";if(slotField&&!isPlayoff){slotField.value="";}};var syncTeams=function(){var same=awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value;if(saveBtn){saveBtn.disabled=!!same;}if(teamError){teamError.style.display=same?"block":"none";}};syncPlayoffFields();syncTeams();if(gameType){gameType.addEventListener("change",syncPlayoffFields);}if(awaySelect){awaySelect.addEventListener("change",syncTeams);}if(homeSelect){homeSelect.addEventListener("change",syncTeams);}var fields=form.querySelectorAll("input[name=\"start_date\"], input[name=\"start_time\"], input[name=\"location\"], select[name=\"away_team_code\"], select[name=\"home_team_code\"], select[name=\"status\"], select[name=\"game_type\"], input[name=\"playoff_slot\"], input[name=\"away_score\"], input[name=\"home_score\"], input[name=\"notes\"]");var initial={};fields.forEach(function(field){initial[field.name]=field.value;});var focusedCount=0;var update=function(){if(!warning){return;}var changed=false;fields.forEach(function(field){if(field.value!==initial[field.name]){changed=true;}});warning.style.display=(changed && focusedCount===0)?"block":"none";};fields.forEach(function(field){field.addEventListener("focus",function(){focusedCount++;update();});field.addEventListener("blur",function(){focusedCount=Math.max(0,focusedCount-1);setTimeout(update,0);});field.addEventListener("input",update);field.addEventListener("change",update);});form.addEventListener("submit",function(event){if(generatedLocked&&slotField){slotField.value=initial.playoff_slot||slotField.value;}if(awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value){event.preventDefault();syncTeams();return;}if(warning){warning.style.display="none";}});});';
+        echo 'forms.forEach(function(form){var warning=form.querySelector(".lllm-quick-edit-unsaved");var gameType=form.querySelector("select[name=\"game_type\"]");var awaySelect=form.querySelector("select[name=\"away_team_code\"]");var homeSelect=form.querySelector("select[name=\"home_team_code\"]");var saveBtn=form.querySelector("button[type=\"submit\"]");var teamError=form.querySelector(".lllm-quick-edit-team-error");var syncTeams=function(){var same=awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value;if(saveBtn){saveBtn.disabled=!!same;}if(teamError){teamError.style.display=same?"block":"none";}};syncTeams();if(awaySelect){awaySelect.addEventListener("change",syncTeams);}if(homeSelect){homeSelect.addEventListener("change",syncTeams);}var fields=form.querySelectorAll("input[name=\"start_date\"], input[name=\"start_time\"], input[name=\"location\"], select[name=\"away_team_code\"], select[name=\"home_team_code\"], select[name=\"status\"], select[name=\"game_type\"], input[name=\"playoff_slot\"], input[name=\"away_score\"], input[name=\"home_score\"], input[name=\"notes\"]");var initial={};fields.forEach(function(field){initial[field.name]=field.value;});var focusedCount=0;var update=function(){if(!warning){return;}var changed=false;fields.forEach(function(field){if(field.value!==initial[field.name]){changed=true;}});warning.style.display=(changed && focusedCount===0)?"block":"none";};fields.forEach(function(field){field.addEventListener("focus",function(){focusedCount++;update();});field.addEventListener("blur",function(){focusedCount=Math.max(0,focusedCount-1);setTimeout(update,0);});field.addEventListener("input",update);field.addEventListener("change",update);});form.addEventListener("submit",function(event){if(awaySelect&&homeSelect&&awaySelect.value!==""&&awaySelect.value===homeSelect.value){event.preventDefault();syncTeams();return;}if(warning){warning.style.display="none";}});});';
         echo '})();';
         echo '</script>';
 
@@ -1964,13 +1861,9 @@ class LLLM_Admin {
                  LEFT JOIN ' . self::table('team_masters') . ' home ON hi.team_master_id = home.id
                  WHERE g.division_id = %d
                    AND g.competition_type = %s
-                   AND g.playoff_round IN (%s,%s,%s)
                  ORDER BY g.updated_at DESC, g.id DESC',
                 $division_id,
-                'playoff',
-                'r1',
-                'r2',
-                'championship'
+                'playoff'
             )
         );
 
@@ -2767,14 +2660,13 @@ class LLLM_Admin {
         $away_score = $away_score_raw === '' ? null : intval($away_score_raw);
         $notes = isset($_POST['notes']) ? sanitize_text_field(wp_unslash($_POST['notes'])) : '';
         $game_type = isset($_POST['game_type']) ? sanitize_text_field(wp_unslash($_POST['game_type'])) : 'regular';
-        $playoff_slot = isset($_POST['playoff_slot']) ? sanitize_text_field(wp_unslash($_POST['playoff_slot'])) : '';
 
         $games_table = self::table('games');
         $game_row = null;
         if ($game_id) {
             $game_row = $wpdb->get_row(
                 $wpdb->prepare(
-                    "SELECT id, division_id, competition_type, playoff_round, playoff_slot, source_game_uid_1, source_game_uid_2, notes FROM {$games_table} WHERE id = %d",
+                    "SELECT id, division_id, competition_type, notes FROM {$games_table} WHERE id = %d",
                     $game_id
                 )
             );
@@ -2834,32 +2726,12 @@ class LLLM_Admin {
 
         $competition_payload = array(
             'competition_type' => 'regular',
-            'playoff_round' => null,
-            'playoff_slot' => null,
-            'source_game_uid_1' => $game_row->source_game_uid_1,
-            'source_game_uid_2' => $game_row->source_game_uid_2,
         );
 
-        if ($game_type === 'playoff_r1') {
+        if ($game_type === 'playoff') {
             $competition_payload['competition_type'] = 'playoff';
-            $competition_payload['playoff_round'] = 'r1';
-            $competition_payload['playoff_slot'] = $playoff_slot;
-        } elseif ($game_type === 'playoff_r2') {
-            $competition_payload['competition_type'] = 'playoff';
-            $competition_payload['playoff_round'] = 'r2';
-            $competition_payload['playoff_slot'] = $playoff_slot;
-        } elseif ($game_type === 'playoff_championship') {
-            $competition_payload['competition_type'] = 'playoff';
-            $competition_payload['playoff_round'] = 'championship';
-            $competition_payload['playoff_slot'] = $playoff_slot;
         } elseif ($game_type !== 'regular') {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'error', __('Invalid game type.', 'lllm'));
-        }
-
-        $is_generated_playoff = self::is_generated_playoff_game($game_row);
-        if ($is_generated_playoff && $competition_payload['competition_type'] === 'playoff') {
-            $competition_payload['playoff_round'] = $game_row->playoff_round;
-            $competition_payload['playoff_slot'] = $game_row->playoff_slot;
         }
 
         $competition_validation = self::validate_game_competition_data($competition_payload);
@@ -4170,10 +4042,10 @@ class LLLM_Admin {
                 'away_score' => $away_score,
                 'notes' => isset($row['notes']) ? sanitize_text_field($row['notes']) : '',
                 'competition_type' => isset($row['competition_type']) ? $row['competition_type'] : 'regular',
-                'playoff_round' => isset($row['playoff_round']) ? $row['playoff_round'] : '',
-                'playoff_slot' => isset($row['playoff_slot']) ? $row['playoff_slot'] : '',
-                'source_game_uid_1' => isset($row['source_game_uid_1']) ? $row['source_game_uid_1'] : '',
-                'source_game_uid_2' => isset($row['source_game_uid_2']) ? $row['source_game_uid_2'] : '',
+                'playoff_round' => null,
+                'playoff_slot' => null,
+                'source_game_uid_1' => null,
+                'source_game_uid_2' => null,
             );
 
             $competition_validation = self::validate_game_competition_data($data);

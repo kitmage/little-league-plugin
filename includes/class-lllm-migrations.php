@@ -172,5 +172,38 @@ class LLLM_Migrations {
         dbDelta($team_instances_sql);
         dbDelta($games_sql);
         dbDelta($import_logs_sql);
+        self::normalize_legacy_playoff_competition_types($games_table);
+    }
+
+    /**
+     * One-time normalization for legacy schemas that encoded playoff rows only
+     * through bracket metadata columns.
+     *
+     * @param string $games_table Fully qualified games table name.
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return void
+     */
+    private static function normalize_legacy_playoff_competition_types($games_table) {
+        global $wpdb;
+
+        $normalized_flag_option = 'lllm_legacy_playoff_competition_normalized';
+        if (get_option($normalized_flag_option) === '1') {
+            return;
+        }
+
+        $wpdb->query(
+            "UPDATE {$games_table}
+             SET competition_type = 'playoff'
+             WHERE competition_type <> 'playoff'
+               AND (
+                    (playoff_round IS NOT NULL AND playoff_round <> '')
+                    OR (playoff_slot IS NOT NULL AND playoff_slot <> '')
+                    OR (source_game_uid_1 IS NOT NULL AND source_game_uid_1 <> '')
+                    OR (source_game_uid_2 IS NOT NULL AND source_game_uid_2 <> '')
+               )"
+        );
+
+        update_option($normalized_flag_option, '1', false);
     }
 }
+
