@@ -400,6 +400,7 @@ class LLLM_Admin {
         add_action('admin_post_lllm_delete_team', array(__CLASS__, 'handle_delete_team'));
         add_action('admin_post_lllm_bulk_delete_teams', array(__CLASS__, 'handle_bulk_delete_teams'));
         add_action('admin_post_lllm_delete_game', array(__CLASS__, 'handle_delete_game'));
+        add_action('admin_post_lllm_add_new_game', array(__CLASS__, 'handle_add_new_game'));
         add_action('admin_post_lllm_bulk_delete_games', array(__CLASS__, 'handle_bulk_delete_games'));
         add_action('admin_post_lllm_quick_edit_game', array(__CLASS__, 'handle_quick_edit_game'));
         add_action('admin_post_lllm_import_validate', array(__CLASS__, 'handle_import_validate'));
@@ -905,6 +906,9 @@ class LLLM_Admin {
                 break;
             case 'game_saved':
                 $text = __('Game updated.', 'lllm');
+                break;
+            case 'game_created':
+                $text = __('Game created.', 'lllm');
                 break;
             case 'import_complete':
                 $text = __('Import complete.', 'lllm');
@@ -1684,6 +1688,7 @@ class LLLM_Admin {
 
         if (!$games) {
             echo '<p>' . esc_html__('No games yet for this division.', 'lllm') . '</p>';
+            self::render_add_new_game_button($season_id, $division_id);
             echo '<p>' . esc_html__('To add Games, please go to the Import Wizard.', 'lllm') . '</p>';
             echo '</div>';
             return;
@@ -1699,6 +1704,7 @@ class LLLM_Admin {
         echo '<a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Export Current Games CSV', 'lllm') . '</a> ';
         echo '<a class="button button-primary" href="' . esc_url($import_url) . '">' . esc_html__('Import Games', 'lllm') . '</a>';
         echo '</p>';
+        self::render_add_new_game_button($season_id, $division_id);
 
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:10px 0;display:flex;gap:8px;align-items:center;">';
         wp_nonce_field('lllm_generate_playoff_bracket');
@@ -1820,6 +1826,23 @@ class LLLM_Admin {
         echo '<input type="text" name="confirm_text_bulk" class="regular-text" form="lllm-bulk-games"> ';
         echo '<button class="button delete" form="lllm-bulk-games" type="submit">' . esc_html__('Bulk Delete Selected', 'lllm') . '</button>';
         echo '</div>';
+    }
+
+    /**
+     * Renders a POST-backed "Add New Game" button preserving current filters.
+     *
+     * @param int $season_id Current season context.
+     * @param int $division_id Current division context.
+     * @return void
+     */
+    private static function render_add_new_game_button($season_id, $division_id) {
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:inline-block;margin:0 0 12px;">';
+        wp_nonce_field('lllm_add_new_game');
+        echo '<input type="hidden" name="action" value="lllm_add_new_game">';
+        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
+        echo '<button type="submit" class="button">' . esc_html__('Add New Game', 'lllm') . '</button>';
+        echo '</form>';
     }
 
     /**
@@ -2412,6 +2435,66 @@ class LLLM_Admin {
             admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id),
             'game_saved'
         );
+    }
+
+    /**
+     * Creates a default scheduled game for the selected division.
+     *
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return void
+     */
+    public static function handle_add_new_game() {
+        if (!current_user_can('lllm_manage_games')) {
+            wp_die(esc_html__('You do not have permission to do this.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_add_new_game');
+
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
+        $redirect_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id);
+
+        if (!$division_id) {
+            self::redirect_with_notice($redirect_url, 'error', __('Select a division before adding a game.', 'lllm'));
+        }
+
+        global $wpdb;
+        $team_instances = $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT ti.id
+                 FROM ' . self::table('team_instances') . ' ti
+                 JOIN ' . self::table('team_masters') . ' tm ON tm.id = ti.team_master_id
+                 WHERE ti.division_id = %d
+                 ORDER BY tm.name ASC',
+                $division_id
+            )
+        );
+
+        if (count($team_instances) < 2) {
+            self::redirect_with_notice($redirect_url, 'error', __('Add at least two teams to this division before creating a game.', 'lllm'));
+        }
+
+        $payload = array(
+            'division_id' => $division_id,
+            'home_team_instance_id' => (int) $team_instances[0]->id,
+            'away_team_instance_id' => (int) $team_instances[1]->id,
+            'location' => __('TBD', 'lllm'),
+            'start_datetime_utc' => gmdate('Y-m-d H:i:s', current_time('timestamp', true) + HOUR_IN_SECONDS),
+            'status' => 'scheduled',
+            'notes' => '',
+            'competition_type' => 'regular',
+            'playoff_round' => null,
+            'playoff_slot' => null,
+            'source_game_uid_1' => null,
+            'source_game_uid_2' => null,
+        );
+
+        $created = self::create_game_record($payload);
+        if (!$created['ok']) {
+            self::redirect_with_notice($redirect_url, 'error', $created['error']);
+        }
+
+        self::redirect_with_notice($redirect_url, 'game_created');
     }
 
     /**
