@@ -694,10 +694,11 @@ Supported automatically (scores equal in a played game).
 1. Go to **Games**, pick Season + Division, and verify standings are final.
 2. Click **Generate Playoff Bracket** (requires at least 6 teams in standings).
 3. Generated dates are anchored to the regular schedule: `r1_g1` starts the day after the latest regular-season game date in that division (at `17:00:00` UTC), then later rounds keep the built-in offsets (+1, +3, +4, +6 days from base).
-4. Review generated games (`r1`, `r2`, `championship`) and optionally adjust date/time/location.
-5. Enter results in Quick Edit as games complete.
-6. As feeder games are marked `played`, downstream bracket placeholders resolve automatically to winners.
-7. If setup needs to be restarted, use **Reset Playoff Games** and generate again.
+4. Review generated games (`r1`, `r2`, `championship`) and optionally adjust date/time/location. The **Generate Playoff Bracket** and **Reset Playoff Games** controls are shown below the games schedule table, followed by an HTML **Assigned Bracket Preview** table.
+5. Use the Assigned Bracket Preview table to verify seed-to-slot assignments before generating or regenerating.
+6. Enter results in Quick Edit as games complete.
+7. As feeder games are marked `played`, downstream bracket placeholders resolve automatically to winners.
+8. If setup needs to be restarted, use **Reset Playoff Games** and generate again.
 
 ---
 
@@ -1444,3 +1445,8 @@ Recent shortcode rendering updates include:
 - Output tables now assign class names to every `th` and `td` based on the displayed column heading (`date-time`, `location`, `home`, `away`, `status`, `score`, etc.).
 - Team mentions in output tables now include team logo markup in the first column of each row.
 - Public shortcode CSS now loads from `assets/lllm-shortcodes.css`, which intentionally contains a comment-only class inventory for theme developers.
+
+
+### 13.8 Playoff shortcode rendering note
+
+* `[lllm_playoff_bracket]` now renders team cells with `render_team_logo` (logo-only output), replacing `render_team_with_logo` for this shortcode.
