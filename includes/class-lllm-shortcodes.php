@@ -161,6 +161,49 @@ class LLLM_Shortcodes {
     }
 
     /**
+     * Builds a standardized shortcode heading block.
+     *
+     * @param object $season Season row.
+     * @param object $division Division row.
+     * @param string $suffix Heading suffix, e.g. Schedule.
+     * @return string HTML heading.
+     */
+    private static function render_context_heading($season, $division, $suffix) {
+        $parts = array();
+        $parts[] = sprintf(__('Season: %s', 'lllm'), (string) $season->name);
+        $parts[] = sprintf(__('Division: %s', 'lllm'), (string) $division->name);
+        $parts[] = $suffix;
+        return '<h2 class="lllm-shortcode-heading">' . esc_html(implode(' | ', $parts)) . '</h2>';
+    }
+
+    /**
+     * Renders date content split into day, date, and time spans.
+     *
+     * @param DateTime $dt Localized date instance.
+     * @return string HTML date value.
+     */
+    private static function render_date_parts($dt) {
+        return '<span class="day">' . esc_html($dt->format('l')) . '</span> '
+            . '<span class="date">' . esc_html($dt->format('n/j/y')) . '</span> '
+            . '<span class="time">' . esc_html($dt->format('g:i a')) . '</span>';
+    }
+
+    /**
+     * Renders a team label with optional logo.
+     *
+     * @param string $name Team name text.
+     * @param int    $logo_attachment_id Logo attachment id.
+     * @return string HTML team display.
+     */
+    private static function render_team_with_logo($name, $logo_attachment_id) {
+        $output = '';
+        if ($logo_attachment_id > 0) {
+            $output .= wp_get_attachment_image($logo_attachment_id, 'thumbnail', false, array('class' => 'lllm-team-logo'));
+        }
+
+        return $output . '<span class="lllm-team-name">' . esc_html($name) . '</span>';
+    }
+    /**
      * Resolves season/division context for shortcode rendering.
      *
      * Resolution order:
@@ -254,7 +297,7 @@ class LLLM_Shortcodes {
         }
 
         $where = implode(' AND ', $filters);
-        $sql = 'SELECT g.*, home.name AS home_name, away.name AS away_name
+        $sql = 'SELECT g.*, home.name AS home_name, away.name AS away_name, home.logo_attachment_id AS home_logo_attachment_id, away.logo_attachment_id AS away_logo_attachment_id
                 FROM ' . $wpdb->prefix . 'lllm_games g
                 JOIN ' . $wpdb->prefix . 'lllm_team_instances hi ON g.home_team_instance_id = hi.id
                 JOIN ' . $wpdb->prefix . 'lllm_team_instances ai ON g.away_team_instance_id = ai.id
@@ -271,13 +314,14 @@ class LLLM_Shortcodes {
             return '<p>' . esc_html__('No games scheduled.', 'lllm') . '</p>';
         }
 
-        $output = '<table class="lllm-schedule"><thead><tr>';
-        $output .= '<th>' . esc_html__('Date/Time', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('Location', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('Home', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('Away', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('Status', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('Score', 'lllm') . '</th>';
+        $output = self::render_context_heading($season, $division, __('Schedule', 'lllm'));
+        $output .= '<table class="lllm-schedule"><thead><tr>';
+        $output .= '<th class="date-time">' . esc_html__('Date/Time', 'lllm') . '</th>';
+        $output .= '<th class="location">' . esc_html__('Location', 'lllm') . '</th>';
+        $output .= '<th class="home">' . esc_html__('Home', 'lllm') . '</th>';
+        $output .= '<th class="away">' . esc_html__('Away', 'lllm') . '</th>';
+        $output .= '<th class="status">' . esc_html__('Status', 'lllm') . '</th>';
+        $output .= '<th class="score">' . esc_html__('Score', 'lllm') . '</th>';
         $output .= '</tr></thead><tbody>';
 
         foreach ($games as $game) {
@@ -288,13 +332,18 @@ class LLLM_Shortcodes {
             if ($game->status === 'played') {
                 $score = esc_html($game->home_score . ' - ' . $game->away_score);
             }
+
+            $first_col = self::render_team_with_logo((string) $game->home_name, (int) $game->home_logo_attachment_id);
+            $first_col .= self::render_team_with_logo((string) $game->away_name, (int) $game->away_logo_attachment_id);
+            $first_col .= self::render_date_parts($dt);
+
             $output .= '<tr>';
-            $output .= '<td>' . esc_html($dt->format('l n/j/y, g:i a')) . '</td>';
-            $output .= '<td>' . esc_html($game->location) . '</td>';
-            $output .= '<td>' . esc_html($game->home_name) . '</td>';
-            $output .= '<td>' . esc_html($game->away_name) . '</td>';
-            $output .= '<td>' . $status . '</td>';
-            $output .= '<td>' . $score . '</td>';
+            $output .= '<td class="date-time">' . $first_col . '</td>';
+            $output .= '<td class="location">' . esc_html($game->location) . '</td>';
+            $output .= '<td class="home">' . self::render_team_with_logo((string) $game->home_name, (int) $game->home_logo_attachment_id) . '</td>';
+            $output .= '<td class="away">' . self::render_team_with_logo((string) $game->away_name, (int) $game->away_logo_attachment_id) . '</td>';
+            $output .= '<td class="status">' . $status . '</td>';
+            $output .= '<td class="score">' . $score . '</td>';
             $output .= '</tr>';
         }
 
@@ -335,29 +384,31 @@ class LLLM_Shortcodes {
             return '<p>' . esc_html__('No standings available.', 'lllm') . '</p>';
         }
 
-        $output = '<table class="lllm-standings"><thead><tr>';
-        $output .= '<th>' . esc_html__('Team', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('GP', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('W', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('L', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('T', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('RF', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('RA', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('RD', 'lllm') . '</th>';
-        $output .= '<th>' . esc_html__('Win%', 'lllm') . '</th>';
+        $output = self::render_context_heading($season, $division, __('Standings', 'lllm'));
+        $output .= '<table class="lllm-standings"><thead><tr>';
+        $output .= '<th class="team">' . esc_html__('Team', 'lllm') . '</th>';
+        $output .= '<th class="gp">' . esc_html__('GP', 'lllm') . '</th>';
+        $output .= '<th class="w">' . esc_html__('W', 'lllm') . '</th>';
+        $output .= '<th class="l">' . esc_html__('L', 'lllm') . '</th>';
+        $output .= '<th class="t">' . esc_html__('T', 'lllm') . '</th>';
+        $output .= '<th class="rf">' . esc_html__('RF', 'lllm') . '</th>';
+        $output .= '<th class="ra">' . esc_html__('RA', 'lllm') . '</th>';
+        $output .= '<th class="rd">' . esc_html__('RD', 'lllm') . '</th>';
+        $output .= '<th class="win-pct">' . esc_html__('Win%', 'lllm') . '</th>';
         $output .= '</tr></thead><tbody>';
 
         foreach ($standings as $row) {
+            $team_logo = isset($row['logo_attachment_id']) ? (int) $row['logo_attachment_id'] : 0;
             $output .= '<tr>';
-            $output .= '<td>' . esc_html($row['team_name']) . '</td>';
-            $output .= '<td>' . esc_html($row['gp']) . '</td>';
-            $output .= '<td>' . esc_html($row['wins']) . '</td>';
-            $output .= '<td>' . esc_html($row['losses']) . '</td>';
-            $output .= '<td>' . esc_html($row['ties']) . '</td>';
-            $output .= '<td>' . esc_html($row['rf']) . '</td>';
-            $output .= '<td>' . esc_html($row['ra']) . '</td>';
-            $output .= '<td>' . esc_html($row['rd']) . '</td>';
-            $output .= '<td>' . esc_html(number_format($row['win_pct'], 3)) . '</td>';
+            $output .= '<td class="team">' . self::render_team_with_logo((string) $row['team_name'], $team_logo) . '</td>';
+            $output .= '<td class="gp">' . esc_html($row['gp']) . '</td>';
+            $output .= '<td class="w">' . esc_html($row['wins']) . '</td>';
+            $output .= '<td class="l">' . esc_html($row['losses']) . '</td>';
+            $output .= '<td class="t">' . esc_html($row['ties']) . '</td>';
+            $output .= '<td class="rf">' . esc_html($row['rf']) . '</td>';
+            $output .= '<td class="ra">' . esc_html($row['ra']) . '</td>';
+            $output .= '<td class="rd">' . esc_html($row['rd']) . '</td>';
+            $output .= '<td class="win-pct">' . esc_html(number_format($row['win_pct'], 3)) . '</td>';
             $output .= '</tr>';
         }
 
@@ -411,7 +462,8 @@ class LLLM_Shortcodes {
         }
 
         $show_logos = $atts['show_logos'] === '1';
-        $output = '<ul class="lllm-teams">';
+        $output = self::render_context_heading($season, $division, __('Teams', 'lllm'));
+        $output .= '<ul class="lllm-teams">';
         foreach ($teams as $team) {
             $output .= '<li>';
             if ($show_logos && $team->logo_attachment_id) {
@@ -453,7 +505,7 @@ class LLLM_Shortcodes {
         global $wpdb;
         $games = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT g.*, home.name AS home_name, away.name AS away_name
+                'SELECT g.*, home.name AS home_name, away.name AS away_name, home.logo_attachment_id AS home_logo_attachment_id, away.logo_attachment_id AS away_logo_attachment_id
                  FROM ' . $wpdb->prefix . 'lllm_games g
                  JOIN ' . $wpdb->prefix . 'lllm_team_instances hi ON g.home_team_instance_id = hi.id
                  JOIN ' . $wpdb->prefix . 'lllm_team_instances ai ON g.away_team_instance_id = ai.id
@@ -495,7 +547,8 @@ class LLLM_Shortcodes {
             'championship' => __('Championship', 'lllm'),
         );
 
-        $output = '<div class="lllm-playoff-bracket">';
+        $output = self::render_context_heading($season, $division, __('Playoff Bracket', 'lllm'));
+        $output .= '<div class="lllm-playoff-bracket">';
         // Round order matches bracket progression from opening round to final.
         foreach (array('r1', 'r2', 'championship') as $round_code) {
             $output .= '<section class="lllm-playoff-round lllm-playoff-round-' . esc_attr($round_code) . '">';
@@ -508,11 +561,11 @@ class LLLM_Shortcodes {
             }
 
             $output .= '<table><thead><tr>';
-            $output .= '<th>' . esc_html__('Game', 'lllm') . '</th>';
-            $output .= '<th>' . esc_html__('Home', 'lllm') . '</th>';
-            $output .= '<th>' . esc_html__('Away', 'lllm') . '</th>';
-            $output .= '<th>' . esc_html__('Status', 'lllm') . '</th>';
-            $output .= '<th>' . esc_html__('Score', 'lllm') . '</th>';
+            $output .= '<th class="game">' . esc_html__('Game', 'lllm') . '</th>';
+            $output .= '<th class="home">' . esc_html__('Home', 'lllm') . '</th>';
+            $output .= '<th class="away">' . esc_html__('Away', 'lllm') . '</th>';
+            $output .= '<th class="status">' . esc_html__('Status', 'lllm') . '</th>';
+            $output .= '<th class="score">' . esc_html__('Score', 'lllm') . '</th>';
             $output .= '</tr></thead><tbody>';
 
             foreach ($games_by_round[$round_code] as $game) {
@@ -526,12 +579,16 @@ class LLLM_Shortcodes {
                 /* translators: %s: playoff game slot number. */
                 $game_label = sprintf(__('Game %s', 'lllm'), (string) $game->playoff_slot);
 
+                $first_col = self::render_team_with_logo($home_label, (int) $game->home_logo_attachment_id);
+                $first_col .= self::render_team_with_logo($away_label, (int) $game->away_logo_attachment_id);
+                $first_col .= '<span class="lllm-game-label">' . esc_html($game_label) . '</span>';
+
                 $output .= '<tr>';
-                $output .= '<td>' . esc_html($game_label) . '</td>';
-                $output .= '<td>' . esc_html($home_label) . '</td>';
-                $output .= '<td>' . esc_html($away_label) . '</td>';
-                $output .= '<td>' . esc_html((string) $game->status) . '</td>';
-                $output .= '<td>' . esc_html($score) . '</td>';
+                $output .= '<td class="game">' . $first_col . '</td>';
+                $output .= '<td class="home">' . self::render_team_with_logo($home_label, (int) $game->home_logo_attachment_id) . '</td>';
+                $output .= '<td class="away">' . self::render_team_with_logo($away_label, (int) $game->away_logo_attachment_id) . '</td>';
+                $output .= '<td class="status">' . esc_html((string) $game->status) . '</td>';
+                $output .= '<td class="score">' . esc_html($score) . '</td>';
                 $output .= '</tr>';
             }
 

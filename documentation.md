@@ -1417,3 +1417,14 @@ W8Z2C6R1T5N7,7,1,played,
 ---
 
 If you want the seed to be even more demo-friendly, I can also provide a “scripted demo path” (exact clicks in order) that a stakeholder can follow to see: create season → assign teams → import schedule → import scores → view standings and schedule pages.
+
+
+## Shortcode output markup updates
+
+Recent shortcode rendering updates include:
+
+- Each shortcode now renders an `h2` heading before output, including Season and Division context plus a content label (Schedule, Standings, Teams, or Playoff Bracket).
+- Schedule date/time cells now split output into `<span class="day">`, `<span class="date">`, and `<span class="time">`.
+- Output tables now assign class names to every `th` and `td` based on the displayed column heading (`date-time`, `location`, `home`, `away`, `status`, `score`, etc.).
+- Team mentions in output tables now include team logo markup in the first column of each row.
+- Public shortcode CSS now loads from `assets/lllm-shortcodes.css`, which intentionally contains a comment-only class inventory for theme developers.

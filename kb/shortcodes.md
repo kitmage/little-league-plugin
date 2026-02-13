@@ -175,3 +175,14 @@ If a shortcode shows as plain text or no data appears:
 5. Remove optional attributes and test the base shortcode first.
 
 If needed, send your admin the exact shortcode you used and a screenshot of the page editor.
+
+
+## Shortcode output markup updates
+
+Recent shortcode rendering updates include:
+
+- Each shortcode now renders an `h2` heading before output, including Season and Division context plus a content label (Schedule, Standings, Teams, or Playoff Bracket).
+- Schedule date/time cells now split output into `<span class="day">`, `<span class="date">`, and `<span class="time">`.
+- Output tables now assign class names to every `th` and `td` based on the displayed column heading (`date-time`, `location`, `home`, `away`, `status`, `score`, etc.).
+- Team mentions in output tables now include team logo markup in the first column of each row.
+- Public shortcode CSS now loads from `assets/lllm-shortcodes.css`, which intentionally contains a comment-only class inventory for theme developers.

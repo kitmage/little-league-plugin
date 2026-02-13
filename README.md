@@ -220,3 +220,14 @@ This usually means plugin code was updated but the database schema migration has
 - Visit any wp-admin page while the plugin is active; LLLM now performs a runtime schema check and triggers migrations when required game columns are missing.
 - If needed, deactivate and reactivate the plugin once to force activation migrations.
 - Retry the import after the migration completes.
+
+
+## Shortcode output markup updates
+
+Recent shortcode rendering updates include:
+
+- Each shortcode now renders an `h2` heading before output, including Season and Division context plus a content label (Schedule, Standings, Teams, or Playoff Bracket).
+- Schedule date/time cells now split output into `<span class="day">`, `<span class="date">`, and `<span class="time">`.
+- Output tables now assign class names to every `th` and `td` based on the displayed column heading (`date-time`, `location`, `home`, `away`, `status`, `score`, etc.).
+- Team mentions in output tables now include team logo markup in the first column of each row.
+- Public shortcode CSS now loads from `assets/lllm-shortcodes.css`, which intentionally contains a comment-only class inventory for theme developers.

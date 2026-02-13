@@ -46,7 +46,7 @@ class LLLM_Standings {
         global $wpdb;
         $teams = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT ti.id AS team_instance_id, COALESCE(ti.display_name, tm.name) AS team_name
+                'SELECT ti.id AS team_instance_id, COALESCE(ti.display_name, tm.name) AS team_name, tm.logo_attachment_id
                  FROM ' . $wpdb->prefix . 'lllm_team_instances ti
                  JOIN ' . $wpdb->prefix . 'lllm_team_masters tm ON ti.team_master_id = tm.id
                  WHERE ti.division_id = %d
@@ -60,6 +60,7 @@ class LLLM_Standings {
             $stats[$team->team_instance_id] = array(
                 'team_instance_id' => (int) $team->team_instance_id,
                 'team_name' => $team->team_name,
+                'logo_attachment_id' => isset($team->logo_attachment_id) ? (int) $team->logo_attachment_id : 0,
                 'gp' => 0,
                 'wins' => 0,
                 'losses' => 0,
