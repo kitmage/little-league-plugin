@@ -1065,16 +1065,16 @@ class LLLM_Admin {
     private static function get_playoff_base_datetime($division_id) {
         global $wpdb;
 
-        $last_regular_start = $wpdb->get_var(
+        $last_regular_date = $wpdb->get_var(
             $wpdb->prepare(
-                'SELECT MAX(start_datetime_utc) FROM ' . self::table('games') . ' WHERE division_id = %d AND competition_type = %s',
+                'SELECT MAX(DATE(start_datetime_utc)) FROM ' . self::table('games') . ' WHERE division_id = %d AND competition_type = %s',
                 $division_id,
                 'regular'
             )
         );
 
-        if (is_string($last_regular_start) && $last_regular_start !== '') {
-            return gmdate('Y-m-d 17:00:00', strtotime($last_regular_start . ' +1 day'));
+        if (is_string($last_regular_date) && $last_regular_date !== '') {
+            return gmdate('Y-m-d 17:00:00', strtotime($last_regular_date . ' +1 day'));
         }
 
         return gmdate('Y-m-d 17:00:00', strtotime('+1 day'));
