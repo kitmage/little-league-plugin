@@ -400,7 +400,6 @@ class LLLM_Admin {
         add_action('admin_post_lllm_delete_team', array(__CLASS__, 'handle_delete_team'));
         add_action('admin_post_lllm_bulk_delete_teams', array(__CLASS__, 'handle_bulk_delete_teams'));
         add_action('admin_post_lllm_delete_game', array(__CLASS__, 'handle_delete_game'));
-        add_action('admin_post_lllm_add_new_game', array(__CLASS__, 'handle_add_new_game'));
         add_action('admin_post_lllm_bulk_delete_games', array(__CLASS__, 'handle_bulk_delete_games'));
         add_action('admin_post_lllm_quick_edit_game', array(__CLASS__, 'handle_quick_edit_game'));
         add_action('admin_post_lllm_create_game_manual', array(__CLASS__, 'handle_create_game_manual'));
@@ -1697,29 +1696,6 @@ class LLLM_Admin {
         echo '<a class="button" href="' . esc_url($export_url) . '">' . esc_html__('Export Current Games CSV', 'lllm') . '</a> ';
         echo '<a class="button button-primary" href="' . esc_url($import_url) . '">' . esc_html__('Import Games', 'lllm') . '</a>';
         echo '</p>';
-        self::render_add_new_game_button($season_id, $division_id);
-
-        echo '<h2>' . esc_html__('Add Game', 'lllm') . '</h2>';
-        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:8px;align-items:end;">';
-        wp_nonce_field('lllm_add_game');
-        echo '<input type="hidden" name="action" value="lllm_add_game">';
-        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
-        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
-        echo '<label>' . esc_html__('Start Date', 'lllm') . '<br><input type="text" name="start_date" placeholder="MM/DD/YYYY" required></label>';
-        echo '<label>' . esc_html__('Start Time', 'lllm') . '<br><input type="text" name="start_time" placeholder="HH:MM" required></label>';
-        echo '<label>' . esc_html__('Location', 'lllm') . '<br><input type="text" name="location" required></label>';
-        echo '<label>' . esc_html__('Status', 'lllm') . '<br><select name="status">';
-        foreach (array('scheduled', 'played', 'canceled', 'postponed') as $status) {
-            echo '<option value="' . esc_attr($status) . '">' . esc_html($status) . '</option>';
-        }
-        echo '</select></label>';
-        echo '<label>' . esc_html__('Away Team Code', 'lllm') . '<br><input type="text" name="away_team_code" required></label>';
-        echo '<label>' . esc_html__('Home Team Code', 'lllm') . '<br><input type="text" name="home_team_code" required></label>';
-        echo '<label>' . esc_html__('Away Score', 'lllm') . '<br><input type="number" name="away_score" min="0"></label>';
-        echo '<label>' . esc_html__('Home Score', 'lllm') . '<br><input type="number" name="home_score" min="0"></label>';
-        echo '<label style="grid-column:1 / span 3;">' . esc_html__('Notes', 'lllm') . '<br><input type="text" name="notes" style="width:100%;"></label>';
-        echo '<button class="button button-primary" type="submit">' . esc_html__('Add Game', 'lllm') . '</button>';
-        echo '</form>';
 
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:10px 0;display:flex;gap:8px;align-items:center;">';
         wp_nonce_field('lllm_generate_playoff_bracket');
@@ -1908,23 +1884,6 @@ class LLLM_Admin {
         echo '<input type="text" name="confirm_text_bulk" class="regular-text" form="lllm-bulk-games"> ';
         echo '<button class="button delete" form="lllm-bulk-games" type="submit">' . esc_html__('Bulk Delete Selected', 'lllm') . '</button>';
         echo '</div>';
-    }
-
-    /**
-     * Renders a POST-backed "Add New Game" button preserving current filters.
-     *
-     * @param int $season_id Current season context.
-     * @param int $division_id Current division context.
-     * @return void
-     */
-    private static function render_add_new_game_button($season_id, $division_id) {
-        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:inline-block;margin:0 0 12px;">';
-        wp_nonce_field('lllm_add_new_game');
-        echo '<input type="hidden" name="action" value="lllm_add_new_game">';
-        echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
-        echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
-        echo '<button type="submit" class="button">' . esc_html__('Add New Game', 'lllm') . '</button>';
-        echo '</form>';
     }
 
     /**
