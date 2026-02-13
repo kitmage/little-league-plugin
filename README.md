@@ -94,7 +94,7 @@ K2P7N6D4R9B1,3,3,played,Tie game
 
 ## CSV templates for Divisions, Franchises, and Teams
 
-The **Divisions** and **Teams** admin screens include CSV helpers for template download and import. Divisions include a separate CSV validation step; Teams currently import directly from template format.
+The **Divisions** and **Teams** admin screens include CSV helpers for template download and import. Divisions currently show template + import actions only (the validate button is hidden); Teams import directly from template format and now include a quick **Download Franchise Codes** export button.
 
 ### Divisions template
 

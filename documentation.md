@@ -47,7 +47,7 @@ The end result: a clean, reliable system that volunteers can run without breakin
    * upload → validate → preview changes → commit (atomic)
 3. System rejects messy uploads (unknown team codes, invalid statuses, bad date formats, duplicate games, etc.) with a clear row-level error report.
 4. Managers can do ongoing weekly updates via a **Score Update CSV** using `game_uid` so names never mismatch.
-5. Divisions, Franchises, and Teams screens include CSV templates plus a validation step before import.
+5. Divisions, Franchises, and Teams screens include CSV templates to support import workflows. Divisions currently expose template download + import, and Teams include template download plus a franchise-code export helper.
 5. Standings compute per Season-Division only, using played games only.
 6. Front-end shortcodes render schedules and standings.
 
@@ -330,6 +330,9 @@ The plugin includes a dedicated **League Manager → Shortcode Generator** subme
 * Import semantics:
   * any non-empty value = assigned to that season/division
   * empty value OR literal `FALSE` (case-insensitive) = unassigned
+* Teams CSV Import helpers include:
+  * “Download Template” (season matrix)
+  * “Download Franchise Codes” (same CSV export used on Franchises screen)
 * Import applies a full-season sync:
   * creates missing assignments from marked cells
   * removes assignments that are unassigned in the CSV
