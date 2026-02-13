@@ -18,74 +18,15 @@ class LLLM_Shortcodes {
     }
 
     /**
-     * Builds a fallback label for feeder-based playoff teams.
+     * Resolves the display label for a playoff game side.
      *
-     * @param string               $source_game_uid Source game UID.
-     * @param array<string,object> $games_by_uid    Game rows indexed by UID.
-     * @return string Human-readable placeholder label.
-     */
-    private static function get_playoff_placeholder_label($source_game_uid, $games_by_uid) {
-        $source_game_uid = (string) $source_game_uid;
-        if ($source_game_uid === '') {
-            return __('TBD', 'lllm');
-        }
-
-        if (!empty($games_by_uid[$source_game_uid])) {
-            $source_game = $games_by_uid[$source_game_uid];
-            $round_code = isset($source_game->playoff_round) ? (string) $source_game->playoff_round : '';
-            $slot = isset($source_game->playoff_slot) ? (string) $source_game->playoff_slot : '';
-
-            // Keep feeder placeholders readable without exposing raw UIDs.
-            $round_label_map = array(
-                'r1' => __('R1', 'lllm'),
-                'r2' => __('R2', 'lllm'),
-                'championship' => __('Championship', 'lllm'),
-            );
-
-            if (isset($round_label_map[$round_code]) && $slot !== '') {
-                /* translators: 1: playoff round label, 2: playoff game slot. */
-                $source_label = sprintf(__('Game %1$s-%2$s', 'lllm'), $round_label_map[$round_code], $slot);
-            } else {
-                $source_label = $source_game_uid;
-            }
-        } else {
-            $source_label = $source_game_uid;
-        }
-
-        /* translators: %s: source game label. */
-        return sprintf(__('Winner of %s', 'lllm'), $source_label);
-    }
-
-    /**
-     * Resolves the display label for a playoff game side, including feeder placeholders.
-     *
-     * @param object               $game         Game row.
-     * @param string               $side         Side key (`home` or `away`).
-     * @param array<string,object> $games_by_uid Game rows indexed by UID.
+     * @param object $game Game row.
+     * @param string $side Side key (`home` or `away`).
      * @return string Team label for display.
      */
-    private static function get_playoff_team_label($game, $side, $games_by_uid) {
+    private static function get_playoff_team_label($game, $side) {
         $team_name_field = $side . '_name';
-        $source_uid_field = $side === 'home' ? 'source_game_uid_1' : 'source_game_uid_2';
-        $source_game_uid = isset($game->{$source_uid_field}) ? (string) $game->{$source_uid_field} : '';
-        $team_name = isset($game->{$team_name_field}) ? (string) $game->{$team_name_field} : '';
-
-        if ($source_game_uid === '') {
-            return $team_name;
-        }
-
-        if (!empty($games_by_uid[$source_game_uid])) {
-            $source_game = $games_by_uid[$source_game_uid];
-            $home_score = isset($source_game->home_score) ? $source_game->home_score : null;
-            $away_score = isset($source_game->away_score) ? $source_game->away_score : null;
-            $is_played = isset($source_game->status) && $source_game->status === 'played';
-
-            if ($is_played && $home_score !== null && $away_score !== null && (int) $home_score !== (int) $away_score) {
-                return (int) $home_score > (int) $away_score ? (string) $source_game->home_name : (string) $source_game->away_name;
-            }
-        }
-
-        return self::get_playoff_placeholder_label($source_game_uid, $games_by_uid);
+        return isset($game->{$team_name_field}) ? (string) $game->{$team_name_field} : '';
     }
 
     /**
@@ -530,12 +471,9 @@ class LLLM_Shortcodes {
                  JOIN ' . $wpdb->prefix . 'lllm_team_masters away ON ai.team_master_id = away.id
                  WHERE g.division_id = %d
                    AND g.competition_type = %s
-                 ORDER BY FIELD(g.playoff_round, %s, %s, %s), CAST(g.playoff_slot AS UNSIGNED) ASC',
+                 ORDER BY g.start_datetime_utc ASC, g.id ASC',
                 $division->id,
-                'playoff',
-                'r1',
-                'r2',
-                'championship'
+                'playoff'
             )
         );
 
@@ -543,75 +481,44 @@ class LLLM_Shortcodes {
             return '<p>' . esc_html__('No playoff bracket available.', 'lllm') . '</p>';
         }
 
-        $games_by_uid = array();
-        // Initialize every supported round so rendering stays deterministic.
-        $games_by_round = array(
-            'r1' => array(),
-            'r2' => array(),
-            'championship' => array(),
-        );
-
-        foreach ($games as $game) {
-            $games_by_uid[$game->game_uid] = $game;
-            if (isset($games_by_round[$game->playoff_round])) {
-                $games_by_round[$game->playoff_round][] = $game;
-            }
-        }
-
-        $round_labels = array(
-            'r1' => __('Round 1', 'lllm'),
-            'r2' => __('Round 2', 'lllm'),
-            'championship' => __('Championship', 'lllm'),
-        );
-
         $output = self::render_context_heading($season, $division, __('Playoff Bracket', 'lllm'));
         $output .= '<div class="lllm-playoff-bracket">';
-        // Round order matches bracket progression from opening round to final.
-        foreach (array('r1', 'r2', 'championship') as $round_code) {
-            $output .= '<section class="lllm-playoff-round lllm-playoff-round-' . esc_attr($round_code) . '">';
-            $output .= '<h3>' . esc_html($round_labels[$round_code]) . '</h3>';
+        $output .= '<section class="lllm-playoff-round lllm-playoff-round-playoff">';
+        $output .= '<h3>' . esc_html__('Playoff Games', 'lllm') . '</h3>';
+        $output .= '<table><thead><tr>';
+        $output .= '<th class="game">' . esc_html__('Game', 'lllm') . '</th>';
+        $output .= '<th class="home">' . esc_html__('Home', 'lllm') . '</th>';
+        $output .= '<th class="away">' . esc_html__('Away', 'lllm') . '</th>';
+        $output .= '<th class="status">' . esc_html__('Status', 'lllm') . '</th>';
+        $output .= '<th class="score">' . esc_html__('Score', 'lllm') . '</th>';
+        $output .= '</tr></thead><tbody>';
 
-            if (empty($games_by_round[$round_code])) {
-                $output .= '<p>' . esc_html__('No games in this round.', 'lllm') . '</p>';
-                $output .= '</section>';
-                continue;
+        foreach ($games as $index => $game) {
+            $home_label = self::get_playoff_team_label($game, 'home');
+            $away_label = self::get_playoff_team_label($game, 'away');
+            $score = '—';
+            if ($game->status === 'played') {
+                $score = $game->home_score . ' - ' . $game->away_score;
             }
 
-            $output .= '<table><thead><tr>';
-            $output .= '<th class="game">' . esc_html__('Game', 'lllm') . '</th>';
-            $output .= '<th class="home">' . esc_html__('Home', 'lllm') . '</th>';
-            $output .= '<th class="away">' . esc_html__('Away', 'lllm') . '</th>';
-            $output .= '<th class="status">' . esc_html__('Status', 'lllm') . '</th>';
-            $output .= '<th class="score">' . esc_html__('Score', 'lllm') . '</th>';
-            $output .= '</tr></thead><tbody>';
+            /* translators: %d: sequential playoff game number. */
+            $game_label = sprintf(__('Game %d', 'lllm'), $index + 1);
 
-            foreach ($games_by_round[$round_code] as $game) {
-                $home_label = self::get_playoff_team_label($game, 'home', $games_by_uid);
-                $away_label = self::get_playoff_team_label($game, 'away', $games_by_uid);
-                $score = '—';
-                if ($game->status === 'played') {
-                    $score = $game->home_score . ' - ' . $game->away_score;
-                }
+            $first_col = self::render_team_logo($home_label, (int) $game->home_logo_attachment_id);
+            $first_col .= self::render_team_logo($away_label, (int) $game->away_logo_attachment_id);
+            $first_col .= '<span class="lllm-game-label">' . esc_html($game_label) . '</span>';
 
-                /* translators: %s: playoff game slot number. */
-                $game_label = sprintf(__('Game %s', 'lllm'), (string) $game->playoff_slot);
-
-                $first_col = self::render_team_logo($home_label, (int) $game->home_logo_attachment_id);
-                $first_col .= self::render_team_logo($away_label, (int) $game->away_logo_attachment_id);
-                $first_col .= '<span class="lllm-game-label">' . esc_html($game_label) . '</span>';
-
-                $output .= '<tr>';
-                $output .= '<td class="game">' . $first_col . '</td>';
-                $output .= '<td class="home">' . self::render_team_logo($home_label, (int) $game->home_logo_attachment_id) . '</td>';
-                $output .= '<td class="away">' . self::render_team_logo($away_label, (int) $game->away_logo_attachment_id) . '</td>';
-                $output .= '<td class="status">' . esc_html((string) $game->status) . '</td>';
-                $output .= '<td class="score">' . esc_html($score) . '</td>';
-                $output .= '</tr>';
-            }
-
-            $output .= '</tbody></table>';
-            $output .= '</section>';
+            $output .= '<tr>';
+            $output .= '<td class="game">' . $first_col . '</td>';
+            $output .= '<td class="home">' . self::render_team_logo($home_label, (int) $game->home_logo_attachment_id) . '</td>';
+            $output .= '<td class="away">' . self::render_team_logo($away_label, (int) $game->away_logo_attachment_id) . '</td>';
+            $output .= '<td class="status">' . esc_html((string) $game->status) . '</td>';
+            $output .= '<td class="score">' . esc_html($score) . '</td>';
+            $output .= '</tr>';
         }
+
+        $output .= '</tbody></table>';
+        $output .= '</section>';
         $output .= '</div>';
 
         return $output;
