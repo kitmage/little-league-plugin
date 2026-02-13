@@ -1976,29 +1976,51 @@ class LLLM_Admin {
         }
 
         $rows = array(
-            array('round' => 'R1', 'slot' => '1', 'home_seed' => '#3', 'away_seed' => '#6'),
-            array('round' => 'R1', 'slot' => '2', 'home_seed' => '#4', 'away_seed' => '#5'),
-            array('round' => 'R2', 'slot' => '1', 'home_seed' => '#1', 'away_seed' => 'Winner R1-2'),
-            array('round' => 'R2', 'slot' => '2', 'home_seed' => '#2', 'away_seed' => 'Winner R1-1'),
-            array('round' => 'Championship', 'slot' => '1', 'home_seed' => 'Winner R2-1', 'away_seed' => 'Winner R2-2'),
+            array('round' => 'R1', 'slot' => '1', 'away_seed' => '#6', 'home_seed' => '#3'),
+            array('round' => 'R1', 'slot' => '2', 'away_seed' => '#5', 'home_seed' => '#4'),
+            array('round' => 'R1', 'slot' => '3', 'away_seed' => '', 'home_seed' => ''),
+            array('round' => 'R1', 'slot' => '4', 'away_seed' => '', 'home_seed' => ''),
+            array('round' => 'R2', 'slot' => '1', 'away_seed' => 'Winner R1-2', 'home_seed' => '#1'),
+            array('round' => 'R2', 'slot' => '2', 'away_seed' => 'Winner R1-1', 'home_seed' => '#2'),
+            array('round' => 'Championship', 'slot' => '1', 'away_seed' => 'Winner R2-2', 'home_seed' => 'Winner R2-1'),
         );
+
+        $is_r1_complete = true;
+        foreach ($rows as $row) {
+            if ($row['round'] !== 'R1') {
+                continue;
+            }
+
+            $away_assigned = isset($seeds[$row['away_seed']]);
+            $home_assigned = isset($seeds[$row['home_seed']]);
+            if (!$away_assigned || !$home_assigned) {
+                $is_r1_complete = false;
+                break;
+            }
+        }
+
+        if (!$is_r1_complete) {
+            echo '<p><strong>' . esc_html__('Playoff Schedule Incomplete', 'lllm') . '</strong></p>';
+        }
 
         echo '<table class="widefat striped" style="max-width:900px;">';
         echo '<thead><tr>';
         echo '<th>' . esc_html__('Round', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Game', 'lllm') . '</th>';
-        echo '<th>' . esc_html__('Home Assignment', 'lllm') . '</th>';
         echo '<th>' . esc_html__('Away Assignment', 'lllm') . '</th>';
+        echo '<th>' . esc_html__('Home Assignment', 'lllm') . '</th>';
         echo '</tr></thead><tbody>';
 
         foreach ($rows as $row) {
-            $home_label = isset($seeds[$row['home_seed']]) ? $row['home_seed'] . ' - ' . $seeds[$row['home_seed']] : $row['home_seed'];
-            $away_label = isset($seeds[$row['away_seed']]) ? $row['away_seed'] . ' - ' . $seeds[$row['away_seed']] : $row['away_seed'];
+            $away_seed = $row['away_seed'] === '' ? __('Unassigned', 'lllm') : $row['away_seed'];
+            $home_seed = $row['home_seed'] === '' ? __('Unassigned', 'lllm') : $row['home_seed'];
+            $away_label = isset($seeds[$row['away_seed']]) ? $row['away_seed'] . ' - ' . $seeds[$row['away_seed']] : $away_seed;
+            $home_label = isset($seeds[$row['home_seed']]) ? $row['home_seed'] . ' - ' . $seeds[$row['home_seed']] : $home_seed;
             echo '<tr>';
             echo '<td>' . esc_html($row['round']) . '</td>';
             echo '<td>' . esc_html($row['slot']) . '</td>';
-            echo '<td>' . esc_html($home_label) . '</td>';
             echo '<td>' . esc_html($away_label) . '</td>';
+            echo '<td>' . esc_html($home_label) . '</td>';
             echo '</tr>';
         }
 
