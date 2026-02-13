@@ -203,6 +203,23 @@ class LLLM_Shortcodes {
 
         return $output . '<span class="lllm-team-name">' . esc_html($name) . '</span>';
     }
+	
+	 /**
+     * Renders a team logo.
+     *
+     * @param string $name Team name text.
+     * @param int    $logo_attachment_id Logo attachment id.
+     * @return string HTML team display.
+     */
+    private static function render_team_logo($name, $logo_attachment_id) {
+        $output = '';
+        if ($logo_attachment_id > 0) {
+            $output .= wp_get_attachment_image($logo_attachment_id, 'thumbnail', false, array('class' => 'lllm-team-logo'));
+        }
+
+        return $output;
+    }
+	
     /**
      * Resolves season/division context for shortcode rendering.
      *
@@ -333,15 +350,15 @@ class LLLM_Shortcodes {
                 $score = esc_html($game->home_score . ' - ' . $game->away_score);
             }
 
-            $first_col = self::render_team_with_logo((string) $game->home_name, (int) $game->home_logo_attachment_id);
-            $first_col .= self::render_team_with_logo((string) $game->away_name, (int) $game->away_logo_attachment_id);
+            $first_col = self::render_team_logo((string) $game->home_name, (int) $game->home_logo_attachment_id);
+            $first_col .= self::render_team_logo((string) $game->away_name, (int) $game->away_logo_attachment_id);
             $first_col .= self::render_date_parts($dt);
 
             $output .= '<tr>';
             $output .= '<td class="date-time">' . $first_col . '</td>';
             $output .= '<td class="location">' . esc_html($game->location) . '</td>';
-            $output .= '<td class="home">' . self::render_team_with_logo((string) $game->home_name, (int) $game->home_logo_attachment_id) . '</td>';
-            $output .= '<td class="away">' . self::render_team_with_logo((string) $game->away_name, (int) $game->away_logo_attachment_id) . '</td>';
+            $output .= '<td class="home">' . /*self::render_team_with_logo((string)*/ $game->home_name/*, (int) $game->home_logo_attachment_id)*/ . '</td>';
+            $output .= '<td class="away">' . /*self::render_team_with_logo((string)*/ $game->away_name/*, (int) $game->away_logo_attachment_id)*/ . '</td>';
             $output .= '<td class="status">' . $status . '</td>';
             $output .= '<td class="score">' . $score . '</td>';
             $output .= '</tr>';
