@@ -83,6 +83,8 @@ Behavior notes:
 - `status` must be one of: `scheduled`, `played`, `canceled`, `postponed` when provided.
 - If either score column is populated, import validation will automatically set the game to `played` and apply both scores (even when `status` is blank).
 - If a row is treated as `played`, both score columns must be provided.
+- Full schedule creates store `start_datetime_utc` in UTC, map `home_team_instance_id`/`away_team_instance_id` from division assignments, and write `competition_type=regular` unless playoff columns are provided.
+- After commit, the Games screen returns to the same season/division filter; imports that insert new games now reuse the existing `game_saved` success notice.
 
 Example:
 
