@@ -1699,10 +1699,10 @@ class LLLM_Admin {
         echo '</p>';
         self::render_add_new_game_button($season_id, $division_id);
 
-        echo '<h2>' . esc_html__('Add Game', 'lllm') . '</h2>';
+        echo '<h2 id="lllm-add-game">' . esc_html__('Add Game', 'lllm') . '</h2>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin:0 0 16px;display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:8px;align-items:end;">';
-        wp_nonce_field('lllm_add_game');
-        echo '<input type="hidden" name="action" value="lllm_add_game">';
+        wp_nonce_field('lllm_create_game_manual');
+        echo '<input type="hidden" name="action" value="lllm_create_game_manual">';
         echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
         echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
         echo '<label>' . esc_html__('Start Date', 'lllm') . '<br><input type="text" name="start_date" placeholder="MM/DD/YYYY" required></label>';
@@ -2517,6 +2517,25 @@ class LLLM_Admin {
             admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id),
             'game_saved'
         );
+    }
+
+    /**
+     * Handles Add New Game button submit by redirecting back to the Games screen.
+     *
+     * @return void
+     */
+    public static function handle_add_new_game() {
+        if (!current_user_can('lllm_manage_games')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_add_new_game');
+
+        $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
+        $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
+
+        wp_safe_redirect(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '#lllm-add-game'));
+        exit;
     }
 
     /**
