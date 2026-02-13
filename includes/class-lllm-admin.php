@@ -2001,6 +2001,7 @@ class LLLM_Admin {
 
         if (!$is_r1_complete) {
             echo '<p><strong>' . esc_html__('Playoff Schedule Incomplete', 'lllm') . '</strong></p>';
+            return;
         }
 
         echo '<table class="widefat striped" style="max-width:900px;">';

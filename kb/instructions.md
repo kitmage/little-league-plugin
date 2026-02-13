@@ -78,7 +78,7 @@ Your schedule + results workspace.
 - Optional playoff tools (shown below the schedule table):
   - Generate Playoff Bracket (starts from the day after the latest regular-season game date in the selected division)
   - Reset Playoff Games
-  - Assigned Bracket Preview table (HTML preview of seed assignments, Away before Home, and an "Playoff Schedule Incomplete" state when Round 1 slots 1-4 are not fully assigned)
+  - Assigned Bracket Preview table (HTML preview of seed assignments, Away before Home; hidden with a "Playoff Schedule Incomplete" message when Round 1 slots 1-4 are not fully assigned)
 
 ### Import Logs
 Audit trail of CSV imports.
