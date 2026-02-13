@@ -1333,7 +1333,7 @@ class LLLM_Admin {
             echo '<input type="hidden" name="action" value="lllm_validate_divisions_csv">';
             echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
             echo '<input type="file" name="csv_file" accept=".csv" required> ';
-            submit_button(__('Validate CSV', 'lllm'), 'secondary', 'submit', false);
+            // submit_button(__('Validate CSV', 'lllm'), 'secondary', 'submit', false);
             echo '</form>';
             echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
             wp_nonce_field('lllm_import_divisions_csv');
@@ -1558,9 +1558,14 @@ class LLLM_Admin {
             ),
             'lllm_download_division_teams_template'
         );
+        $franchise_codes_url = wp_nonce_url(
+            admin_url('admin-post.php?action=lllm_export_franchises_csv'),
+            'lllm_export_franchises_csv'
+        );
         echo '<h2>' . esc_html__('Teams CSV Import', 'lllm') . '</h2>';
         echo '<p>' . esc_html__('Import team assignments for all divisions in this season. Any non-empty value means assigned; leave blank or enter FALSE to unassign.', 'lllm') . '</p>';
-        echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a></p>';
+        echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a> '
+            . '<a class="button" href="' . esc_url($franchise_codes_url) . '">' . esc_html__('Download Franchise Codes', 'lllm') . '</a></p>';
         echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('lllm_import_division_teams_csv');
         echo '<input type="hidden" name="action" value="lllm_import_division_teams_csv">';
