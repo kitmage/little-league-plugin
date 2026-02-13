@@ -517,7 +517,7 @@ Downloadable error report CSV should add an `error` column with the message.
 * Inline quick edit (per row): Status + game type + playoff slot (when playoff) + scores + notes
 * “Export CSV” button
 * “Go to Import Wizard” button
-* “Add New Game” button (POST to `admin-post.php` with nonce + selected `season_id` and `division_id`)
+* “Add Game Manually” expandable section with a single inline manual-create form
 
 ### Important behaviors
 
@@ -979,7 +979,7 @@ Subpages (left nav):
 
 * Export Current Games CSV (secondary)
 * Import Games (primary) → goes to Import Wizard
-* Add New Game (creates a scheduled placeholder game and keeps current season/division filters)
+* Add Game Manually (expandable details section with a single manual-create form)
 
 **Table columns**
 
