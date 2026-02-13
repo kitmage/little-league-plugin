@@ -171,10 +171,7 @@ Managers are intended to work primarily in League Manager screens.
 * `game_uid` (CHAR(12) unique, not null) // human-friendly stable ID for CSV (e.g., base32)
 * `division_id` (BIGINT, not null)
 * `competition_type` (VARCHAR 20, not null, default `regular`) // `regular|playoff`
-* `playoff_round` (VARCHAR 20, null) // `r1|r2|championship` when playoff
-* `playoff_slot` (VARCHAR 20, null) // slot inside round, stringified for UI compatibility
-* `source_game_uid_1` (CHAR(12), null) // feeder game UID for winner placeholder/advancement wiring
-* `source_game_uid_2` (CHAR(12), null) // second feeder UID (used by championship)
+* Legacy columns retained for backward compatibility (currently ignored by app logic): `playoff_round`, `playoff_slot`, `source_game_uid_1`, `source_game_uid_2`.
 * `home_team_instance_id` (BIGINT, not null)
 * `away_team_instance_id` (BIGINT, not null)
 * `location` (VARCHAR 160, not null) // free text v1
@@ -459,7 +456,7 @@ Every validation + commit produces a log entry with:
 * Inserts must write `start_datetime_utc` in UTC.
 * Inserts must persist resolved `home_team_instance_id` and `away_team_instance_id`.
 * Inserts must persist `status`, `away_score`, `home_score`, `notes`, and `location`.
-* Full-schedule creates default `competition_type` to `regular` unless playoff metadata is present and valid.
+* Full-schedule writes `competition_type` only (`regular` by default, or `playoff` when explicitly provided).
 * On natural-key duplicates (`game_unique`), `create_game_record` treats the create as an update of the existing row rather than a hard failure.
 * After commit, redirect to the same `Games` screen season/division filter and show a success notice (`game_saved` when new rows were inserted).
 
@@ -683,9 +680,8 @@ Supported automatically (scores equal in a played game).
 
 #### Feeder linkage rules
 
-* `source_game_uid_1` and `source_game_uid_2` are only valid for playoff games.
+* Legacy feeder UID fields are retained for compatibility but ignored by current app logic.
 * R1 games do not have feeder links.
-* R2 games use `source_game_uid_1` to identify the R1 winner feeding that slot.
 * Championship uses both feeder fields to reference both R2 winners.
 * If feeder game status is unresolved (not `played`), displays should show a placeholder label (`Winner of Game <round>-<slot>`) instead of a resolved team winner.
 
@@ -694,7 +690,7 @@ Supported automatically (scores equal in a played game).
 1. Go to **Games**, pick Season + Division, and verify standings are final.
 2. Click **Generate Playoff Bracket** (requires at least 6 teams in standings).
 3. Generated dates are anchored to the regular schedule: `r1_g1` starts the day after the latest regular-season game date in that division (at `17:00:00` UTC), then later rounds keep the built-in offsets (+1, +3, +4, +6 days from base).
-4. Use the **Playoff Schedule Slots** cards below the games schedule table to create or edit Round 1 slots 1-2, Round 2 slots 1-2, and Championship slot 1. Slot forms mirror Add Game Manually fields (date/time/location/team pickers/status/notes) and pre-fill existing playoff rows by (`competition_type=playoff`, `playoff_round`, `playoff_slot`).
+4. Use the playoff tools to create or edit playoff games; playoff selection now relies on `competition_type=playoff`.
 5. Use the Assigned Bracket Preview table to verify seed-to-slot assignments before generating or regenerating (Away appears before Home). If Round 1 slots 1-4 are not fully seeded, the preview displays **Playoff Schedule Incomplete** and hides the preview table.
 6. Enter results in Quick Edit as games complete.
 7. As feeder games are marked `played`, downstream bracket placeholders resolve automatically to winners.
