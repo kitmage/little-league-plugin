@@ -1,5 +1,5 @@
 /*
-Schedule shortcode classes: lllm-shortcode-heading, lllm-schedule, date-time, location, home, away, win, day, date, time, lllm-team-logo, lllm-team-name, lllm-team-score, lllm-updated.
+Schedule shortcode classes: lllm-shortcode-heading, lllm-schedule, date-time, location, home, away, win, day, date, time, lllm-team, lllm-team-logo, lllm-team-name, lllm-team-score, lllm-updated.
 Standings shortcode classes: lllm-shortcode-heading, lllm-standings, team, gp, w, l, t, rf, ra, rd, win-pct, lllm-team-logo, lllm-team-name, lllm-updated.
 Teams shortcode classes: lllm-shortcode-heading, lllm-teams, lllm-team-logo.
 Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lllm-shortcode-deprecation.
@@ -53,6 +53,12 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
 
 .lllm-table-wrap .lllm-standings .team {
     min-width: 11rem;
+}
+
+
+.lllm-table-wrap .lllm-team {
+    display: inline-flex;
+    align-items: center;
 }
 
 .lllm-table-wrap .lllm-team-logo {
