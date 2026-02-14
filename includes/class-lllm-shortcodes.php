@@ -460,7 +460,7 @@ class LLLM_Shortcodes {
             array(
                 'season' => '',
                 'division' => '',
-                'show_logos' => '0',
+                'show_logos' => '1',
             ),
             $atts,
             'lllm_teams'
@@ -500,6 +500,8 @@ class LLLM_Shortcodes {
             $output .= '<td class="team-logo" data-label="' . esc_attr__('Team Logo', 'lllm') . '">';
             if ($show_logos && $team->logo_attachment_id) {
                 $output .= wp_get_attachment_image((int) $team->logo_attachment_id, 'thumbnail', false, array('class' => 'lllm-team-logo'));
+            } else {
+                $output .= '&mdash;';
             }
             $output .= '</td>';
             $output .= '<td class="team-name" data-label="' . esc_attr__('Team Name', 'lllm') . '">' . esc_html($team->name) . '</td>';
