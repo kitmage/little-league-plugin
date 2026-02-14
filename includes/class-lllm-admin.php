@@ -985,6 +985,14 @@ class LLLM_Admin {
         echo '<p><textarea name="custom_css" class="large-text code" rows="10" spellcheck="false" placeholder="' . esc_attr__('.lllm-schedule {\n  border-color: #1d4ed8;\n}', 'lllm') . '">' . esc_textarea($custom_css) . '</textarea></p>';
         submit_button(__('Save Custom CSS', 'lllm'));
         echo '</form>';
+        echo '<h3>' . esc_html__('Shortcode CSS Class Reference', 'lllm') . '</h3>';
+        echo '<p>' . esc_html__('Use these classes in custom CSS to target shortcode output elements.', 'lllm') . '</p>';
+        echo '<ul style="list-style:disc;padding-left:20px;">';
+        echo '<li><code>[lllm_schedule]</code>: <code>.lllm-shortcode-heading</code>, <code>.lllm-schedule</code>, <code>.date-time</code>, <code>.location</code>, <code>.home</code>, <code>.away</code>, <code>.win</code>, <code>.day</code>, <code>.date</code>, <code>.time</code>, <code>.lllm-team-name</code>, <code>.lllm-team-score</code>, <code>.lllm-updated</code>.</li>';
+        echo '<li><code>[lllm_standings]</code>: <code>.lllm-shortcode-heading</code>, <code>.lllm-standings</code>, <code>.team</code>, <code>.gp</code>, <code>.w</code>, <code>.l</code>, <code>.t</code>, <code>.rf</code>, <code>.ra</code>, <code>.rd</code>, <code>.win-pct</code>, <code>.lllm-team-logo</code>, <code>.lllm-team-name</code>, <code>.lllm-updated</code>.</li>';
+        echo '<li><code>[lllm_teams]</code>: <code>.lllm-shortcode-heading</code>, <code>.lllm-teams</code>, <code>.lllm-team-logo</code>.</li>';
+        echo '<li><code>[lllm_playoff_bracket]</code> (deprecated alias): uses the same classes as <code>[lllm_schedule type="playoff"]</code> plus <code>.lllm-shortcode-deprecation</code> notice for administrators.</li>';
+        echo '</ul>';
         echo '</div>';
     }
 
