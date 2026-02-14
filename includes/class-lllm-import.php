@@ -35,8 +35,7 @@ class LLLM_Import {
      */
     public static function get_import_types() {
         return array(
-            'full' => __('Full Schedule Import', 'lllm'),
-            'score' => __('Score Update Import', 'lllm'),
+            'games_unified' => __('Games Import', 'lllm'),
         );
     }
 

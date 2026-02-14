@@ -1952,30 +1952,13 @@ class LLLM_Admin {
      */
     private static function render_import_wizard_inline($seasons, $divisions, $season_id, $division_id) {
         $step = isset($_GET['step']) ? absint($_GET['step']) : 1;
-        $import_type = isset($_GET['import_type']) ? sanitize_text_field(wp_unslash($_GET['import_type'])) : 'full';
-        $types = LLLM_Import::get_import_types();
+        $import_type = 'games_unified';
 
         echo '<hr>';
         echo '<h2>' . esc_html__('Import Wizard', 'lllm') . '</h2>';
 
         if ($step === 1) {
-            echo '<form method="get">';
-            echo '<input type="hidden" name="page" value="lllm-games">';
-            echo '<input type="hidden" name="step" value="2">';
-            echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
-            echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
-
-            echo '<h3>' . esc_html__('Choose Import Type', 'lllm') . '</h3>';
-            foreach ($types as $key => $label) {
-                echo '<label style="display:block;margin:8px 0;">';
-                echo '<input type="radio" name="import_type" value="' . esc_attr($key) . '" ' . checked($import_type, $key, false) . '> ';
-                echo esc_html($label);
-                echo '</label>';
-            }
-
-            submit_button(__('Continue', 'lllm'));
-            echo '</form>';
-            return;
+            $step = 2;
         }
 
         if ($step === 2) {
@@ -2021,7 +2004,7 @@ class LLLM_Admin {
             if (!empty($data['summary']['errors'])) {
                 if (!empty($data['error_report_url'])) {
                     echo '<p><a class="button" href="' . esc_url($data['error_report_url']) . '">' . esc_html__('Download Error Report CSV', 'lllm') . '</a></p>';
-                    $retry_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type));
+                    $retry_url = admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2');
                     echo '<p><a class="button button-secondary" href="' . esc_url($retry_url) . '">' . esc_html__('Try Again', 'lllm') . '</a></p>';
                 }
                 echo '<p>' . esc_html__('Fix errors before importing.', 'lllm') . '</p>';
@@ -2062,10 +2045,8 @@ class LLLM_Admin {
         $season_id = isset($_GET['season_id']) ? absint($_GET['season_id']) : 0;
         $division_id = isset($_GET['division_id']) ? absint($_GET['division_id']) : 0;
         $step = isset($_GET['step']) ? absint($_GET['step']) : 1;
-        $import_type = isset($_GET['import_type']) ? sanitize_text_field(wp_unslash($_GET['import_type'])) : 'full';
-
         $target_url = admin_url(
-            'admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=' . $step . '&import_type=' . rawurlencode($import_type)
+            'admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=' . $step
         );
         wp_safe_redirect($target_url);
         exit;
@@ -2826,15 +2807,8 @@ class LLLM_Admin {
         }
 
         check_admin_referer('lllm_download_template');
-        $type = isset($_GET['import_type']) ? sanitize_text_field(wp_unslash($_GET['import_type'])) : 'full';
-
-        if ($type === 'score') {
-            $headers = array('game_uid', 'away_score', 'home_score', 'status', 'notes');
-            $filename = 'score-update-template.csv';
-        } else {
-            $headers = array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'regular_or_playoff', 'status', 'away_score', 'home_score', 'notes');
-            $filename = 'full-schedule-template.csv';
-        }
+        $headers = array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'regular_or_playoff', 'status', 'away_score', 'home_score', 'notes');
+        $filename = 'games-import-template.csv';
 
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=' . $filename);
@@ -3648,12 +3622,11 @@ class LLLM_Admin {
      *
      * @param int                 $season_id   Season primary key.
      * @param int                 $division_id Division primary key.
-     * @param string              $import_type Import type key (`full` or `score`).
      * @param array<int,array>    $rows        Parsed CSV rows.
      * @return array{operations: array<int,array<string,mixed>>, errors: array<int,array<string,mixed>>}|WP_Error
      *         Planned operations/errors payload or error.
      */
-    private static function validate_import($season_id, $division_id, $import_type, $rows) {
+    private static function validate_import($season_id, $division_id, $rows) {
         global $wpdb;
         $errors = array();
         $operations = array();
@@ -3665,62 +3638,6 @@ class LLLM_Admin {
         foreach ($rows as $index => $row) {
             $row_number = $index + 2;
             $status = isset($row['status']) ? strtolower(trim($row['status'])) : '';
-
-            if ($import_type === 'score') {
-                $has_home_score = $row['home_score'] !== '';
-                $has_away_score = $row['away_score'] !== '';
-
-                if ($has_home_score || $has_away_score) {
-                    $status = 'played';
-                }
-
-                if ($status === '') {
-                    $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: status is required for score updates when no scores are provided.', 'lllm'), $row_number));
-                    continue;
-                }
-                if (!in_array($status, $allowed_status, true)) {
-                    $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: invalid status.', 'lllm'), $row_number));
-                    continue;
-                }
-
-                $game_uid = isset($row['game_uid']) ? self::normalize_game_uid(trim($row['game_uid'])) : '';
-                if (!$game_uid) {
-                    $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: game_uid is required.', 'lllm'), $row_number));
-                    continue;
-                }
-
-                $game = $wpdb->get_row(
-                    $wpdb->prepare(
-                        'SELECT * FROM ' . self::table('games') . ' WHERE game_uid = %s AND division_id = %d',
-                        $game_uid,
-                        $division_id
-                    )
-                );
-                if (!$game) {
-                    $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: game_uid not found.', 'lllm'), $row_number));
-                    continue;
-                }
-
-                $home_score = $has_home_score ? intval($row['home_score']) : null;
-                $away_score = $has_away_score ? intval($row['away_score']) : null;
-
-                if ($status === 'played' && ($home_score === null || $away_score === null)) {
-                    $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: scores required for played games.', 'lllm'), $row_number));
-                    continue;
-                }
-
-                $operations[] = array(
-                    'action' => 'update',
-                    'game_id' => (int) $game->id,
-                    'data' => array(
-                        'status' => $status,
-                        'home_score' => $home_score,
-                        'away_score' => $away_score,
-                        'notes' => isset($row['notes']) ? sanitize_text_field($row['notes']) : '',
-                    ),
-                );
-                continue;
-            }
 
             $start_date = isset($row['start_date']) ? trim($row['start_date']) : '';
             $start_time = isset($row['start_time']) ? trim($row['start_time']) : '';
@@ -3866,27 +3783,25 @@ class LLLM_Admin {
 
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
         $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
-        $import_type = isset($_POST['import_type']) ? sanitize_text_field(wp_unslash($_POST['import_type'])) : 'full';
+        $import_type = 'games_unified';
 
         if (empty($_FILES['csv_file']['tmp_name'])) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type)), 'error', __('CSV file is required.', 'lllm'));
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2'), 'error', __('CSV file is required.', 'lllm'));
         }
 
         $parsed = LLLM_Import::parse_csv($_FILES['csv_file']['tmp_name']);
         if (is_wp_error($parsed)) {
-            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type)), 'error', $parsed->get_error_message());
+            self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2'), 'error', $parsed->get_error_message());
         }
 
-        $required_headers = $import_type === 'score'
-            ? array('game_uid', 'away_score', 'home_score', 'status')
-            : array('start_date', 'start_time', 'location', 'away_team_code', 'home_team_code');
+        $required_headers = array('start_date', 'start_time', 'location', 'away_team_code', 'home_team_code');
         foreach ($required_headers as $header) {
             if (!in_array($header, $parsed['headers'], true)) {
-                self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2&import_type=' . rawurlencode($import_type)), 'error', sprintf(__('Missing required header: %s', 'lllm'), $header));
+                self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id . '&step=2'), 'error', sprintf(__('Missing required header: %s', 'lllm'), $header));
             }
         }
 
-        $validation = self::validate_import($season_id, $division_id, $import_type, $parsed['rows']);
+        $validation = self::validate_import($season_id, $division_id, $parsed['rows']);
         $operations = $validation['operations'];
         $errors = $validation['errors'];
 
