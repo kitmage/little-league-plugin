@@ -63,7 +63,7 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
 }
 
 .lllm-table-wrap .lllm-team-logo {
-    max-width: 1.5rem;
+    max-width: 5rem;
     height: auto;
     vertical-align: middle;
     margin-right: 0.4rem;
