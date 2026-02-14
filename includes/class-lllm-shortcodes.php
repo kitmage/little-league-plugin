@@ -321,8 +321,8 @@ class LLLM_Shortcodes {
         $output = self::render_context_heading($season, $division, __('Schedule', 'lllm'), $schedule_label);
         $output .= '<div class="lllm-table-wrap">';
         $output .= '<table class="lllm-schedule"><thead><tr>';
-        $output .= '<th class="away">' . esc_html__('Away', 'lllm') . '</th>';
-        $output .= '<th class="home">' . esc_html__('Home', 'lllm') . '</th>';
+        $output .= '<th class="away">' . esc_html__('Away (Score)', 'lllm') . '</th>';
+        $output .= '<th class="home">' . esc_html__('Home (Score)', 'lllm') . '</th>';
         $output .= '<th class="date-time">' . esc_html__('Date/Time', 'lllm') . '</th>';
         $output .= '<th class="location">' . esc_html__('Location', 'lllm') . '</th>';
         $output .= '<th class="win">' . esc_html__('Win', 'lllm') . '</th>';
