@@ -365,6 +365,7 @@ class LLLM_Shortcodes {
      *
      * Supported attributes:
      * - `season`, `division` (slug filters)
+     * - `type` (`regular` default, `playoff` for playoff standings)
      * - `mobile_mode` (`compact`/`full`; compact hides low-priority stats on narrow screens)
      *
      * @param array<string,string> $atts Shortcode attributes.
@@ -375,6 +376,7 @@ class LLLM_Shortcodes {
             array(
                 'season' => '',
                 'division' => '',
+                'type' => 'regular',
                 'mobile_mode' => 'compact',
             ),
             $atts,
@@ -387,7 +389,12 @@ class LLLM_Shortcodes {
         }
 
         $timezone = $season->timezone ? $season->timezone : wp_timezone_string();
-        $standings = LLLM_Standings::get_standings($division->id);
+        $standings_type = strtolower(self::sanitize_shortcode_token($atts['type']));
+        if (!in_array($standings_type, array('regular', 'playoff'), true)) {
+            $standings_type = 'regular';
+        }
+
+        $standings = LLLM_Standings::get_standings($division->id, $standings_type);
 
         if (!$standings) {
             return '<p>' . esc_html__('No standings available.', 'lllm') . '</p>';
@@ -400,7 +407,8 @@ class LLLM_Shortcodes {
             $standings_classes .= ' lllm-standings--show-full';
         }
 
-        $output = self::render_context_heading($season, $division, __('Standings', 'lllm'));
+        $standings_label = $standings_type === 'playoff' ? __('Playoff', 'lllm') : __('Regular', 'lllm');
+        $output = self::render_context_heading($season, $division, __('Standings', 'lllm'), $standings_label);
         $output .= '<div class="lllm-table-wrap">';
         $output .= '<table class="' . esc_attr($standings_classes) . '"><thead><tr>';
         $output .= '<th class="team is-priority-high">' . esc_html__('Team', 'lllm') . '</th>';

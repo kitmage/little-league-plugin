@@ -16,3 +16,4 @@
 - Confirm regular schedule excludes playoff games.
 - Confirm playoff schedule includes only playoff games.
 - Confirm shortcode generator outputs valid schedule shortcodes with `type`.
+- Confirm standings shortcode supports `type="regular"` and `type="playoff"` with matching heading context labels.
