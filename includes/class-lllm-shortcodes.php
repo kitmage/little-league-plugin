@@ -460,7 +460,7 @@ class LLLM_Shortcodes {
             array(
                 'season' => '',
                 'division' => '',
-                'show_logos' => '0',
+                'show_logos' => '1',
             ),
             $atts,
             'lllm_teams'
@@ -489,16 +489,26 @@ class LLLM_Shortcodes {
 
         $show_logos = $atts['show_logos'] === '1';
         $output = self::render_context_heading($season, $division, __('Teams', 'lllm'));
-        $output .= '<ul class="lllm-teams">';
+        $output .= '<div class="lllm-table-wrap">';
+        $output .= '<table class="lllm-teams"><tbody>';
+
         foreach ($teams as $team) {
-            $output .= '<li>';
+            $output .= '<tr>';
+            $output .= '<td colspan="2" class="lllm-team-row-cell">';
+            $output .= '<div class="lllm-team-row">';
             if ($show_logos && $team->logo_attachment_id) {
                 $output .= wp_get_attachment_image((int) $team->logo_attachment_id, 'thumbnail', false, array('class' => 'lllm-team-logo'));
+            } else {
+                $output .= '<span class="lllm-team-logo lllm-team-logo--placeholder">&mdash;</span>';
             }
-            $output .= esc_html($team->name);
-            $output .= '</li>';
+            $output .= '<span class="lllm-team-name">' . esc_html($team->name) . '</span>';
+            $output .= '</div>';
+            $output .= '</td>';
+            $output .= '</tr>';
         }
-        $output .= '</ul>';
+
+        $output .= '</tbody></table>';
+        $output .= '</div>';
 
         return $output;
     }
