@@ -678,15 +678,12 @@ class LLLM_Admin {
      * @return array{valid:bool,error:string,data:array<string,mixed>} Validation result.
      */
     private static function validate_game_competition_data($data) {
-        $competition_type = isset($data['competition_type']) ? self::normalize_playoff_meta_value($data['competition_type']) : 'regular';
-        if ($competition_type === '') {
-            $competition_type = 'regular';
-        }
+        $competition_type = isset($data['competition_type']) ? self::normalize_playoff_meta_value($data['competition_type']) : '';
 
         if (!in_array($competition_type, array('regular', 'playoff'), true)) {
             return array(
                 'valid' => false,
-                'error' => __('Invalid competition type.', 'lllm'),
+                'error' => __('Invalid regular_or_playoff value. Use regular or playoff.', 'lllm'),
                 'data' => $data,
             );
         }
@@ -2804,7 +2801,7 @@ class LLLM_Admin {
             $headers = array('game_uid', 'away_score', 'home_score', 'status', 'notes');
             $filename = 'score-update-template.csv';
         } else {
-            $headers = array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'status', 'away_score', 'home_score', 'notes');
+            $headers = array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'regular_or_playoff', 'status', 'away_score', 'home_score', 'notes');
             $filename = 'full-schedule-template.csv';
         }
 
@@ -2867,7 +2864,7 @@ class LLLM_Admin {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename=current-games.csv');
         $output = fopen('php://output', 'w');
-        fputcsv($output, array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'status', 'away_score', 'home_score', 'notes'));
+        fputcsv($output, array('game_uid', 'start_date(mm/dd/yyyy)', 'start_time(24HR)', 'location', 'away_team_code', 'home_team_code', 'regular_or_playoff', 'status', 'away_score', 'home_score', 'notes'));
         foreach ($games as $game) {
             $datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
             $datetime->setTimezone($export_timezone);
@@ -2878,6 +2875,7 @@ class LLLM_Admin {
                 $game->location,
                 $game->away_code,
                 $game->home_code,
+                $game->competition_type,
                 $game->status,
                 $game->away_score,
                 $game->home_score,
@@ -3770,6 +3768,16 @@ class LLLM_Admin {
                 );
             }
 
+            if (array_key_exists('regular_or_playoff', $row)) {
+                $competition_type = trim((string) $row['regular_or_playoff']);
+                if ($competition_type === '') {
+                    $errors[] = array('row' => $row_number, 'message' => sprintf(__('Row %d: regular_or_playoff is required when the column is provided.', 'lllm'), $row_number));
+                    continue;
+                }
+            } else {
+                $competition_type = 'regular';
+            }
+
             $data = array(
                 'division_id' => $division_id,
                 'home_team_instance_id' => $team_map[$home_code],
@@ -3780,11 +3788,7 @@ class LLLM_Admin {
                 'home_score' => $home_score,
                 'away_score' => $away_score,
                 'notes' => isset($row['notes']) ? sanitize_text_field($row['notes']) : '',
-                'competition_type' => isset($row['competition_type']) ? $row['competition_type'] : 'regular',
-                'playoff_round' => null,
-                'playoff_slot' => null,
-                'source_game_uid_1' => null,
-                'source_game_uid_2' => null,
+                'competition_type' => $competition_type,
             );
 
             $competition_validation = self::validate_game_competition_data($data);
