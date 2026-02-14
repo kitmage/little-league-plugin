@@ -48,12 +48,8 @@ On the **Games** screen, each row includes Quick Edit controls for game metadata
 
 ### Game Type options
 
-- `Regular Game` → regular season game (`competition_type=regular`)
-- `Playoff R1` → playoff round 1 (`competition_type=playoff`, `playoff_round=r1`)
-- `Playoff R2` → playoff round 2 (`competition_type=playoff`, `playoff_round=r2`)
-- `Championship` → final game (`competition_type=playoff`, `playoff_round=championship`)
-
-For playoff types, Quick Edit also exposes the round slot (`playoff_slot`) used for bracket ordering.
+- `Regular` → regular season game (`competition_type=regular`)
+- `Playoff` → playoff game (`competition_type=playoff`)
 
 ## Games manual-create form
 
@@ -187,14 +183,24 @@ This keeps shortcode labels, control mapping, value sources (static options or d
 ### Schedule
 
 ```
-[lllm_schedule season="spring-2026" division="8u" show_past="1" show_future="1" limit="50"]
+[lllm_schedule season="spring-2026" division="8u" type="regular" show_past="1" show_future="1" limit="50"]
 ```
 
 Optional filter by franchise code (`team_code`):
 
 ```
-[lllm_schedule season="spring-2026" division="8u" team_code="dirtbags"]
+[lllm_schedule season="spring-2026" division="8u" type="regular" team_code="dirtbags"]
 ```
+
+Show playoff games only:
+
+```
+[lllm_schedule season="spring-2026" division="8u" type="playoff" show_past="1" show_future="1"]
+```
+
+`type` accepts:
+- `regular` (default behavior)
+- `playoff`
 
 ### Standings
 
@@ -207,47 +213,6 @@ Optional filter by franchise code (`team_code`):
 ```
 [lllm_teams season="spring-2026" division="8u" show_logos="1"]
 ```
-
-### Playoff bracket
-
-```
-[lllm_playoff_bracket season="spring-2026" division="8u"]
-```
-
-This shortcode renders the generated 6-team playoff bracket for the selected season/division.
-
-## Playoff Bracket (6-team)
-
-The built-in bracket generator uses a fixed, single-elimination 6-team format based on standings order (seeds 1–6):
-
-Generated playoff dates are anchored to the current regular schedule: Round 1 Game 1 is set to the day after the latest regular-season game date in the selected division (at `17:00:00` UTC), and remaining rounds keep the existing day offsets.
-
-- **R1 Game 1:** Seed 3 vs Seed 6
-- **R1 Game 2:** Seed 4 vs Seed 5
-- **R2 Game 1:** Seed 1 vs winner of R1 Game 2
-- **R2 Game 2:** Seed 2 vs winner of R1 Game 1
-- **Championship:** winner of R2 Game 1 vs winner of R2 Game 2
-
-### Unresolved feeder behavior
-
-When a downstream playoff game references a feeder game that has not been played yet, bracket display shows a placeholder in the form `Winner of Game <round>-<slot>` until that feeder game status is `played`.
-
-On the **Games** admin screen, playoff controls now appear below the schedule table with editable **Playoff Schedule Slots** cards for: Round 1 (slots 1-2), Round 2 (slots 1-2), and Championship (slot 1). Each slot matches the Add Game Manually field style (date, time, location, away/home team pickers, status, notes) and pre-fills existing playoff games by round+slot when present.
-Generate/reset buttons remain available beneath the slot cards, followed by the **Assigned Bracket Preview** table that shows seeded matchups with **Away** listed before **Home**.
-If Round 1 slots 1-4 are not fully seeded, the preview shows **Playoff Schedule Incomplete** and hides the preview table.
-
-### Playoff slot save handler
-
-A dedicated admin-post action (`action=lllm_save_playoff_slots`) is available for saving the 5 core bracket slots (`r1/1`, `r1/2`, `r2/1`, `r2/2`, `championship/1`) in one request. The handler:
-
-- requires `lllm_manage_games` capability and a valid `lllm_save_playoff_slots` nonce,
-- converts submitted local `start_date` + `start_time` to UTC using the same parser as manual game creation,
-- enforces away/home team difference and division team assignment per slot,
-- updates existing playoff rows by `(division_id, competition_type, playoff_round, playoff_slot)` or creates missing rows via the shared `create_game_record` path,
-- writes `competition_type=playoff` plus round/slot metadata, and
-- wraps the full save in a DB transaction (`START TRANSACTION` / `COMMIT` / `ROLLBACK`).
-
-For `[lllm_playoff_bracket]`, team columns now render logos using the logo-only renderer (`render_team_logo`) instead of the name+logo renderer.
 
 ## Documentation
 
