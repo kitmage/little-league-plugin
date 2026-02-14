@@ -31,7 +31,32 @@ class LLLM_Shortcodes {
             return $output;
         }
 
-        return '<p>' . esc_html__('The [lllm_playoff_bracket] shortcode has been retired. Please use [lllm_schedule type="playoff"] instead.', 'lllm') . '</p>';
+        return self::render_deprecated_playoff_shortcode(is_array($attr) ? $attr : array());
+    }
+
+    /**
+     * Soft-aliases legacy playoff shortcode usage to schedule type=playoff output.
+     *
+     * @param array<string,string> $atts Legacy shortcode attributes.
+     * @return string
+     */
+    private static function render_deprecated_playoff_shortcode($atts) {
+        _deprecated_function(
+            'lllm_playoff_bracket shortcode',
+            '1.1.0',
+            '[lllm_schedule type="playoff"]'
+        );
+
+        $message = '';
+        if (current_user_can('manage_options')) {
+            $message = '<p class="lllm-shortcode-deprecation">'
+                . esc_html__('Deprecated shortcode: [lllm_playoff_bracket] now aliases to [lllm_schedule type="playoff"]. Please migrate existing content.', 'lllm')
+                . '</p>';
+        }
+
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'playoff';
+        return $message . self::render_schedule($atts);
     }
 
     /**
@@ -249,10 +274,10 @@ class LLLM_Shortcodes {
         $filters = array('g.division_id = %d');
         $params = array($division->id);
         if ($schedule_type === 'playoff') {
-            $filters[] = 'g.competition_type = %s';
+            $filters[] = "(g.competition_type = %s OR (g.playoff_round IS NOT NULL AND g.playoff_round <> '') OR (g.playoff_slot IS NOT NULL AND g.playoff_slot <> ''))";
             $params[] = 'playoff';
         } else {
-            $filters[] = 'g.competition_type <> %s';
+            $filters[] = "(g.competition_type <> %s AND (g.playoff_round IS NULL OR g.playoff_round = '') AND (g.playoff_slot IS NULL OR g.playoff_slot = ''))";
             $params[] = 'playoff';
         }
 

@@ -202,6 +202,10 @@ Show playoff games only:
 - `regular` (default behavior)
 - `playoff`
 
+Legacy compatibility notes:
+- Legacy games with playoff metadata (`playoff_round` or `playoff_slot`) are treated as playoff schedule rows even if `competition_type` was not normalized yet.
+- Legacy shortcode `[lllm_playoff_bracket]` is soft-deprecated and currently aliases to `[lllm_schedule type="playoff"]` while emitting a deprecation warning for admins.
+
 ### Standings
 
 ```
@@ -213,6 +217,14 @@ Show playoff games only:
 ```
 [lllm_teams season="spring-2026" division="8u" show_logos="1"]
 ```
+
+## Manual regression checklist (release QA)
+
+- [ ] Create one regular game and one playoff game manually from the Games screen.
+- [ ] Import a CSV containing both regular and playoff games.
+- [ ] Verify `[lllm_schedule type="regular"]` excludes playoff games.
+- [ ] Verify `[lllm_schedule type="playoff"]` shows only playoff games (including legacy rows that only have playoff round/slot metadata).
+- [ ] Verify Shortcode Generator outputs a valid schedule shortcode that includes the `type` attribute.
 
 ## Documentation
 
