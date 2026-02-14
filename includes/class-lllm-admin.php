@@ -408,6 +408,7 @@ class LLLM_Admin {
         add_action('admin_post_lllm_download_division_teams_template', array(__CLASS__, 'handle_download_division_teams_template'));
         add_action('admin_post_lllm_validate_division_teams_csv', array(__CLASS__, 'handle_validate_division_teams_csv'));
         add_action('admin_post_lllm_import_division_teams_csv', array(__CLASS__, 'handle_import_division_teams_csv'));
+        add_action('admin_post_lllm_save_custom_css', array(__CLASS__, 'handle_save_custom_css'));
         add_action('wp_ajax_lllm_shortcode_generator_value_source', array(__CLASS__, 'handle_shortcode_generator_value_source'));
     }
 
@@ -968,13 +969,43 @@ class LLLM_Admin {
             wp_die(esc_html__('You do not have permission to access this page.', 'lllm'));
         }
 
+        $custom_css = get_option('lllm_custom_css', '');
+
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('Welcome to League Manager', 'lllm') . '</h1>';
         echo '<p>' . esc_html__('League Manager helps you run your Little League season with a simple workflow: set up seasons/divisions/franchises, assign teams, import schedules, and post weekly scores.', 'lllm') . '</p>';
         echo '<p>' . esc_html__('Managers can keep data consistent by using the CSV templates and import tools, while viewing game results and standings in one place for each division.', 'lllm') . '</p>';
         echo '<p>' . esc_html__('To get started, use the submenu on the left beginning with Seasons, then Divisions, Franchises, Teams, and Games.', 'lllm') . '</p>';
         echo '<p>' . esc_html__('Need shortcode help? Open the Shortcode Generator submenu to build and copy shortcode snippets.', 'lllm') . '</p>';
+        echo '<h2>' . esc_html__('Custom Frontend CSS', 'lllm') . '</h2>';
+        echo '<p>' . esc_html__('Add optional CSS to customize frontend League Manager shortcodes.', 'lllm') . '</p>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        wp_nonce_field('lllm_save_custom_css');
+        echo '<input type="hidden" name="action" value="lllm_save_custom_css">';
+        echo '<p><textarea name="custom_css" class="large-text code" rows="10" spellcheck="false" placeholder="' . esc_attr__('.lllm-schedule {\n  border-color: #1d4ed8;\n}', 'lllm') . '">' . esc_textarea($custom_css) . '</textarea></p>';
+        submit_button(__('Save Custom CSS', 'lllm'));
+        echo '</form>';
         echo '</div>';
+    }
+
+    /**
+     * Saves frontend custom CSS configured on the Welcome screen.
+     *
+     * @return void
+     */
+    public static function handle_save_custom_css() {
+        if (!current_user_can('lllm_manage_seasons')) {
+            wp_die(esc_html__('You do not have permission to perform this action.', 'lllm'));
+        }
+
+        check_admin_referer('lllm_save_custom_css');
+
+        $custom_css = isset($_POST['custom_css']) ? sanitize_textarea_field(wp_unslash($_POST['custom_css'])) : '';
+
+        update_option('lllm_custom_css', $custom_css, false);
+
+        wp_safe_redirect(admin_url('admin.php?page=lllm-welcome'));
+        exit;
     }
 
     /**
