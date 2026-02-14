@@ -171,7 +171,7 @@ Managers are intended to work primarily in League Manager screens.
 * `game_uid` (CHAR(12) unique, not null) // human-friendly stable ID for CSV (e.g., base32)
 * `division_id` (BIGINT, not null)
 * `competition_type` (VARCHAR 20, not null, default `regular`) // `regular|playoff`
-* Legacy playoff metadata columns are retained for backward compatibility and ignored by current app logic.
+* Legacy playoff metadata columns are retained for backward compatibility and used as playoff fallback signals during schedule filtering until all legacy data is normalized.
 * `home_team_instance_id` (BIGINT, not null)
 * `away_team_instance_id` (BIGINT, not null)
 * `location` (VARCHAR 160, not null) // free text v1
@@ -663,6 +663,16 @@ Supported automatically (scores equal in a played game).
 * There is no bracket generation workflow in v1 documentation.
 * Managers can create and edit playoff games using the same manual add, quick edit, and CSV import tools used for regular games.
 * Schedule output can be filtered with shortcode attribute `type="playoff"`.
+* Legacy playoff rows with `playoff_round` or `playoff_slot` metadata are included in playoff schedule output even when `competition_type` is not yet normalized.
+* Deprecated shortcode policy: `[lllm_playoff_bracket]` remains as a soft alias to `[lllm_schedule type="playoff"]` and emits a deprecation warning for administrators.
+
+### 12.4 Manual regression checklist
+
+- Create regular and playoff games manually.
+- Import regular and playoff games from CSV.
+- Confirm regular schedule excludes playoff games.
+- Confirm playoff schedule includes only playoff games.
+- Confirm shortcode generator emits a valid schedule shortcode that includes `type`.
 
 ---
 

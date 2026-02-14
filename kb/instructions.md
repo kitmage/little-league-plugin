@@ -357,3 +357,11 @@ If an import fails:
 - [ ] Full schedule imported and validated.
 - [ ] Weekly score update process documented for volunteers.
 - [ ] Front-end shortcodes placed on pages.
+
+## Release regression checklist (manual)
+
+- [ ] Create one regular and one playoff game manually.
+- [ ] Import CSV rows for both regular and playoff games.
+- [ ] Confirm regular schedule shortcode excludes playoff games.
+- [ ] Confirm playoff schedule shortcode shows only playoff games (including legacy playoff metadata rows).
+- [ ] Confirm shortcode generator outputs a valid schedule shortcode with a `type` attribute.

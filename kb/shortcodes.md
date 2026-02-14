@@ -143,9 +143,13 @@ Use this to show all teams in a division.
 
 ## 4) Schedule game type filter
 
-The retired playoff bracket shortcode has been replaced by the schedule shortcode `type` filter.
+The legacy playoff bracket shortcode is now soft-deprecated and aliases to the schedule shortcode `type` filter.
 
 Use `type="regular"` for regular-season games (default) and `type="playoff"` for playoff-only schedules.
+
+Legacy compatibility behavior:
+- Legacy rows with `playoff_round`/`playoff_slot` metadata are included in playoff schedule output even before data normalization.
+- `[lllm_playoff_bracket]` still renders playoff schedule output for backward compatibility, but admins should migrate to `[lllm_schedule type="playoff"]`.
 
 ### Example
 
