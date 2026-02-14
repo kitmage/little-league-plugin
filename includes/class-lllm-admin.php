@@ -1134,6 +1134,7 @@ class LLLM_Admin {
                 wp_nonce_field('lllm_delete_season', 'lllm_delete_season_nonce');
                 echo '<input type="hidden" name="action" value="lllm_delete_season">';
                 echo '<input type="hidden" name="id" value="' . esc_attr($season->id) . '">';
+                echo '<input type="hidden" name="lllm_delete_confirmed" value="0">';
                 echo '<button class="button-link delete">' . esc_html__('Delete', 'lllm') . '</button>';
                 echo '</form></td>';
                 echo '</tr>';
@@ -1143,6 +1144,7 @@ class LLLM_Admin {
             echo '<form id="lllm-bulk-seasons" class="lllm-bulk-delete-form" data-confirm-message="' . esc_attr__('Are you sure you want to delete the selected seasons?', 'lllm') . '" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             wp_nonce_field('lllm_bulk_delete_seasons');
             echo '<input type="hidden" name="action" value="lllm_bulk_delete_seasons">';
+            echo '<input type="hidden" name="lllm_delete_confirmed" value="0">';
             submit_button(__('Bulk Delete Selected', 'lllm'), 'delete', 'submit', false);
             echo '</form>';
         }
@@ -1235,6 +1237,7 @@ class LLLM_Admin {
                 echo '<input type="hidden" name="action" value="lllm_delete_division">';
                 echo '<input type="hidden" name="id" value="' . esc_attr($division->id) . '">';
                 echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+                echo '<input type="hidden" name="lllm_delete_confirmed" value="0">';
                 echo '<button class="button-link delete">' . esc_html__('Delete', 'lllm') . '</button>';
                 echo '</form></td>';
                 echo '</tr>';
@@ -1245,6 +1248,7 @@ class LLLM_Admin {
             wp_nonce_field('lllm_bulk_delete_divisions');
             echo '<input type="hidden" name="action" value="lllm_bulk_delete_divisions">';
             echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
+            echo '<input type="hidden" name="lllm_delete_confirmed" value="0">';
             submit_button(__('Bulk Delete Selected', 'lllm'), 'delete', 'submit', false);
             echo '</form>';
         }
@@ -1363,6 +1367,7 @@ class LLLM_Admin {
                 wp_nonce_field('lllm_delete_team', 'lllm_delete_team_nonce');
                 echo '<input type="hidden" name="action" value="lllm_delete_team">';
                 echo '<input type="hidden" name="id" value="' . esc_attr($team->id) . '">';
+                echo '<input type="hidden" name="lllm_delete_confirmed" value="0">';
                 echo '<button class="button-link delete">' . esc_html__('Delete', 'lllm') . '</button>';
                 echo '</form></td>';
                 echo '</tr>';
@@ -1372,6 +1377,7 @@ class LLLM_Admin {
             echo '<form id="lllm-bulk-teams" class="lllm-bulk-delete-form" data-confirm-message="' . esc_attr__('Are you sure you want to delete the selected franchises?', 'lllm') . '" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             wp_nonce_field('lllm_bulk_delete_teams');
             echo '<input type="hidden" name="action" value="lllm_bulk_delete_teams">';
+            echo '<input type="hidden" name="lllm_delete_confirmed" value="0">';
             submit_button(__('Bulk Delete Selected', 'lllm'), 'delete', 'submit', false);
             echo '</form>';
         }
@@ -1648,6 +1654,7 @@ class LLLM_Admin {
         echo '<input type="hidden" name="action" value="lllm_bulk_delete_games">';
         echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
         echo '<input type="hidden" name="division_id" value="' . esc_attr($division_id) . '">';
+        echo '<input type="hidden" name="lllm_delete_confirmed" value="0">';
         echo '</form>';
 
         $site_timezone = wp_timezone();
@@ -4026,11 +4033,23 @@ class LLLM_Admin {
 
         echo '<script>';
         echo '(function(){';
-        echo 'var bindForm=function(form){form.addEventListener("submit",function(event){var message=form.getAttribute("data-confirm-message")||"Are you sure?";if(!window.confirm(message)){event.preventDefault();}});};';
-        echo 'document.querySelectorAll(".lllm-delete-confirm-form, .lllm-bulk-delete-form").forEach(bindForm);';
-        echo 'document.querySelectorAll(".lllm-delete-confirm-submit").forEach(function(button){button.addEventListener("click",function(event){var message=button.getAttribute("data-confirm-message")||"Are you sure?";if(!window.confirm(message)){event.preventDefault();}});});';
+        echo 'var forms=document.querySelectorAll(".lllm-delete-confirm-form, .lllm-bulk-delete-form");';
+        echo 'forms.forEach(function(form){form.addEventListener("submit",function(event){var submitter=event.submitter||null;var message=(submitter&&submitter.getAttribute("data-confirm-message"))||form.getAttribute("data-confirm-message")||"Are you sure?";if(!window.confirm(message)){event.preventDefault();return;}var confirmedField=form.querySelector("input[name=\\"lllm_delete_confirmed\\"]");if(confirmedField){confirmedField.value="1";}});});';
         echo '})();';
         echo '</script>';
+    }
+
+    /**
+     * Checks whether a delete request has browser-confirmation flag set.
+     *
+     * @return bool True when browser confirmation is present.
+     */
+    private static function is_browser_delete_confirmed() {
+        if (!isset($_POST['lllm_delete_confirmed'])) {
+            return false;
+        }
+
+        return sanitize_text_field(wp_unslash($_POST['lllm_delete_confirmed'])) === '1';
     }
 
     /**
@@ -4064,7 +4083,7 @@ class LLLM_Admin {
 
         check_admin_referer('lllm_delete_season', 'lllm_delete_season_nonce');
         $season_id = isset($_POST['id']) ? absint($_POST['id']) : 0;
-        if (!$season_id) {
+        if (!$season_id || !self::is_browser_delete_confirmed()) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-seasons'), 'delete_blocked', __('Confirmation required.', 'lllm'));
         }
 
@@ -4085,7 +4104,7 @@ class LLLM_Admin {
 
         check_admin_referer('lllm_bulk_delete_seasons');
         $season_ids = isset($_POST['season_ids']) ? array_map('absint', (array) $_POST['season_ids']) : array();
-        if (!$season_ids) {
+        if (!$season_ids || !self::is_browser_delete_confirmed()) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-seasons'), 'delete_blocked', __('Confirmation required.', 'lllm'));
         }
 
@@ -4123,7 +4142,7 @@ class LLLM_Admin {
         check_admin_referer('lllm_delete_division', 'lllm_delete_division_nonce');
         $division_id = isset($_POST['id']) ? absint($_POST['id']) : 0;
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
-        if (!$division_id) {
+        if (!$division_id || !self::is_browser_delete_confirmed()) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'delete_blocked', __('Confirmation required.', 'lllm'));
         }
 
@@ -4147,7 +4166,7 @@ class LLLM_Admin {
         check_admin_referer('lllm_bulk_delete_divisions');
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
         $division_ids = isset($_POST['division_ids']) ? array_map('absint', (array) $_POST['division_ids']) : array();
-        if (!$division_ids) {
+        if (!$division_ids || !self::is_browser_delete_confirmed()) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-divisions&season_id=' . $season_id), 'delete_blocked', __('Confirmation required.', 'lllm'));
         }
 
@@ -4183,7 +4202,7 @@ class LLLM_Admin {
 
         check_admin_referer('lllm_delete_team', 'lllm_delete_team_nonce');
         $team_id = isset($_POST['id']) ? absint($_POST['id']) : 0;
-        if (!$team_id) {
+        if (!$team_id || !self::is_browser_delete_confirmed()) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'delete_blocked', __('Confirmation required.', 'lllm'));
         }
 
@@ -4212,7 +4231,7 @@ class LLLM_Admin {
         check_admin_referer('lllm_bulk_delete_teams');
         global $wpdb;
         $team_ids = isset($_POST['team_ids']) ? array_map('absint', (array) $_POST['team_ids']) : array();
-        if (!$team_ids) {
+        if (!$team_ids || !self::is_browser_delete_confirmed()) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-franchises'), 'delete_blocked', __('Confirmation required.', 'lllm'));
         }
 
@@ -4255,7 +4274,7 @@ class LLLM_Admin {
         $game_id = isset($_POST['id']) ? absint($_POST['id']) : 0;
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
         $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
-        if (!$game_id) {
+        if (!$game_id || !self::is_browser_delete_confirmed()) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'delete_blocked', __('Confirmation required.', 'lllm'));
         }
 
@@ -4282,7 +4301,7 @@ class LLLM_Admin {
         $season_id = isset($_POST['season_id']) ? absint($_POST['season_id']) : 0;
         $division_id = isset($_POST['division_id']) ? absint($_POST['division_id']) : 0;
         $game_ids = isset($_POST['game_ids']) ? array_map('absint', (array) $_POST['game_ids']) : array();
-        if (!$game_ids) {
+        if (!$game_ids || !self::is_browser_delete_confirmed()) {
             self::redirect_with_notice(admin_url('admin.php?page=lllm-games&season_id=' . $season_id . '&division_id=' . $division_id), 'delete_blocked', __('Confirmation required.', 'lllm'));
         }
 
