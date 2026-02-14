@@ -147,7 +147,7 @@ class LLLM_Shortcodes {
             $parts[] = $context;
         }
         $parts[] = $suffix;
-        return '<h2 class="lllm-shortcode-heading">' . esc_html(implode(' ', $parts)) . '</h2>';
+        return '<h2 class="lllm-shortcode-heading">' . esc_html(implode(' / ', $parts)) . '</h2>';
     }
 
     /**
@@ -347,8 +347,8 @@ class LLLM_Shortcodes {
             $output .= '<tr>';
             $output .= '<td class="date-time" data-label="' . esc_attr__('Date/Time', 'lllm') . '">' . self::render_date_parts($dt) . '</td>';
             $output .= '<td class="location" data-label="' . esc_attr__('Location', 'lllm') . '">' . esc_html($game->location) . '</td>';
-            $output .= '<td class="away" data-label="' . esc_attr__('Away', 'lllm') . '">' . self::render_team_logo_name_with_score((string) $game->away_name, (int) $game->away_logo_attachment_id, $away_score) . '</td>';
-            $output .= '<td class="home" data-label="' . esc_attr__('Home', 'lllm') . '">' . self::render_team_logo_name_with_score((string) $game->home_name, (int) $game->home_logo_attachment_id, $home_score) . '</td>';
+            $output .= '<td class="away" data-label="' . esc_attr__('Away', 'lllm') . '">' . /*self::render_team_logo_name_with_score((string)*/ $game->away_name/*, (int) $game->away_logo_attachment_id*/, $away_score/*) . */'</td>';
+            $output .= '<td class="home" data-label="' . esc_attr__('Home', 'lllm') . '">' . /*self::render_team_logo_name_with_score((string)*/ $game->home_name/*, (int) $game->home_logo_attachment_id*/, $home_score/*) . */'</td>';
             $output .= '<td class="win" data-label="' . esc_attr__('Win', 'lllm') . '">' . esc_html($winner) . '</td>';
             $output .= '</tr>';
         }
