@@ -52,7 +52,7 @@ class LLLM_Admin {
                         'optional' => true,
                     ),
                     'type' => array(
-                        'label' => __('Schedule Type', 'lllm'),
+                        'label' => __('Type', 'lllm'),
                         'control_type' => 'select',
                         'value_source' => array(
                             'type' => 'static',
@@ -62,7 +62,7 @@ class LLLM_Admin {
                             ),
                         ),
                         'default_value' => 'regular',
-                        'optional' => true,
+                        'optional' => false,
                     ),
                     'show_past' => array(
                         'label' => __('Show Past Games', 'lllm'),

@@ -89,7 +89,7 @@ Audit trail of CSV imports.
 - Download error report CSV for failed imports.
 
 ### Shortcode Generator
-Build and copy shortcodes for schedule/standings/team list/bracket display.
+Build and copy shortcodes for schedule/standings/team list display.
 
 - Select shortcode type.
 - Fill attributes.
@@ -325,7 +325,7 @@ If an import fails:
 ## Step 9: Publish front-end views with shortcodes
 
 1. Go to **League Manager → Shortcode Generator**.
-2. Select shortcode type (Schedule, Standings, Teams, Bracket).
+2. Select shortcode type (Schedule, Standings, Teams).
 3. Set season/division/team filters.
 4. Copy shortcode.
 5. Paste into a WordPress page/post.
