@@ -104,7 +104,7 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
     .lllm-table-wrap .lllm-schedule td,
     .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) td {
         display: block;
-        width: 100%;
+        /*width: 100%;*/
     }
 
     .lllm-table-wrap .lllm-schedule tr,
