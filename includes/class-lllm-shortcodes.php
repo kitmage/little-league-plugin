@@ -139,10 +139,13 @@ class LLLM_Shortcodes {
      * @param string $suffix Heading suffix, e.g. Schedule.
      * @return string HTML heading.
      */
-    private static function render_context_heading($season, $division, $suffix) {
+    private static function render_context_heading($season, $division, $suffix, $context = '') {
         $parts = array();
         $parts[] = sprintf(__('%s', 'lllm'), (string) $season->name);
         $parts[] = sprintf(__('%s', 'lllm'), (string) $division->name);
+        if ($context !== '') {
+            $parts[] = $context;
+        }
         $parts[] = $suffix;
         return '<h2 class="lllm-shortcode-heading">' . esc_html(implode(' ', $parts)) . '</h2>';
     }
@@ -175,31 +178,19 @@ class LLLM_Shortcodes {
         return $output . '<span class="lllm-team-name">' . esc_html($name) . '</span>';
     }
 	
-	 /**
-     * Renders a team logo.
-     *
-     * @param string $name Team name text.
-     * @param int    $logo_attachment_id Logo attachment id.
-     * @return string HTML team display.
-     */
-    private static function render_team_logo($name, $logo_attachment_id) {
-        $output = '';
-        if ($logo_attachment_id > 0) {
-            $output .= wp_get_attachment_image($logo_attachment_id, 'thumbnail', false, array('class' => 'lllm-team-logo'));
-        }
 
-        return $output;
-    }
 
     /**
-     * Renders a team name with score on the next line.
+     * Renders a team logo/name line with score on the next line.
      *
      * @param string     $team_name Team name text.
+     * @param int        $logo_attachment_id Logo attachment id.
      * @param int|string $score Team score value.
      * @return string HTML team/score block.
      */
-    private static function render_team_name_with_score($team_name, $score) {
-        return '<span class="lllm-team-name">' . esc_html($team_name) . '</span><br><span class="lllm-team-score">' . esc_html((string) $score) . '</span>';
+    private static function render_team_logo_name_with_score($team_name, $logo_attachment_id, $score) {
+        return self::render_team_with_logo($team_name, $logo_attachment_id)
+            . '<br><span class="lllm-team-score">' . esc_html((string) $score) . '</span>';
     }
 	
     /**
@@ -326,7 +317,8 @@ class LLLM_Shortcodes {
             return '<p>' . esc_html__('No games scheduled.', 'lllm') . '</p>';
         }
 
-        $output = self::render_context_heading($season, $division, __('Schedule', 'lllm'));
+        $schedule_label = $schedule_type === 'playoff' ? __('Playoff', 'lllm') : __('Regular', 'lllm');
+        $output = self::render_context_heading($season, $division, __('Schedule', 'lllm'), $schedule_label);
         $output .= '<div class="lllm-table-wrap">';
         $output .= '<table class="lllm-schedule"><thead><tr>';
         $output .= '<th class="date-time">' . esc_html__('Date/Time', 'lllm') . '</th>';
@@ -352,15 +344,11 @@ class LLLM_Shortcodes {
                 }
             }
 
-            $first_col = self::render_team_logo((string) $game->home_name, (int) $game->home_logo_attachment_id);
-            $first_col .= self::render_team_logo((string) $game->away_name, (int) $game->away_logo_attachment_id);
-            $first_col .= self::render_date_parts($dt);
-
             $output .= '<tr>';
-            $output .= '<td class="date-time" data-label="' . esc_attr__('Date/Time', 'lllm') . '">' . $first_col . '</td>';
+            $output .= '<td class="date-time" data-label="' . esc_attr__('Date/Time', 'lllm') . '">' . self::render_date_parts($dt) . '</td>';
             $output .= '<td class="location" data-label="' . esc_attr__('Location', 'lllm') . '">' . esc_html($game->location) . '</td>';
-            $output .= '<td class="home" data-label="' . esc_attr__('Home', 'lllm') . '">' . self::render_team_name_with_score((string) $game->home_name, $home_score) . '</td>';
-            $output .= '<td class="away" data-label="' . esc_attr__('Away', 'lllm') . '">' . self::render_team_name_with_score((string) $game->away_name, $away_score) . '</td>';
+            $output .= '<td class="home" data-label="' . esc_attr__('Home', 'lllm') . '">' . self::render_team_logo_name_with_score((string) $game->home_name, (int) $game->home_logo_attachment_id, $home_score) . '</td>';
+            $output .= '<td class="away" data-label="' . esc_attr__('Away', 'lllm') . '">' . self::render_team_logo_name_with_score((string) $game->away_name, (int) $game->away_logo_attachment_id, $away_score) . '</td>';
             $output .= '<td class="win" data-label="' . esc_attr__('Win', 'lllm') . '">' . esc_html($winner) . '</td>';
             $output .= '</tr>';
         }
