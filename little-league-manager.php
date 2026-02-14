@@ -177,4 +177,9 @@ function lllm_enqueue_public_assets() {
         array(),
         LLLM_VERSION
     );
+
+    $custom_css = get_option('lllm_custom_css', '');
+    if (is_string($custom_css) && trim($custom_css) !== '') {
+        wp_add_inline_style('lllm-shortcodes', $custom_css);
+    }
 }
