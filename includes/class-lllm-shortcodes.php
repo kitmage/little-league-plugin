@@ -327,7 +327,8 @@ class LLLM_Shortcodes {
         }
 
         $output = self::render_context_heading($season, $division, __('Schedule', 'lllm'));
-        $output .= '<div class="lllm-table-wrap"><table class="lllm-schedule"><thead><tr>';
+        $output .= '<div class="lllm-table-wrap">';
+        $output .= '<table class="lllm-schedule"><thead><tr>';
         $output .= '<th class="date-time">' . esc_html__('Date/Time', 'lllm') . '</th>';
         $output .= '<th class="location">' . esc_html__('Location', 'lllm') . '</th>';
         $output .= '<th class="home">' . esc_html__('Home', 'lllm') . '</th>';
@@ -364,7 +365,8 @@ class LLLM_Shortcodes {
             $output .= '</tr>';
         }
 
-        $output .= '</tbody></table></div>';
+        $output .= '</tbody></table>';
+        $output .= '</div>';
         $output .= '<p class="lllm-updated">' . esc_html__('Last updated:', 'lllm') . ' ' . esc_html(wp_date('Y-m-d H:i', time(), new DateTimeZone($timezone))) . '</p>';
 
         return $output;
@@ -402,7 +404,8 @@ class LLLM_Shortcodes {
         }
 
         $output = self::render_context_heading($season, $division, __('Standings', 'lllm'));
-        $output .= '<div class="lllm-table-wrap"><table class="lllm-standings"><thead><tr>';
+        $output .= '<div class="lllm-table-wrap">';
+        $output .= '<table class="lllm-standings"><thead><tr>';
         $output .= '<th class="team">' . esc_html__('Team', 'lllm') . '</th>';
         $output .= '<th class="gp">' . esc_html__('GP', 'lllm') . '</th>';
         $output .= '<th class="w">' . esc_html__('W', 'lllm') . '</th>';
@@ -429,7 +432,8 @@ class LLLM_Shortcodes {
             $output .= '</tr>';
         }
 
-        $output .= '</tbody></table></div>';
+        $output .= '</tbody></table>';
+        $output .= '</div>';
         $output .= '<p class="lllm-updated">' . esc_html__('Last updated:', 'lllm') . ' ' . esc_html(wp_date('Y-m-d H:i', time(), new DateTimeZone($timezone))) . '</p>';
 
         return $output;
