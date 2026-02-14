@@ -12,7 +12,8 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
 }
 
 .lllm-table-wrap .lllm-schedule,
-.lllm-table-wrap .lllm-standings {
+.lllm-table-wrap .lllm-standings,
+.lllm-table-wrap .lllm-teams {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.95rem;
@@ -22,19 +23,23 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
 .lllm-table-wrap .lllm-schedule th,
 .lllm-table-wrap .lllm-schedule td,
 .lllm-table-wrap .lllm-standings th,
-.lllm-table-wrap .lllm-standings td {
+.lllm-table-wrap .lllm-standings td,
+.lllm-table-wrap .lllm-teams th,
+.lllm-table-wrap .lllm-teams td {
     padding: 0.65rem 0.75rem;
     vertical-align: middle;
 }
 
 .lllm-table-wrap .lllm-schedule th,
-.lllm-table-wrap .lllm-standings th {
+.lllm-table-wrap .lllm-standings th,
+.lllm-table-wrap .lllm-teams th {
     text-align: left;
     white-space: nowrap;
 }
 
 .lllm-table-wrap .lllm-schedule tbody tr:nth-child(even),
-.lllm-table-wrap .lllm-standings tbody tr:nth-child(even) {
+.lllm-table-wrap .lllm-standings tbody tr:nth-child(even),
+.lllm-table-wrap .lllm-teams tbody tr:nth-child(even) {
     background-color: rgba(0, 0, 0, 0.04);
 }
 
@@ -76,7 +81,8 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
 
 @media (max-width: 768px) {
     .lllm-table-wrap .lllm-schedule,
-    .lllm-table-wrap .lllm-standings {
+    .lllm-table-wrap .lllm-standings,
+    .lllm-table-wrap .lllm-teams {
         font-size: 0.85rem;
     }
 
@@ -89,7 +95,8 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
     }
 
     .lllm-table-wrap .lllm-schedule thead,
-    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) thead {
+    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) thead,
+    .lllm-table-wrap .lllm-teams thead {
         border: 0;
         clip: rect(0, 0, 0, 0);
         clip-path: inset(50%);
@@ -104,18 +111,23 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
 
     .lllm-table-wrap .lllm-schedule,
     .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full),
+    .lllm-table-wrap .lllm-teams,
     .lllm-table-wrap .lllm-schedule tbody,
     .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) tbody,
+    .lllm-table-wrap .lllm-teams tbody,
     .lllm-table-wrap .lllm-schedule tr,
     .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) tr,
+    .lllm-table-wrap .lllm-teams tr,
     .lllm-table-wrap .lllm-schedule td,
-    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) td {
+    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) td,
+    .lllm-table-wrap .lllm-teams td {
         display: block;
         /*width: 100%;*/
     }
 
     .lllm-table-wrap .lllm-schedule tr,
-    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) tr {
+    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) tr,
+    .lllm-table-wrap .lllm-teams tr {
         margin-bottom: 0.75rem;
         border: 1px solid rgba(0, 0, 0, 0.12);
         border-radius: 0.35rem;
@@ -123,7 +135,8 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
     }
 
     .lllm-table-wrap .lllm-schedule td,
-    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) td {
+    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) td,
+    .lllm-table-wrap .lllm-teams td {
         position: relative;
         text-align: left;
         padding: 0.45rem 0.5rem 0.45rem 7rem;
@@ -132,12 +145,14 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
     }
 
     .lllm-table-wrap .lllm-schedule td:last-child,
-    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) td:last-child {
+    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) td:last-child,
+    .lllm-table-wrap .lllm-teams td:last-child {
         border-bottom: 0;
     }
 
     .lllm-table-wrap .lllm-schedule td::before,
-    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) td::before {
+    .lllm-table-wrap .lllm-standings:not(.lllm-standings--show-full) td::before,
+    .lllm-table-wrap .lllm-teams td::before {
         content: attr(data-label);
         position: absolute;
         left: 0.5rem;
