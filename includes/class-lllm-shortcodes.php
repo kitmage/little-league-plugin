@@ -357,11 +357,11 @@ class LLLM_Shortcodes {
             $first_col .= self::render_date_parts($dt);
 
             $output .= '<tr>';
-            $output .= '<td class="date-time">' . $first_col . '</td>';
-            $output .= '<td class="location">' . esc_html($game->location) . '</td>';
-            $output .= '<td class="home">' . self::render_team_name_with_score((string) $game->home_name, $home_score) . '</td>';
-            $output .= '<td class="away">' . self::render_team_name_with_score((string) $game->away_name, $away_score) . '</td>';
-            $output .= '<td class="win">' . esc_html($winner) . '</td>';
+            $output .= '<td class="date-time" data-label="' . esc_attr__('Date/Time', 'lllm') . '">' . $first_col . '</td>';
+            $output .= '<td class="location" data-label="' . esc_attr__('Location', 'lllm') . '">' . esc_html($game->location) . '</td>';
+            $output .= '<td class="home" data-label="' . esc_attr__('Home', 'lllm') . '">' . self::render_team_name_with_score((string) $game->home_name, $home_score) . '</td>';
+            $output .= '<td class="away" data-label="' . esc_attr__('Away', 'lllm') . '">' . self::render_team_name_with_score((string) $game->away_name, $away_score) . '</td>';
+            $output .= '<td class="win" data-label="' . esc_attr__('Win', 'lllm') . '">' . esc_html($winner) . '</td>';
             $output .= '</tr>';
         }
 
@@ -420,15 +420,15 @@ class LLLM_Shortcodes {
         foreach ($standings as $row) {
             $team_logo = isset($row['logo_attachment_id']) ? (int) $row['logo_attachment_id'] : 0;
             $output .= '<tr>';
-            $output .= '<td class="team">' . self::render_team_with_logo((string) $row['team_name'], $team_logo) . '</td>';
-            $output .= '<td class="gp">' . esc_html($row['gp']) . '</td>';
-            $output .= '<td class="w">' . esc_html($row['wins']) . '</td>';
-            $output .= '<td class="l">' . esc_html($row['losses']) . '</td>';
-            $output .= '<td class="t">' . esc_html($row['ties']) . '</td>';
-            $output .= '<td class="rf">' . esc_html($row['rf']) . '</td>';
-            $output .= '<td class="ra">' . esc_html($row['ra']) . '</td>';
-            $output .= '<td class="rd">' . esc_html($row['rd']) . '</td>';
-            $output .= '<td class="win-pct">' . esc_html(number_format($row['win_pct'], 3)) . '</td>';
+            $output .= '<td class="team" data-label="' . esc_attr__('Team', 'lllm') . '">' . self::render_team_with_logo((string) $row['team_name'], $team_logo) . '</td>';
+            $output .= '<td class="gp" data-label="' . esc_attr__('GP', 'lllm') . '">' . esc_html($row['gp']) . '</td>';
+            $output .= '<td class="w" data-label="' . esc_attr__('W', 'lllm') . '">' . esc_html($row['wins']) . '</td>';
+            $output .= '<td class="l" data-label="' . esc_attr__('L', 'lllm') . '">' . esc_html($row['losses']) . '</td>';
+            $output .= '<td class="t" data-label="' . esc_attr__('T', 'lllm') . '">' . esc_html($row['ties']) . '</td>';
+            $output .= '<td class="rf" data-label="' . esc_attr__('RF', 'lllm') . '">' . esc_html($row['rf']) . '</td>';
+            $output .= '<td class="ra" data-label="' . esc_attr__('RA', 'lllm') . '">' . esc_html($row['ra']) . '</td>';
+            $output .= '<td class="rd" data-label="' . esc_attr__('RD', 'lllm') . '">' . esc_html($row['rd']) . '</td>';
+            $output .= '<td class="win-pct" data-label="' . esc_attr__('Win%', 'lllm') . '">' . esc_html(number_format($row['win_pct'], 3)) . '</td>';
             $output .= '</tr>';
         }
 
