@@ -2,5 +2,5 @@
 Schedule shortcode classes: lllm-shortcode-heading, lllm-schedule, date-time, location, home, away, win, day, date, time, lllm-team-logo, lllm-team-name, lllm-team-score, lllm-updated.
 Standings shortcode classes: lllm-shortcode-heading, lllm-standings, team, gp, w, l, t, rf, ra, rd, win-pct, lllm-team-logo, lllm-team-name, lllm-updated.
 Teams shortcode classes: lllm-shortcode-heading, lllm-teams, lllm-team-logo.
-Playoff bracket shortcode classes: lllm-shortcode-heading, lllm-playoff-bracket, lllm-playoff-round, lllm-playoff-round-r1, lllm-playoff-round-r2, lllm-playoff-round-championship, game, home, away, status, score, lllm-team-logo, lllm-team-name, lllm-game-label.
+Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lllm-shortcode-deprecation.
 */
