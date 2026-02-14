@@ -665,6 +665,10 @@
     };
 
     Object.keys(map).forEach(function (shortcodeName) {
+        if (shortcodeName === 'lllm_playoff_bracket') {
+            return;
+        }
+
         var definition = map[shortcodeName] || {};
         var option = document.createElement('option');
         option.value = shortcodeName;
