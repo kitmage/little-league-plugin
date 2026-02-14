@@ -72,11 +72,63 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
         font-size: 0.85rem;
     }
 
-    .lllm-table-wrap .lllm-schedule th,
+    .lllm-table-wrap .lllm-schedule thead,
+    .lllm-table-wrap .lllm-standings thead {
+        border: 0;
+        clip: rect(0, 0, 0, 0);
+        clip-path: inset(50%);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
+    }
+
+    .lllm-table-wrap .lllm-schedule,
+    .lllm-table-wrap .lllm-standings,
+    .lllm-table-wrap .lllm-schedule tbody,
+    .lllm-table-wrap .lllm-standings tbody,
+    .lllm-table-wrap .lllm-schedule tr,
+    .lllm-table-wrap .lllm-standings tr,
     .lllm-table-wrap .lllm-schedule td,
-    .lllm-table-wrap .lllm-standings th,
     .lllm-table-wrap .lllm-standings td {
-        padding: 0.45rem 0.5rem;
+        display: block;
+        width: 100%;
+    }
+
+    .lllm-table-wrap .lllm-schedule tr,
+    .lllm-table-wrap .lllm-standings tr {
+        margin-bottom: 0.75rem;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 0.35rem;
+        background: #fff;
+    }
+
+    .lllm-table-wrap .lllm-schedule td,
+    .lllm-table-wrap .lllm-standings td {
+        position: relative;
+        text-align: left;
+        padding: 0.45rem 0.5rem 0.45rem 7rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        min-height: 2rem;
+    }
+
+    .lllm-table-wrap .lllm-schedule td:last-child,
+    .lllm-table-wrap .lllm-standings td:last-child {
+        border-bottom: 0;
+    }
+
+    .lllm-table-wrap .lllm-schedule td::before,
+    .lllm-table-wrap .lllm-standings td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-weight: 600;
+        white-space: nowrap;
     }
 
     .lllm-table-wrap .lllm-schedule .home,
