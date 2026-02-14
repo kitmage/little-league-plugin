@@ -377,6 +377,7 @@ class LLLM_Shortcodes {
      *
      * Supported attributes:
      * - `season`, `division` (slug filters)
+     * - `mobile_mode` (`compact`/`full`; compact hides low-priority stats on narrow screens)
      *
      * @param array<string,string> $atts Shortcode attributes.
      * @return string HTML output.
@@ -386,6 +387,7 @@ class LLLM_Shortcodes {
             array(
                 'season' => '',
                 'division' => '',
+                'mobile_mode' => 'compact',
             ),
             $atts,
             'lllm_standings'
@@ -403,32 +405,39 @@ class LLLM_Shortcodes {
             return '<p>' . esc_html__('No standings available.', 'lllm') . '</p>';
         }
 
+        $mobile_mode = strtolower((string) $atts['mobile_mode']);
+        $show_full_mobile = $mobile_mode === 'full';
+        $standings_classes = 'lllm-standings';
+        if ($show_full_mobile) {
+            $standings_classes .= ' lllm-standings--show-full';
+        }
+
         $output = self::render_context_heading($season, $division, __('Standings', 'lllm'));
         $output .= '<div class="lllm-table-wrap">';
-        $output .= '<table class="lllm-standings"><thead><tr>';
-        $output .= '<th class="team">' . esc_html__('Team', 'lllm') . '</th>';
-        $output .= '<th class="gp">' . esc_html__('GP', 'lllm') . '</th>';
-        $output .= '<th class="w">' . esc_html__('W', 'lllm') . '</th>';
-        $output .= '<th class="l">' . esc_html__('L', 'lllm') . '</th>';
-        $output .= '<th class="t">' . esc_html__('T', 'lllm') . '</th>';
-        $output .= '<th class="rf">' . esc_html__('RF', 'lllm') . '</th>';
-        $output .= '<th class="ra">' . esc_html__('RA', 'lllm') . '</th>';
-        $output .= '<th class="rd">' . esc_html__('RD', 'lllm') . '</th>';
-        $output .= '<th class="win-pct">' . esc_html__('Win%', 'lllm') . '</th>';
+        $output .= '<table class="' . esc_attr($standings_classes) . '"><thead><tr>';
+        $output .= '<th class="team is-priority-high">' . esc_html__('Team', 'lllm') . '</th>';
+        $output .= '<th class="gp is-priority-medium">' . esc_html__('GP', 'lllm') . '</th>';
+        $output .= '<th class="w is-priority-high">' . esc_html__('W', 'lllm') . '</th>';
+        $output .= '<th class="l is-priority-high">' . esc_html__('L', 'lllm') . '</th>';
+        $output .= '<th class="t is-priority-medium">' . esc_html__('T', 'lllm') . '</th>';
+        $output .= '<th class="rf is-priority-low">' . esc_html__('RF', 'lllm') . '</th>';
+        $output .= '<th class="ra is-priority-low">' . esc_html__('RA', 'lllm') . '</th>';
+        $output .= '<th class="rd is-priority-low">' . esc_html__('RD', 'lllm') . '</th>';
+        $output .= '<th class="win-pct is-priority-high">' . esc_html__('Win%', 'lllm') . '</th>';
         $output .= '</tr></thead><tbody>';
 
         foreach ($standings as $row) {
             $team_logo = isset($row['logo_attachment_id']) ? (int) $row['logo_attachment_id'] : 0;
             $output .= '<tr>';
-            $output .= '<td class="team" data-label="' . esc_attr__('Team', 'lllm') . '">' . self::render_team_with_logo((string) $row['team_name'], $team_logo) . '</td>';
-            $output .= '<td class="gp" data-label="' . esc_attr__('GP', 'lllm') . '">' . esc_html($row['gp']) . '</td>';
-            $output .= '<td class="w" data-label="' . esc_attr__('W', 'lllm') . '">' . esc_html($row['wins']) . '</td>';
-            $output .= '<td class="l" data-label="' . esc_attr__('L', 'lllm') . '">' . esc_html($row['losses']) . '</td>';
-            $output .= '<td class="t" data-label="' . esc_attr__('T', 'lllm') . '">' . esc_html($row['ties']) . '</td>';
-            $output .= '<td class="rf" data-label="' . esc_attr__('RF', 'lllm') . '">' . esc_html($row['rf']) . '</td>';
-            $output .= '<td class="ra" data-label="' . esc_attr__('RA', 'lllm') . '">' . esc_html($row['ra']) . '</td>';
-            $output .= '<td class="rd" data-label="' . esc_attr__('RD', 'lllm') . '">' . esc_html($row['rd']) . '</td>';
-            $output .= '<td class="win-pct" data-label="' . esc_attr__('Win%', 'lllm') . '">' . esc_html(number_format($row['win_pct'], 3)) . '</td>';
+            $output .= '<td class="team is-priority-high" data-label="' . esc_attr__('Team', 'lllm') . '">' . self::render_team_with_logo((string) $row['team_name'], $team_logo) . '</td>';
+            $output .= '<td class="gp is-priority-medium" data-label="' . esc_attr__('GP', 'lllm') . '">' . esc_html($row['gp']) . '</td>';
+            $output .= '<td class="w is-priority-high" data-label="' . esc_attr__('W', 'lllm') . '">' . esc_html($row['wins']) . '</td>';
+            $output .= '<td class="l is-priority-high" data-label="' . esc_attr__('L', 'lllm') . '">' . esc_html($row['losses']) . '</td>';
+            $output .= '<td class="t is-priority-medium" data-label="' . esc_attr__('T', 'lllm') . '">' . esc_html($row['ties']) . '</td>';
+            $output .= '<td class="rf is-priority-low" data-label="' . esc_attr__('RF', 'lllm') . '">' . esc_html($row['rf']) . '</td>';
+            $output .= '<td class="ra is-priority-low" data-label="' . esc_attr__('RA', 'lllm') . '">' . esc_html($row['ra']) . '</td>';
+            $output .= '<td class="rd is-priority-low" data-label="' . esc_attr__('RD', 'lllm') . '">' . esc_html($row['rd']) . '</td>';
+            $output .= '<td class="win-pct is-priority-high" data-label="' . esc_attr__('Win%', 'lllm') . '">' . esc_html(number_format($row['win_pct'], 3)) . '</td>';
             $output .= '</tr>';
         }
 
