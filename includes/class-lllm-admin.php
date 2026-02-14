@@ -2868,6 +2868,7 @@ class LLLM_Admin {
         foreach ($games as $game) {
             $datetime = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
             $datetime->setTimezone($export_timezone);
+            $regular_or_playoff = self::normalize_playoff_meta_value($game->competition_type) === 'playoff' ? 'playoff' : 'regular';
             fputcsv($output, array(
                 $game->game_uid,
                 $datetime->format('m/d/Y'),
@@ -2875,7 +2876,7 @@ class LLLM_Admin {
                 $game->location,
                 $game->away_code,
                 $game->home_code,
-                $game->competition_type,
+                $regular_or_playoff,
                 $game->status,
                 $game->away_score,
                 $game->home_score,

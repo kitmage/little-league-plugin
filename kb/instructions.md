@@ -231,6 +231,7 @@ Use this at the start of season or when the schedule is rebuilt.
    - `location`
    - `away_team_code`
    - `home_team_code`
+   - `regular_or_playoff`
    - `status`
    - `away_score`
    - `home_score`
