@@ -75,12 +75,8 @@ Your schedule + results workspace.
 - Use **Export Current Games CSV** to pull current data.
 - Use **Quick Edit** for one-off corrections.
 - Use **Add Game Manually** for single game entry without CSV.
-- Optional playoff tools (shown below the schedule table):
-  - Playoff Schedule Slots cards for Round 1 slots 1-2, Round 2 slots 1-2, and Championship slot 1
-  - Each slot card supports create/edit with Date, Time, Location, Away Team, Home Team, Status, and Notes (pre-filled from existing playoff game by round+slot)
-  - Generate Playoff Bracket (starts from the day after the latest regular-season game date in the selected division)
-  - Reset Playoff Games
-  - Assigned Bracket Preview table (HTML preview of seed assignments, Away before Home; hidden with a "Playoff Schedule Incomplete" message when Round 1 slots 1-4 are not fully assigned)
+- Use game **Type** (`regular` or `playoff`) when creating/editing games.
+- Playoff games are managed manually using the same Add Game, Quick Edit, and CSV workflows as regular games.
 
 ### Import Logs
 Audit trail of CSV imports.
@@ -304,7 +300,7 @@ In **Games**, use **Quick Edit** for small corrections:
 - Scores
 - Date/time
 - Location
-- Game type/playoff settings
+- Game type (`regular` or `playoff`)
 
 Use CSV import for bulk changes; use Quick Edit for one-off fixes.
 
@@ -326,9 +322,10 @@ If an import fails:
 
 1. Go to **League Manager → Shortcode Generator**.
 2. Select shortcode type (Schedule, Standings, Teams).
-3. Set season/division/team filters.
-4. Copy shortcode.
-5. Paste into a WordPress page/post.
+3. For Schedule shortcodes, set `type` to `regular` or `playoff` as needed.
+4. Set season/division/team filters.
+5. Copy shortcode.
+6. Paste into a WordPress page/post.
 
 ---
 

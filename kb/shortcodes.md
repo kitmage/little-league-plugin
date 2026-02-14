@@ -69,13 +69,13 @@ Use this to show upcoming/past games with date/time, location, teams, status, an
 ### Example
 
 ```text
-[lllm_schedule season="spring-2026" division="8u" show_past="1" show_future="1" limit="50"]
+[lllm_schedule season="spring-2026" division="8u" type="regular" show_past="1" show_future="1" limit="50"]
 ```
 
 Filter to one team/franchise code:
 
 ```text
-[lllm_schedule season="spring-2026" division="8u" team_code="dirtbags"]
+[lllm_schedule season="spring-2026" division="8u" type="regular" team_code="dirtbags"]
 ```
 
 ### Attributes
@@ -85,6 +85,7 @@ Filter to one team/franchise code:
 | `season` | select (dynamic seasons) | *(empty)* | Season slug (for example: `spring-2026`). |
 | `division` | select (dynamic divisions) | *(empty)* | Division slug (for example: `8u`). |
 | `team_code` | select (dynamic team codes) | *(empty)* | Filters to games where either team matches this franchise/team code. |
+| `type` | `"regular"` or `"playoff"` | `"regular"` | Filters schedule rows by game type. |
 | `show_past` | `"1"` or `"0"` | `"1"` | Include past games (`1`) or hide them (`0`). |
 | `show_future` | `"1"` or `"0"` | `"1"` | Include future games (`1`) or hide them (`0`). |
 | `limit` | number as text | `"50"` | Max number of rows returned. |
@@ -140,30 +141,20 @@ Use this to show all teams in a division.
 
 ---
 
-## 4) `[lllm_playoff_bracket]` — playoff bracket view
+## 4) Schedule game type filter
 
-Use this to display generated playoff games for a division.
+The retired playoff bracket shortcode has been replaced by the schedule shortcode `type` filter.
+
+Use `type="regular"` for regular-season games (default) and `type="playoff"` for playoff-only schedules.
 
 ### Example
 
 ```text
-[lllm_playoff_bracket season="spring-2026" division="8u"]
+[lllm_schedule season="spring-2026" division="8u" type="playoff" show_past="1" show_future="1"]
 ```
 
-### Attributes
-
-| Attribute | Type | Default | What it does |
-|---|---|---|---|
-| `season` | select (dynamic seasons) | *(empty)* | Season slug. |
-| `division` | select (dynamic divisions) | *(empty)* | Division slug. |
-
-### Good to know
-
-- Renders rounds: **Round 1**, **Round 2**, and **Championship**.
-- If feeder games are not final yet, bracket slots can show placeholders like **Winner of Game R1-2** until source games are marked played.
-- Playoff bracket team cells use logo-only rendering (`render_team_logo`).
-
 ---
+
 
 ## Troubleshooting checklist
 
@@ -182,7 +173,7 @@ If needed, send your admin the exact shortcode you used and a screenshot of the 
 
 Recent shortcode rendering updates include:
 
-- Each shortcode now renders an `h2` heading before output, including Season and Division context plus a content label (Schedule, Standings, Teams, or Playoff Bracket).
+- Each shortcode now renders an `h2` heading before output, including Season and Division context plus a content label (Schedule, Standings, or Teams).
 - Schedule date/time cells now split output into `<span class="day">`, `<span class="date">`, and `<span class="time">`.
 - Output tables now assign class names to every `th` and `td` based on the displayed column heading (`date-time`, `location`, `home`, `away`, `status`, `score`, etc.).
 - Team mentions in output tables now include team logo markup in the first column of each row.

@@ -18,7 +18,7 @@ Here’s how it works:
   * **Schedules** (upcoming games, results, statuses like scheduled/played/postponed/canceled)
   * **Standings** (wins/losses/ties, runs for/against, run differential, win %), calculated automatically from played games only.
 
-The end result: a clean, reliable system that volunteers can run without breaking data, and a solid foundation for future enhancements (playoffs, head-to-head tie breakers, locations list, etc.) if we ever want them.
+The end result: a clean, reliable system that volunteers can run without breaking data, and a solid foundation for future enhancements (head-to-head tie breakers, locations list, etc.) if we ever want them.
 
 ---
 
@@ -171,7 +171,7 @@ Managers are intended to work primarily in League Manager screens.
 * `game_uid` (CHAR(12) unique, not null) // human-friendly stable ID for CSV (e.g., base32)
 * `division_id` (BIGINT, not null)
 * `competition_type` (VARCHAR 20, not null, default `regular`) // `regular|playoff`
-* Legacy columns retained for backward compatibility (currently ignored by app logic): `playoff_round`, `playoff_slot`, `source_game_uid_1`, `source_game_uid_2`.
+* Legacy playoff metadata columns are retained for backward compatibility and ignored by current app logic.
 * `home_team_instance_id` (BIGINT, not null)
 * `away_team_instance_id` (BIGINT, not null)
 * `location` (VARCHAR 160, not null) // free text v1
@@ -186,7 +186,7 @@ Managers are intended to work primarily in League Manager screens.
 
 * UNIQUE(`game_uid`)
 * INDEX(`division_id`, `start_datetime_utc`)
-* INDEX(`division_id`, `competition_type`, `playoff_round`, `playoff_slot`)
+* INDEX(`division_id`, `competition_type`)
 * INDEX(`source_game_uid_1`)
 * INDEX(`source_game_uid_2`)
 * INDEX(`home_team_instance_id`)
@@ -432,10 +432,11 @@ Every validation + commit produces a log entry with:
 4. `location` (required)
 5. `away_team_code` (required)
 6. `home_team_code` (required)
-7. `status` (optional; defaults to `scheduled`)
-8. `away_score` (optional; required if status=played)
-9. `home_score` (optional; required if status=played)
-10. `notes` (optional)
+7. `regular_or_playoff` (required; `regular` or `playoff`)
+8. `status` (optional; defaults to `scheduled`)
+9. `away_score` (optional; required if status=played)
+10. `home_score` (optional; required if status=played)
+11. `notes` (optional)
 
 **Team matching**
 
@@ -479,7 +480,7 @@ Every validation + commit produces a log entry with:
 
 The “Download Current Games CSV” export should always include:
 
-* `game_uid`, `start_date(mm/dd/yyyy)`, `start_time(24HR)`, `location`, `away_team_code`, `home_team_code`, `status`, `away_score`, `home_score`, `notes`
+* `game_uid`, `start_date(mm/dd/yyyy)`, `start_time(24HR)`, `location`, `away_team_code`, `home_team_code`, `regular_or_playoff`, `status`, `away_score`, `home_score`, `notes`
 
 This becomes the canonical “edit and re-upload” file.
 
@@ -511,7 +512,7 @@ Downloadable error report CSV should add an `error` column with the message.
 
 * Filter: Season → Division
 * Table: Date/Time, Location, Away, Home, Status, Score
-* Inline quick edit (per row): Status + game type + playoff slot (when playoff) + scores + notes
+* Inline quick edit (per row): Status + game type (`regular`/`playoff`) + scores + notes
 * “Export CSV” button
 * “Go to Import Wizard” button
 * “Add Game Manually” expandable section with a single inline manual-create form
@@ -547,11 +548,6 @@ Downloadable error report CSV should add an `error` column with the message.
 
    * `[lllm_teams season="spring-2026" division="8u" show_logos="1"]`
 
-4. Playoff bracket:
-
-   * `[lllm_playoff_bracket season="spring-2026" division="8u"]`
-   * Renders generated playoff games for `r1`, `r2`, and `championship` rounds.
-   * If feeder results are not final yet, shows winner placeholders until source games are `played`.
 
 ### 12.1A Admin shortcode builder (schema source of truth)
 
@@ -661,40 +657,12 @@ Supported automatically (scores equal in a played game).
 * Rename Franchise name/logo is allowed; franchise code (`team_code`) remains stable.
 * If a team truly becomes a new identity, Admin should create a new Franchise + new code.
 
-### 13.6 Playoff business rules (fixed 6-team bracket)
+### 13.6 Playoff business rules
 
-* Format is fixed at **6 teams** in standings order (seeds 1–6).
-* Bracket generator creates exactly 5 games in this sequence:
-
-  * `r1` slot `1`: seed 3 vs seed 6
-  * `r1` slot `2`: seed 4 vs seed 5
-  * `r2` slot `1`: seed 1 vs winner of `r1` slot `2`
-  * `r2` slot `2`: seed 2 vs winner of `r1` slot `1`
-  * `championship` slot `1`: winner of `r2` slot `1` vs winner of `r2` slot `2`
-
-#### Round + slot naming
-
-* Round codes are stored as `r1`, `r2`, and `championship`.
-* Slot values are stored as string numerals (`1`, `2`, etc.) for consistent quick-edit and rendering behavior.
-* Display ordering is by round (`r1` → `r2` → `championship`) and then numeric slot order.
-
-#### Feeder linkage rules
-
-* Legacy feeder UID fields are retained for compatibility but ignored by current app logic.
-* R1 games do not have feeder links.
-* Championship uses both feeder fields to reference both R2 winners.
-* If feeder game status is unresolved (not `played`), displays should show a placeholder label (`Winner of Game <round>-<slot>`) instead of a resolved team winner.
-
-### 13.7 Manager playoff workflow notes
-
-1. Go to **Games**, pick Season + Division, and verify standings are final.
-2. Click **Generate Playoff Bracket** (requires at least 6 teams in standings).
-3. Generated dates are anchored to the regular schedule: `r1_g1` starts the day after the latest regular-season game date in that division (at `17:00:00` UTC), then later rounds keep the built-in offsets (+1, +3, +4, +6 days from base).
-4. Use the playoff tools to create or edit playoff games; playoff selection now relies on `competition_type=playoff`.
-5. Use the Assigned Bracket Preview table to verify seed-to-slot assignments before generating or regenerating (Away appears before Home). If Round 1 slots 1-4 are not fully seeded, the preview displays **Playoff Schedule Incomplete** and hides the preview table.
-6. Enter results in Quick Edit as games complete.
-7. As feeder games are marked `played`, downstream bracket placeholders resolve automatically to winners.
-8. If setup needs to be restarted, use **Reset Playoff Games** and generate again.
+* Playoff games are managed manually as normal game records with `competition_type=playoff`.
+* There is no bracket generation workflow in v1 documentation.
+* Managers can create and edit playoff games using the same manual add, quick edit, and CSV import tools used for regular games.
+* Schedule output can be filtered with shortcode attribute `type="playoff"`.
 
 ---
 
@@ -1326,7 +1294,7 @@ This keeps the Manager workflow simple:
 
 # Sample Seed (for dev + stakeholder demo)
 
-Below is a realistic “seed” dataset that an Admin can enter in under 10 minutes to demonstrate the whole workflow.
+Below is a realistic starter dataset that an Admin can enter in under 10 minutes to demonstrate the whole workflow.
 
 ### 1) Create Season
 
@@ -1429,20 +1397,16 @@ W8Z2C6R1T5N7,7,1,played,
 
 ---
 
-If you want the seed to be even more demo-friendly, I can also provide a “scripted demo path” (exact clicks in order) that a stakeholder can follow to see: create season → assign teams → import schedule → import scores → view standings and schedule pages.
+If you want this to be even more demo-friendly, I can also provide a “scripted demo path” (exact clicks in order) that a stakeholder can follow to see: create season → assign teams → import schedule → import scores → view standings and schedule pages.
 
 
 ## Shortcode output markup updates
 
 Recent shortcode rendering updates include:
 
-- Each shortcode now renders an `h2` heading before output, including Season and Division context plus a content label (Schedule, Standings, Teams, or Playoff Bracket).
+- Each shortcode now renders an `h2` heading before output, including Season and Division context plus a content label (Schedule, Standings, or Teams).
 - Schedule date/time cells now split output into `<span class="day">`, `<span class="date">`, and `<span class="time">`.
 - Output tables now assign class names to every `th` and `td` based on the displayed column heading (`date-time`, `location`, `home`, `away`, `status`, `score`, etc.).
 - Team mentions in output tables now include team logo markup in the first column of each row.
 - Public shortcode CSS now loads from `assets/lllm-shortcodes.css`, which intentionally contains a comment-only class inventory for theme developers.
 
-
-### 13.8 Playoff shortcode rendering note
-
-* `[lllm_playoff_bracket]` now renders team cells with `render_team_logo` (logo-only output), replacing `render_team_with_logo` for this shortcode.
