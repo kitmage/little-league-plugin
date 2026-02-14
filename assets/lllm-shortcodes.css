@@ -4,3 +4,90 @@ Standings shortcode classes: lllm-shortcode-heading, lllm-standings, team, gp, w
 Teams shortcode classes: lllm-shortcode-heading, lllm-teams, lllm-team-logo.
 Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lllm-shortcode-deprecation.
 */
+
+.lllm-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.lllm-table-wrap .lllm-schedule,
+.lllm-table-wrap .lllm-standings {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.lllm-table-wrap .lllm-schedule th,
+.lllm-table-wrap .lllm-schedule td,
+.lllm-table-wrap .lllm-standings th,
+.lllm-table-wrap .lllm-standings td {
+    padding: 0.65rem 0.75rem;
+    vertical-align: middle;
+}
+
+.lllm-table-wrap .lllm-schedule th,
+.lllm-table-wrap .lllm-standings th {
+    text-align: left;
+    white-space: nowrap;
+}
+
+.lllm-table-wrap .lllm-schedule tbody tr:nth-child(even),
+.lllm-table-wrap .lllm-standings tbody tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.lllm-table-wrap .lllm-standings .gp,
+.lllm-table-wrap .lllm-standings .w,
+.lllm-table-wrap .lllm-standings .l,
+.lllm-table-wrap .lllm-standings .t,
+.lllm-table-wrap .lllm-standings .rf,
+.lllm-table-wrap .lllm-standings .ra,
+.lllm-table-wrap .lllm-standings .rd,
+.lllm-table-wrap .lllm-standings .win-pct {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.lllm-table-wrap .lllm-standings .team {
+    min-width: 11rem;
+}
+
+.lllm-table-wrap .lllm-team-logo {
+    max-width: 1.5rem;
+    height: auto;
+    vertical-align: middle;
+    margin-right: 0.4rem;
+}
+
+.lllm-table-wrap .lllm-team-name {
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .lllm-table-wrap .lllm-schedule,
+    .lllm-table-wrap .lllm-standings {
+        font-size: 0.85rem;
+    }
+
+    .lllm-table-wrap .lllm-schedule th,
+    .lllm-table-wrap .lllm-schedule td,
+    .lllm-table-wrap .lllm-standings th,
+    .lllm-table-wrap .lllm-standings td {
+        padding: 0.45rem 0.5rem;
+    }
+
+    .lllm-table-wrap .lllm-schedule .home,
+    .lllm-table-wrap .lllm-schedule .away,
+    .lllm-table-wrap .lllm-schedule .win,
+    .lllm-table-wrap .lllm-standings .team {
+        white-space: nowrap;
+    }
+
+    .lllm-table-wrap .lllm-team-logo {
+        max-width: 1.2rem;
+        margin-right: 0.3rem;
+    }
+}
