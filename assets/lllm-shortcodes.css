@@ -16,7 +16,6 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
 .lllm-table-wrap .lllm-teams {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.95rem;
     line-height: 1.4;
 }
 
@@ -24,7 +23,6 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
 .lllm-table-wrap .lllm-schedule td,
 .lllm-table-wrap .lllm-standings th,
 .lllm-table-wrap .lllm-standings td,
-.lllm-table-wrap .lllm-teams th,
 .lllm-table-wrap .lllm-teams td {
     padding: 0.65rem 0.75rem;
     vertical-align: middle;
@@ -60,6 +58,19 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
     min-width: 11rem;
 }
 
+.lllm-table-wrap .lllm-teams .team {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.lllm-table-wrap .lllm-teams .lllm-team-logo--placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    margin-right: 0;
+}
 
 .lllm-table-wrap .lllm-team {
     display: inline-flex;
@@ -77,7 +88,6 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
 .lllm-table-wrap .lllm-team-name {
     white-space: nowrap;
 }
-
 
 @media (max-width: 768px) {
     .lllm-table-wrap .lllm-schedule,
