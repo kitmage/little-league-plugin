@@ -64,7 +64,10 @@ If you must use a slug/code not shown in curated options:
 
 ## 1) `[lllm_schedule]` — game schedule table
 
-Use this to show upcoming/past games with date/time, location, teams with inline scores, and the winning team.
+Use this to show upcoming/past games with teams, date/time, location, inline scores, and the winning team.
+
+Schedule table columns render in this order: **Away**, **Home**, **Date/Time**, **Location**, **Win**.
+In Away/Home cells, the team logo and team name are wrapped in `<div class="lllm-team">...</div>`.
 
 ### Example
 

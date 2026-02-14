@@ -548,6 +548,10 @@ Downloadable error report CSV should add an `error` column with the message.
 
    * `[lllm_teams season="spring-2026" division="8u" show_logos="1"]`
 
+Schedule rendering details:
+
+* Column order: Away, Home, Date/Time, Location, Win
+* In Away/Home cells, logo + name are grouped in `<div class="lllm-team">...</div>`
 
 ### 12.1A Admin shortcode builder (schema source of truth)
 

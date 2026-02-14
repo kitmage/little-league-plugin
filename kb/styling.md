@@ -77,6 +77,7 @@ Use full mode when your design needs all metrics visible and horizontal scroll i
 - `.lllm-shortcode-heading` — heading above shortcode output blocks
 - `.lllm-table-wrap` — responsive table container
 - `.lllm-updated` — “last updated” metadata text
+- `.lllm-team` — wrapper around team logo + team name in schedule Away/Home cells
 - `.lllm-team-logo` — inline team logo image sizing/alignment
 - `.lllm-team-name` — inline team name spacing/wrapping behavior
 - `.lllm-team-score` — team score text element
@@ -88,6 +89,8 @@ Primary container and table classes:
 - `.lllm-schedule`
 
 Column and content classes commonly present in schedule output:
+
+Rendered schedule column order is: **Away → Home → Date/Time → Location → Win**.
 
 - `.date-time`
 - `.location`

@@ -186,6 +186,9 @@ This keeps shortcode labels, control mapping, value sources (static options or d
 [lllm_schedule season="spring-2026" division="8u" type="regular" show_past="1" show_future="1" limit="50"]
 ```
 
+Schedule output columns are rendered in this order: **Away**, **Home**, **Date/Time**, **Location**, **Win**.
+In Away/Home cells, team logo + name are wrapped in `<div class="lllm-team">...</div>`.
+
 Optional filter by franchise code (`team_code`):
 
 ```
