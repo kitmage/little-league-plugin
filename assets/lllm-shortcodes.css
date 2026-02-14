@@ -58,10 +58,15 @@ Deprecated shortcode notice class (for [lllm_playoff_bracket] alias output): lll
     min-width: 11rem;
 }
 
-.lllm-table-wrap .lllm-teams .team {
+.lllm-table-wrap .lllm-teams .lllm-team-row {
     display: flex;
     align-items: center;
     gap: 0.65rem;
+}
+
+.lllm-table-wrap .lllm-teams .lllm-team-row-cell {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
 }
 
 .lllm-table-wrap .lllm-teams .lllm-team-logo--placeholder {

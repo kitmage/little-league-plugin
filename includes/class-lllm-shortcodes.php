@@ -494,13 +494,15 @@ class LLLM_Shortcodes {
 
         foreach ($teams as $team) {
             $output .= '<tr>';
-            $output .= '<td class="team" data-label="' . esc_attr__('Team', 'lllm') . '">';
+            $output .= '<td colspan="2" class="lllm-team-row-cell">';
+            $output .= '<div class="lllm-team-row">';
             if ($show_logos && $team->logo_attachment_id) {
                 $output .= wp_get_attachment_image((int) $team->logo_attachment_id, 'thumbnail', false, array('class' => 'lllm-team-logo'));
             } else {
                 $output .= '<span class="lllm-team-logo lllm-team-logo--placeholder">&mdash;</span>';
             }
             $output .= '<span class="lllm-team-name">' . esc_html($team->name) . '</span>';
+            $output .= '</div>';
             $output .= '</td>';
             $output .= '</tr>';
         }
