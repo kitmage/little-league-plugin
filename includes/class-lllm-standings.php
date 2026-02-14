@@ -6,13 +6,15 @@ if (!defined('ABSPATH')) {
 
 class LLLM_Standings {
     /**
-     * Builds the transient key used for cached standings by division.
+     * Builds the transient key used for cached standings by division/type.
      *
-     * @param int $division_id Division primary key.
+     * @param int    $division_id Division primary key.
+     * @param string $type        Competition type (`regular` or `playoff`).
      * @return string Transient cache key.
      */
-    public static function get_cache_key($division_id) {
-        return 'lllm_standings_' . (int) $division_id;
+    public static function get_cache_key($division_id, $type = 'regular') {
+        $type = $type === 'playoff' ? 'playoff' : 'regular';
+        return 'lllm_standings_' . (int) $division_id . '_' . $type;
     }
 
     /**
@@ -22,7 +24,8 @@ class LLLM_Standings {
      * @return void
      */
     public static function bust_cache($division_id) {
-        delete_transient(self::get_cache_key($division_id));
+        delete_transient(self::get_cache_key($division_id, 'regular'));
+        delete_transient(self::get_cache_key($division_id, 'playoff'));
     }
 
     /**
@@ -32,12 +35,14 @@ class LLLM_Standings {
      * Otherwise this method aggregates played games into per-team totals,
      * applies tie-break sorting, caches the result for one hour, and returns it.
      *
-     * @param int $division_id Division primary key.
+     * @param int    $division_id Division primary key.
+     * @param string $type        Competition type (`regular` or `playoff`).
      * @global wpdb $wpdb WordPress database abstraction object.
      * @return array<int,array<string,int|float|string>> Sorted standings rows.
      */
-    public static function get_standings($division_id) {
-        $cache_key = self::get_cache_key($division_id);
+    public static function get_standings($division_id, $type = 'regular') {
+        $type = $type === 'playoff' ? 'playoff' : 'regular';
+        $cache_key = self::get_cache_key($division_id, $type);
         $cached = get_transient($cache_key);
         if ($cached !== false) {
             return $cached;
@@ -72,15 +77,33 @@ class LLLM_Standings {
             );
         }
 
-        $games = $wpdb->get_results(
-            $wpdb->prepare(
-                'SELECT home_team_instance_id, away_team_instance_id, home_score, away_score
-                 FROM ' . $wpdb->prefix . 'lllm_games
-                 WHERE division_id = %d AND status = %s',
-                $division_id,
-                'played'
-            )
-        );
+        if ($type === 'playoff') {
+            $games = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT home_team_instance_id, away_team_instance_id, home_score, away_score
+                     FROM ' . $wpdb->prefix . 'lllm_games
+                     WHERE division_id = %d
+                       AND status = %s
+                       AND (competition_type = %s OR (playoff_round IS NOT NULL AND playoff_round <> \'\') OR (playoff_slot IS NOT NULL AND playoff_slot <> \'\'))',
+                    $division_id,
+                    'played',
+                    'playoff'
+                )
+            );
+        } else {
+            $games = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT home_team_instance_id, away_team_instance_id, home_score, away_score
+                     FROM ' . $wpdb->prefix . 'lllm_games
+                     WHERE division_id = %d
+                       AND status = %s
+                       AND (competition_type <> %s AND (playoff_round IS NULL OR playoff_round = \'\') AND (playoff_slot IS NULL OR playoff_slot = \'\'))',
+                    $division_id,
+                    'played',
+                    'playoff'
+                )
+            );
+        }
 
         foreach ($games as $game) {
             $home_id = (int) $game->home_team_instance_id;

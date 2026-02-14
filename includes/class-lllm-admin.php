@@ -101,7 +101,7 @@ class LLLM_Admin {
             ),
             'lllm_standings' => array(
                 'display_label' => __('Standings Table', 'lllm'),
-                'attributes' => array('season', 'division'),
+                'attributes' => array('season', 'division', 'type'),
                 'attribute_meta' => array(
                     'season' => array(
                         'label' => __('Season', 'lllm'),
@@ -119,6 +119,19 @@ class LLLM_Admin {
                         'dependsOn' => array('season'),
                         'filterBy' => array('season' => 'season_slug'),
                         'default_value' => '',
+                        'optional' => true,
+                    ),
+                    'type' => array(
+                        'label' => __('Type', 'lllm'),
+                        'control_type' => 'select',
+                        'value_source' => array(
+                            'type' => 'static',
+                            'options' => array(
+                                array('label' => __('Regular', 'lllm'), 'value' => 'regular'),
+                                array('label' => __('Playoff', 'lllm'), 'value' => 'playoff'),
+                            ),
+                        ),
+                        'default_value' => 'regular',
                         'optional' => true,
                     ),
                 ),
