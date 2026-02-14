@@ -190,6 +190,17 @@ class LLLM_Shortcodes {
 
         return $output;
     }
+
+    /**
+     * Renders a team name with score on the next line.
+     *
+     * @param string     $team_name Team name text.
+     * @param int|string $score Team score value.
+     * @return string HTML team/score block.
+     */
+    private static function render_team_name_with_score($team_name, $score) {
+        return '<span class="lllm-team-name">' . esc_html($team_name) . '</span><br><span class="lllm-team-score">' . esc_html((string) $score) . '</span>';
+    }
 	
     /**
      * Resolves season/division context for shortcode rendering.
@@ -321,17 +332,23 @@ class LLLM_Shortcodes {
         $output .= '<th class="location">' . esc_html__('Location', 'lllm') . '</th>';
         $output .= '<th class="home">' . esc_html__('Home', 'lllm') . '</th>';
         $output .= '<th class="away">' . esc_html__('Away', 'lllm') . '</th>';
-        $output .= '<th class="status">' . esc_html__('Status', 'lllm') . '</th>';
-        $output .= '<th class="score">' . esc_html__('Score', 'lllm') . '</th>';
+        $output .= '<th class="win">' . esc_html__('Win', 'lllm') . '</th>';
         $output .= '</tr></thead><tbody>';
 
         foreach ($games as $game) {
             $dt = new DateTime($game->start_datetime_utc, new DateTimeZone('UTC'));
             $dt->setTimezone(new DateTimeZone($timezone));
-            $status = esc_html($game->status);
-            $score = '—';
+            $home_score = '—';
+            $away_score = '—';
+            $winner = '—';
             if ($game->status === 'played') {
-                $score = esc_html($game->home_score . ' - ' . $game->away_score);
+                $home_score = (string) $game->home_score;
+                $away_score = (string) $game->away_score;
+                if ((int) $game->home_score > (int) $game->away_score) {
+                    $winner = (string) $game->home_name;
+                } elseif ((int) $game->away_score > (int) $game->home_score) {
+                    $winner = (string) $game->away_name;
+                }
             }
 
             $first_col = self::render_team_logo((string) $game->home_name, (int) $game->home_logo_attachment_id);
@@ -341,10 +358,9 @@ class LLLM_Shortcodes {
             $output .= '<tr>';
             $output .= '<td class="date-time">' . $first_col . '</td>';
             $output .= '<td class="location">' . esc_html($game->location) . '</td>';
-            $output .= '<td class="home">' . /*self::render_team_with_logo((string)*/ $game->home_name/*, (int) $game->home_logo_attachment_id)*/ . '</td>';
-            $output .= '<td class="away">' . /*self::render_team_with_logo((string)*/ $game->away_name/*, (int) $game->away_logo_attachment_id)*/ . '</td>';
-            $output .= '<td class="status">' . $status . '</td>';
-            $output .= '<td class="score">' . $score . '</td>';
+            $output .= '<td class="home">' . self::render_team_name_with_score((string) $game->home_name, $home_score) . '</td>';
+            $output .= '<td class="away">' . self::render_team_name_with_score((string) $game->away_name, $away_score) . '</td>';
+            $output .= '<td class="win">' . esc_html($winner) . '</td>';
             $output .= '</tr>';
         }
 

@@ -64,7 +64,7 @@ If you must use a slug/code not shown in curated options:
 
 ## 1) `[lllm_schedule]` — game schedule table
 
-Use this to show upcoming/past games with date/time, location, teams, status, and score (for played games).
+Use this to show upcoming/past games with date/time, location, teams with inline scores, and the winning team.
 
 ### Example
 
