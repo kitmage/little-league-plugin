@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Admin UX
+- Replaced typed `DELETE` confirmation inputs on Seasons, Divisions, Franchises, and Games delete actions with browser confirmation prompts.
+- Added server-side validation for a browser-confirmed delete flag so delete requests still require explicit confirmation even if JavaScript is bypassed.
+
 ### Migration notes
 - Playoff schedule filtering now keeps compatibility with legacy game rows that only contain `playoff_round` / `playoff_slot` metadata. Those rows continue to appear under playoff schedule output until all legacy data is normalized.
 
