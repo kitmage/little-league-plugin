@@ -14,19 +14,24 @@ class LLLM_Shortcodes {
         add_shortcode('lllm_schedule', array(__CLASS__, 'render_schedule'));
         add_shortcode('lllm_standings', array(__CLASS__, 'render_standings'));
         add_shortcode('lllm_teams', array(__CLASS__, 'render_teams'));
-        add_shortcode('lllm_playoff_bracket', array(__CLASS__, 'render_playoff_bracket'));
+        add_filter('pre_do_shortcode_tag', array(__CLASS__, 'maybe_render_deprecated_shortcode'), 10, 4);
     }
 
     /**
-     * Resolves the display label for a playoff game side.
+     * Handles deprecated shortcode tags with migration guidance.
      *
-     * @param object $game Game row.
-     * @param string $side Side key (`home` or `away`).
-     * @return string Team label for display.
+     * @param string|false $output Short-circuit output from previous callback.
+     * @param string       $tag Shortcode tag.
+     * @param array        $attr Parsed shortcode attributes.
+     * @param array        $m Full regex match array.
+     * @return string|false
      */
-    private static function get_playoff_team_label($game, $side) {
-        $team_name_field = $side . '_name';
-        return isset($game->{$team_name_field}) ? (string) $game->{$team_name_field} : '';
+    public static function maybe_render_deprecated_shortcode($output, $tag, $attr, $m) {
+        if ($tag !== 'lllm_playoff_bracket') {
+            return $output;
+        }
+
+        return '<p>' . esc_html__('The [lllm_playoff_bracket] shortcode has been retired. Please use [lllm_schedule type="playoff"] instead.', 'lllm') . '</p>';
     }
 
     /**
@@ -202,6 +207,7 @@ class LLLM_Shortcodes {
      * Supported attributes:
      * - `season`, `division` (slug filters)
      * - `team_code` (limits to games involving the team)
+     * - `type` (`regular` default, `playoff` for playoff games)
      * - `show_past`, `show_future` (`1`/`0` flags)
      * - `limit` (max rows)
      *
@@ -215,6 +221,7 @@ class LLLM_Shortcodes {
                 'season' => '',
                 'division' => '',
                 'team_code' => '',
+                'type' => 'regular',
                 'show_past' => '1',
                 'show_future' => '1',
                 'limit' => '50',
@@ -230,6 +237,10 @@ class LLLM_Shortcodes {
 
         $timezone = $season->timezone ? $season->timezone : wp_timezone_string();
         $atts['team_code'] = self::sanitize_shortcode_token($atts['team_code']);
+        $schedule_type = strtolower(self::sanitize_shortcode_token($atts['type']));
+        if (!in_array($schedule_type, array('regular', 'playoff'), true)) {
+            $schedule_type = 'regular';
+        }
         $show_past = $atts['show_past'] === '1';
         $show_future = $atts['show_future'] === '1';
         $limit = max(1, intval($atts['limit']));
@@ -237,6 +248,13 @@ class LLLM_Shortcodes {
         global $wpdb;
         $filters = array('g.division_id = %d');
         $params = array($division->id);
+        if ($schedule_type === 'playoff') {
+            $filters[] = 'g.competition_type = %s';
+            $params[] = 'playoff';
+        } else {
+            $filters[] = 'g.competition_type <> %s';
+            $params[] = 'playoff';
+        }
 
         if ($atts['team_code']) {
             $filters[] = '(home.team_code = %s OR away.team_code = %s)';
@@ -435,92 +453,4 @@ class LLLM_Shortcodes {
         return $output;
     }
 
-    /**
-     * Renders the playoff bracket shortcode output.
-     *
-     * Supported attributes:
-     * - `season`, `division` (slug filters)
-     *
-     * @param array<string,string> $atts Shortcode attributes.
-     * @global wpdb $wpdb WordPress database abstraction object.
-     * @return string HTML output.
-     */
-    public static function render_playoff_bracket($atts) {
-        $atts = shortcode_atts(
-            array(
-                'season' => '',
-                'division' => '',
-            ),
-            $atts,
-            'lllm_playoff_bracket'
-        );
-
-        list($season, $division) = self::resolve_context($atts);
-        if (!$season || !$division) {
-            return '<p>' . esc_html__('Playoff bracket is not available yet.', 'lllm') . '</p>';
-        }
-
-        global $wpdb;
-        $games = $wpdb->get_results(
-            $wpdb->prepare(
-                'SELECT g.*, home.name AS home_name, away.name AS away_name, home.logo_attachment_id AS home_logo_attachment_id, away.logo_attachment_id AS away_logo_attachment_id
-                 FROM ' . $wpdb->prefix . 'lllm_games g
-                 JOIN ' . $wpdb->prefix . 'lllm_team_instances hi ON g.home_team_instance_id = hi.id
-                 JOIN ' . $wpdb->prefix . 'lllm_team_instances ai ON g.away_team_instance_id = ai.id
-                 JOIN ' . $wpdb->prefix . 'lllm_team_masters home ON hi.team_master_id = home.id
-                 JOIN ' . $wpdb->prefix . 'lllm_team_masters away ON ai.team_master_id = away.id
-                 WHERE g.division_id = %d
-                   AND g.competition_type = %s
-                 ORDER BY g.start_datetime_utc ASC, g.id ASC',
-                $division->id,
-                'playoff'
-            )
-        );
-
-        if (!$games) {
-            return '<p>' . esc_html__('No playoff bracket available.', 'lllm') . '</p>';
-        }
-
-        $output = self::render_context_heading($season, $division, __('Playoff Bracket', 'lllm'));
-        $output .= '<div class="lllm-playoff-bracket">';
-        $output .= '<section class="lllm-playoff-round lllm-playoff-round-playoff">';
-        $output .= '<h3>' . esc_html__('Playoff Games', 'lllm') . '</h3>';
-        $output .= '<table><thead><tr>';
-        $output .= '<th class="game">' . esc_html__('Game', 'lllm') . '</th>';
-        $output .= '<th class="home">' . esc_html__('Home', 'lllm') . '</th>';
-        $output .= '<th class="away">' . esc_html__('Away', 'lllm') . '</th>';
-        $output .= '<th class="status">' . esc_html__('Status', 'lllm') . '</th>';
-        $output .= '<th class="score">' . esc_html__('Score', 'lllm') . '</th>';
-        $output .= '</tr></thead><tbody>';
-
-        foreach ($games as $index => $game) {
-            $home_label = self::get_playoff_team_label($game, 'home');
-            $away_label = self::get_playoff_team_label($game, 'away');
-            $score = '—';
-            if ($game->status === 'played') {
-                $score = $game->home_score . ' - ' . $game->away_score;
-            }
-
-            /* translators: %d: sequential playoff game number. */
-            $game_label = sprintf(__('Game %d', 'lllm'), $index + 1);
-
-            $first_col = self::render_team_logo($home_label, (int) $game->home_logo_attachment_id);
-            $first_col .= self::render_team_logo($away_label, (int) $game->away_logo_attachment_id);
-            $first_col .= '<span class="lllm-game-label">' . esc_html($game_label) . '</span>';
-
-            $output .= '<tr>';
-            $output .= '<td class="game">' . $first_col . '</td>';
-            $output .= '<td class="home">' . self::render_team_logo($home_label, (int) $game->home_logo_attachment_id) . '</td>';
-            $output .= '<td class="away">' . self::render_team_logo($away_label, (int) $game->away_logo_attachment_id) . '</td>';
-            $output .= '<td class="status">' . esc_html((string) $game->status) . '</td>';
-            $output .= '<td class="score">' . esc_html($score) . '</td>';
-            $output .= '</tr>';
-        }
-
-        $output .= '</tbody></table>';
-        $output .= '</section>';
-        $output .= '</div>';
-
-        return $output;
-    }
 }

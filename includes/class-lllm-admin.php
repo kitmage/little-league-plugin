@@ -18,7 +18,7 @@ class LLLM_Admin {
             // parent selections change and clear invalid downstream selections.
             'lllm_schedule' => array(
                 'display_label' => __('Schedule Table', 'lllm'),
-                'attributes' => array('season', 'division', 'team_code', 'show_past', 'show_future', 'limit'),
+                'attributes' => array('season', 'division', 'team_code', 'type', 'show_past', 'show_future', 'limit'),
                 'attribute_meta' => array(
                     'season' => array(
                         'label' => __('Season', 'lllm'),
@@ -49,6 +49,19 @@ class LLLM_Admin {
                             'division' => 'division_slug',
                         ),
                         'default_value' => '',
+                        'optional' => true,
+                    ),
+                    'type' => array(
+                        'label' => __('Schedule Type', 'lllm'),
+                        'control_type' => 'select',
+                        'value_source' => array(
+                            'type' => 'static',
+                            'options' => array(
+                                array('label' => __('Regular', 'lllm'), 'value' => 'regular'),
+                                array('label' => __('Playoff', 'lllm'), 'value' => 'playoff'),
+                            ),
+                        ),
+                        'default_value' => 'regular',
                         'optional' => true,
                     ),
                     'show_past' => array(
@@ -143,30 +156,6 @@ class LLLM_Admin {
                             ),
                         ),
                         'default_value' => '0',
-                        'optional' => true,
-                    ),
-                ),
-            ),
-            'lllm_playoff_bracket' => array(
-                'display_label' => __('Playoff Bracket', 'lllm'),
-                'attributes' => array('season', 'division'),
-                'attribute_meta' => array(
-                    'season' => array(
-                        'label' => __('Season', 'lllm'),
-                        'control_type' => 'select',
-                        'allow_custom_value' => true,
-                        'value_source' => array('type' => 'dynamic', 'key' => 'season_slugs'),
-                        'default_value' => '',
-                        'optional' => true,
-                    ),
-                    'division' => array(
-                        'label' => __('Division', 'lllm'),
-                        'control_type' => 'select',
-                        'allow_custom_value' => true,
-                        'value_source' => array('type' => 'dynamic', 'key' => 'division_slugs'),
-                        'dependsOn' => array('season'),
-                        'filterBy' => array('season' => 'season_slug'),
-                        'default_value' => '',
                         'optional' => true,
                     ),
                 ),
