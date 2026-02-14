@@ -323,8 +323,8 @@ class LLLM_Shortcodes {
         $output .= '<table class="lllm-schedule"><thead><tr>';
         $output .= '<th class="date-time">' . esc_html__('Date/Time', 'lllm') . '</th>';
         $output .= '<th class="location">' . esc_html__('Location', 'lllm') . '</th>';
-        $output .= '<th class="home">' . esc_html__('Home', 'lllm') . '</th>';
         $output .= '<th class="away">' . esc_html__('Away', 'lllm') . '</th>';
+        $output .= '<th class="home">' . esc_html__('Home', 'lllm') . '</th>';
         $output .= '<th class="win">' . esc_html__('Win', 'lllm') . '</th>';
         $output .= '</tr></thead><tbody>';
 
@@ -347,8 +347,8 @@ class LLLM_Shortcodes {
             $output .= '<tr>';
             $output .= '<td class="date-time" data-label="' . esc_attr__('Date/Time', 'lllm') . '">' . self::render_date_parts($dt) . '</td>';
             $output .= '<td class="location" data-label="' . esc_attr__('Location', 'lllm') . '">' . esc_html($game->location) . '</td>';
-            $output .= '<td class="home" data-label="' . esc_attr__('Home', 'lllm') . '">' . self::render_team_logo_name_with_score((string) $game->home_name, (int) $game->home_logo_attachment_id, $home_score) . '</td>';
             $output .= '<td class="away" data-label="' . esc_attr__('Away', 'lllm') . '">' . self::render_team_logo_name_with_score((string) $game->away_name, (int) $game->away_logo_attachment_id, $away_score) . '</td>';
+            $output .= '<td class="home" data-label="' . esc_attr__('Home', 'lllm') . '">' . self::render_team_logo_name_with_score((string) $game->home_name, (int) $game->home_logo_attachment_id, $home_score) . '</td>';
             $output .= '<td class="win" data-label="' . esc_attr__('Win', 'lllm') . '">' . esc_html($winner) . '</td>';
             $output .= '</tr>';
         }
@@ -365,6 +365,7 @@ class LLLM_Shortcodes {
      *
      * Supported attributes:
      * - `season`, `division` (slug filters)
+     * - `type` (`regular` default, `playoff` for playoff standings)
      * - `mobile_mode` (`compact`/`full`; compact hides low-priority stats on narrow screens)
      *
      * @param array<string,string> $atts Shortcode attributes.
@@ -375,6 +376,7 @@ class LLLM_Shortcodes {
             array(
                 'season' => '',
                 'division' => '',
+                'type' => 'regular',
                 'mobile_mode' => 'compact',
             ),
             $atts,
@@ -387,7 +389,12 @@ class LLLM_Shortcodes {
         }
 
         $timezone = $season->timezone ? $season->timezone : wp_timezone_string();
-        $standings = LLLM_Standings::get_standings($division->id);
+        $standings_type = strtolower(self::sanitize_shortcode_token($atts['type']));
+        if (!in_array($standings_type, array('regular', 'playoff'), true)) {
+            $standings_type = 'regular';
+        }
+
+        $standings = LLLM_Standings::get_standings($division->id, $standings_type);
 
         if (!$standings) {
             return '<p>' . esc_html__('No standings available.', 'lllm') . '</p>';
@@ -400,7 +407,8 @@ class LLLM_Shortcodes {
             $standings_classes .= ' lllm-standings--show-full';
         }
 
-        $output = self::render_context_heading($season, $division, __('Standings', 'lllm'));
+        $standings_label = $standings_type === 'playoff' ? __('Playoff', 'lllm') : __('Regular', 'lllm');
+        $output = self::render_context_heading($season, $division, __('Standings', 'lllm'), $standings_label);
         $output .= '<div class="lllm-table-wrap">';
         $output .= '<table class="' . esc_attr($standings_classes) . '"><thead><tr>';
         $output .= '<th class="team is-priority-high">' . esc_html__('Team', 'lllm') . '</th>';
