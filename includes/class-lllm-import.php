@@ -22,6 +22,9 @@ class LLLM_Import {
         if (preg_match('/^start_time\s*\(.*\)$/', $header)) {
             return 'start_time';
         }
+        if ($header === 'competition_type') {
+            return 'regular_or_playoff';
+        }
         return $header;
     }
 
