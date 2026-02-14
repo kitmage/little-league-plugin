@@ -1257,15 +1257,8 @@ class LLLM_Admin {
                 'lllm_download_divisions_template'
             );
             echo '<h2>' . esc_html__('Division CSV Import', 'lllm') . '</h2>';
-            echo '<p>' . esc_html__('Use this template to validate division names before importing.', 'lllm') . '</p>';
+            echo '<p>' . esc_html__('Download the template, fill in division names, and import your CSV.', 'lllm') . '</p>';
             echo '<p><a class="button" href="' . esc_url($template_url) . '">' . esc_html__('Download Template', 'lllm') . '</a></p>';
-            echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
-            wp_nonce_field('lllm_validate_divisions_csv');
-            echo '<input type="hidden" name="action" value="lllm_validate_divisions_csv">';
-            echo '<input type="hidden" name="season_id" value="' . esc_attr($season_id) . '">';
-            echo '<input type="file" name="csv_file" accept=".csv" required> ';
-            // submit_button(__('Validate CSV', 'lllm'), 'secondary', 'submit', false);
-            echo '</form>';
             echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
             wp_nonce_field('lllm_import_divisions_csv');
             echo '<input type="hidden" name="action" value="lllm_import_divisions_csv">';
